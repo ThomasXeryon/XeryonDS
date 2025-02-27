@@ -4,7 +4,7 @@ import { Station, SessionLog, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { Settings, Users, Activity, PlusCircle, Loader2 } from "lucide-react";
+import { Settings, Users, Activity, PlusCircle, Loader2, Home } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -83,47 +83,58 @@ export default function AdminPage() {
             <img 
               src="/Xeryon-logo-v2.png" 
               alt="Xeryon Logo" 
-              className="h-8 object-contain"
+              className="h-8 object-contain cursor-pointer"
+              onClick={() => setLocation("/")}
             />
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 transition-colors">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Station
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Demo Station</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <Input
-                  placeholder="Station Name"
-                  value={newStationName}
-                  onChange={(e) => setNewStationName(e.target.value)}
-                />
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => createStation.mutate(newStationName)}
-                  disabled={createStation.isPending || !newStationName.trim()}
-                >
-                  {createStation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                  )}
-                  Create Station
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/")}
+              className="hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 transition-colors">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Station
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Demo Station</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <Input
+                    placeholder="Station Name"
+                    value={newStationName}
+                    onChange={(e) => setNewStationName(e.target.value)}
+                  />
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    onClick={() => createStation.mutate(newStationName)}
+                    disabled={createStation.isPending || !newStationName.trim()}
+                  >
+                    {createStation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Create Station
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="hover:bg-accent/5 transition-colors cursor-pointer" onClick={() => setLocation("/admin/stations")}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

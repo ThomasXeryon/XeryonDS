@@ -26,7 +26,8 @@ export default function HomePage() {
             <img 
               src="/Xeryon-logo-v2.png" 
               alt="Xeryon Logo" 
-              className="h-8 object-contain"
+              className="h-8 object-contain cursor-pointer"
+              onClick={() => setLocation("/")}
             />
             <h1 className="text-2xl font-bold">Demo Stations</h1>
           </div>
