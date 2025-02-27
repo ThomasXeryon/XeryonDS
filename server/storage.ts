@@ -29,45 +29,50 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private stations: Map<number, Station>;
   private sessionLogs: Map<number, SessionLog>;
-  currentId: number;
+  private currentId: number;
   sessionStore: session.SessionStore;
 
   constructor() {
     this.users = new Map();
     this.stations = new Map();
     this.sessionLogs = new Map();
-    this.currentId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
 
+    // Set initial ID to be higher than any pre-initialized data
+    this.currentId = 1;
+
+    // Initialize admin user first
+    const adminUser: User = {
+      id: this.currentId++,
+      username: "admin",
+      password: hashPassword("adminpass"),
+      isAdmin: true,
+    };
+    this.users.set(adminUser.id, adminUser);
+
     // Initialize demo stations
-    this.stations.set(1, {
-      id: 1,
+    const station1: Station = {
+      id: this.currentId++,
       name: "Demo Station 1",
       status: "available",
       currentUserId: null,
       sessionStart: null,
       isActive: true,
-    });
-    this.stations.set(2, {
-      id: 2,
+    };
+
+    const station2: Station = {
+      id: this.currentId++,
       name: "Demo Station 2",
       status: "available",
       currentUserId: null,
       sessionStart: null,
       isActive: true,
-    });
+    };
 
-    // Create admin user with the shared hashing function
-    const hashedPassword = hashPassword("adminpass");
-
-    this.users.set(1, {
-      id: 1,
-      username: "admin",
-      password: hashedPassword,
-      isAdmin: true,
-    });
+    this.stations.set(station1.id, station1);
+    this.stations.set(station2.id, station2);
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -100,10 +105,7 @@ export class MemStorage implements IStorage {
   }
 
   async createStation(name: string): Promise<Station> {
-    // Find the highest ID currently in use
-    const maxId = Math.max(...Array.from(this.stations.keys()), 0);
-    const id = maxId + 1;
-
+    const id = this.currentId++;
     const station: Station = {
       id,
       name,

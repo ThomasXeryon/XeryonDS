@@ -39,12 +39,24 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username: string, password: string, done) => {
       try {
+        console.log(`Authentication attempt for username: ${username}`);
         const user = await storage.getUserByUsername(username);
-        if (!user || !comparePasswords(password, user.password)) {
+
+        if (!user) {
+          console.log(`User not found: ${username}`);
           return done(null, false, { message: "Invalid username or password" });
         }
+
+        const isValidPassword = comparePasswords(password, user.password);
+        console.log(`Password validation result for ${username}: ${isValidPassword}`);
+
+        if (!isValidPassword) {
+          return done(null, false, { message: "Invalid username or password" });
+        }
+
         return done(null, user);
       } catch (err) {
+        console.error("Authentication error:", err);
         return done(err);
       }
     }),
@@ -70,9 +82,13 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
+      const hashedPassword = hashPassword(req.body.password);
+      console.log(`Registering new user: ${req.body.username}`);
+      console.log(`Hashed password format: ${hashedPassword.split('.').length} parts`);
+
       const user = await storage.createUser({
         ...req.body,
-        password: hashPassword(req.body.password),
+        password: hashedPassword,
       });
 
       req.login(user, (err) => {
