@@ -1,13 +1,14 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Station } from "@shared/schema";
 import { StationCard } from "@/components/station-card";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
+import { LogOut, LayoutDashboard } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
+  const [, setLocation] = useLocation();
 
   const { data: stations } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -31,7 +32,23 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             <span>Welcome, {user?.username}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            {user?.isAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setLocation("/admin")}
+                className="hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
