@@ -1,16 +1,9 @@
 import { users, stations, sessionLogs, type User, type InsertUser, type Station, type SessionLog } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import { hashPassword } from "@shared/auth-utils";
 
 const MemoryStore = createMemoryStore(session);
-
-// Import the hash function to ensure consistent hashing
-function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const hashedBuffer = scryptSync(password, salt, 64);
-  return `${hashedBuffer.toString("hex")}.${salt}`;
-}
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -66,7 +59,7 @@ export class MemStorage implements IStorage {
       isActive: true,
     });
 
-    // Create admin user with the same hashing function as auth.ts
+    // Create admin user with the shared hashing function
     const hashedPassword = hashPassword("adminpass");
 
     this.users.set(1, {

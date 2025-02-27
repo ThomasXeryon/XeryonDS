@@ -2,28 +2,14 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { hashPassword, comparePasswords } from "@shared/auth-utils";
 
 declare global {
   namespace Express {
     interface User extends SelectUser {}
   }
-}
-
-// Use the same hashing function as storage.ts
-function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const hashedBuffer = scryptSync(password, salt, 64);
-  return `${hashedBuffer.toString("hex")}.${salt}`;
-}
-
-function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = scryptSync(supplied, salt, 64);
-  return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
 export function setupAuth(app: Express) {
