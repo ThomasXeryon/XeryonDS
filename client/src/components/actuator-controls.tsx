@@ -1,23 +1,64 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import type { WebSocketMessage } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 export function ActuatorControls({ stationId, enabled }: { stationId: number; enabled: boolean }) {
   const wsRef = useRef<WebSocket>();
+  const [isConnected, setIsConnected] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
+    if (!enabled) return;
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     wsRef.current = new WebSocket(wsUrl);
 
+    wsRef.current.onopen = () => {
+      setIsConnected(true);
+      toast({
+        title: "Connected to control system",
+        description: "You can now control the actuator",
+      });
+    };
+
+    wsRef.current.onclose = () => {
+      setIsConnected(false);
+      toast({
+        title: "Disconnected from control system",
+        description: "Please refresh the page to reconnect",
+        variant: "destructive",
+      });
+    };
+
+    wsRef.current.onerror = () => {
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to control system",
+        variant: "destructive",
+      });
+    };
+
+    wsRef.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "error") {
+        toast({
+          title: "Control system error",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    };
+
     return () => {
       wsRef.current?.close();
     };
-  }, []);
+  }, [enabled, toast]);
 
   const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
-    if (!wsRef.current || !enabled) return;
+    if (!wsRef.current || !enabled || !isConnected) return;
 
     const message: WebSocketMessage = {
       type,
@@ -34,7 +75,7 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
         <Button
           variant="outline"
           size="icon"
-          disabled={!enabled}
+          disabled={!enabled || !isConnected}
           onMouseDown={() => sendCommand("move", "up")}
           onMouseUp={() => sendCommand("stop")}
           onMouseLeave={() => sendCommand("stop")}
@@ -45,7 +86,7 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
       <Button
         variant="outline"
         size="icon"
-        disabled={!enabled}
+        disabled={!enabled || !isConnected}
         onMouseDown={() => sendCommand("move", "left")}
         onMouseUp={() => sendCommand("stop")}
         onMouseLeave={() => sendCommand("stop")}
@@ -55,14 +96,14 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
       <Button
         variant="outline"
         size="icon"
-        disabled={!enabled}
+        disabled={!enabled || !isConnected}
       >
         <Square className="h-4 w-4" />
       </Button>
       <Button
         variant="outline"
         size="icon"
-        disabled={!enabled}
+        disabled={!enabled || !isConnected}
         onMouseDown={() => sendCommand("move", "right")}
         onMouseUp={() => sendCommand("stop")}
         onMouseLeave={() => sendCommand("stop")}
@@ -73,7 +114,7 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
         <Button
           variant="outline"
           size="icon"
-          disabled={!enabled}
+          disabled={!enabled || !isConnected}
           onMouseDown={() => sendCommand("move", "down")}
           onMouseUp={() => sendCommand("stop")}
           onMouseLeave={() => sendCommand("stop")}
