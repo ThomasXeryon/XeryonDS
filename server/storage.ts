@@ -62,7 +62,7 @@ export class MemStorage implements IStorage {
     this.users.set(1, {
       id: 1,
       username: "admin",
-      password: "admin", // This should be hashed in production
+      password: "adminpass", // Changed to meet 6 character minimum
       isAdmin: true,
     });
   }
