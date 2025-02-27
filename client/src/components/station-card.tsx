@@ -141,22 +141,35 @@ export function StationCard({ station }: { station: Station }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <CameraFeed stationId={station.id} />
-            <AdvancedControls
-              stationId={station.id}
-              enabled={isMySession}
-              isConnected={wsConnection.connected}
-              onCommand={handleCommand}
-            />
-          </div>
-          {station.sessionStart && isMySession && (
+        {isFullscreen ? (
+          // Fullscreen layout
+          <div className="grid grid-cols-[1fr,300px] gap-8">
             <div className="space-y-6">
-              <SessionTimer startTime={station.sessionStart} />
+              <CameraFeed stationId={station.id} />
+              {station.sessionStart && isMySession && (
+                <SessionTimer startTime={station.sessionStart} />
+              )}
             </div>
-          )}
-        </div>
+            <div>
+              <AdvancedControls
+                stationId={station.id}
+                enabled={isMySession}
+                isConnected={wsConnection.connected}
+                onCommand={handleCommand}
+              />
+            </div>
+          </div>
+        ) : (
+          // Overview layout
+          <div className="space-y-6">
+            <div className="aspect-video">
+              <CameraFeed stationId={station.id} />
+            </div>
+            {station.sessionStart && isMySession && (
+              <SessionTimer startTime={station.sessionStart} />
+            )}
+          </div>
+        )}
 
         {station.status === "available" ? (
           <Button 

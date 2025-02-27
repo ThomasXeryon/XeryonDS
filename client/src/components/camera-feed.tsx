@@ -15,11 +15,11 @@ export function CameraFeed({ stationId }: { stationId: number }) {
   }, [stationId]);
 
   return (
-    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+    <div className="w-full h-full bg-muted rounded-lg overflow-hidden">
       <img
         ref={imgRef}
         alt="Camera Feed"
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         src={`/api/stations/${stationId}/camera`}
       />
     </div>
