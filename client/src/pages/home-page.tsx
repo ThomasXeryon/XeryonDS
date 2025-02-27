@@ -31,10 +31,11 @@ export default function HomePage() {
             />
             <h1 className="text-2xl font-bold">Demo Stations</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div id="user-controls" className="flex items-center gap-4">
             <span>Welcome, {user?.username}</span>
             {user?.isAdmin && (
               <Button 
+                id="admin-dashboard"
                 variant="outline" 
                 size="sm" 
                 onClick={() => setLocation("/admin")}
@@ -57,10 +58,12 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main id="demo-stations" className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stations?.map((station) => (
-            <StationCard key={station.id} station={station} />
+            <div key={station.id} className="station-card">
+              <StationCard station={station} />
+            </div>
           ))}
         </div>
       </main>

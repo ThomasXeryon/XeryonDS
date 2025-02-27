@@ -11,18 +11,27 @@ import StationsPage from "@/pages/admin/stations-page";
 import UsersPage from "@/pages/admin/users-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
+import { SiteTour } from "@/components/site-tour";
+import { FeedbackDialog } from "@/components/feedback-dialog";
+import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
+  const { user } = useAuth();
+
   return (
-    <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/admin" component={AdminPage} />
-      <ProtectedRoute path="/admin/analytics" component={AnalyticsPage} />
-      <ProtectedRoute path="/admin/stations" component={StationsPage} />
-      <ProtectedRoute path="/admin/users" component={UsersPage} />
-      <Route path="/auth" component={AuthPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Switch>
+        <ProtectedRoute path="/" component={HomePage} />
+        <ProtectedRoute path="/admin" component={AdminPage} />
+        <ProtectedRoute path="/admin/analytics" component={AnalyticsPage} />
+        <ProtectedRoute path="/admin/stations" component={StationsPage} />
+        <ProtectedRoute path="/admin/users" component={UsersPage} />
+        <Route path="/auth" component={AuthPage} />
+        <Route component={NotFound} />
+      </Switch>
+      <SiteTour isAdmin={user?.isAdmin} />
+      <FeedbackDialog />
+    </>
   );
 }
 
