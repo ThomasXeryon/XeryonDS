@@ -8,7 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
-  
+
   const { data: stations } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
   });
@@ -21,7 +21,14 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Xeryon Demo Stations</h1>
+          <div className="flex items-center gap-4">
+            <img 
+              src="/attached_assets/Xeryon-logo-v2.webp" 
+              alt="Xeryon Logo" 
+              className="h-8 object-contain"
+            />
+            <h1 className="text-2xl font-bold">Demo Stations</h1>
+          </div>
           <div className="flex items-center gap-4">
             <span>Welcome, {user?.username}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>

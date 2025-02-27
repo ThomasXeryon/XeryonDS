@@ -56,8 +56,15 @@ export default function AuthPage() {
     <div className="min-h-screen flex">
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Xeryon Remote Demo Station</CardTitle>
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center">
+              <img 
+                src="/attached_assets/Xeryon-logo-v2.webp" 
+                alt="Xeryon Logo" 
+                className="h-12 object-contain"
+              />
+            </div>
+            <CardTitle className="text-center">Remote Demo Station</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
@@ -65,7 +72,7 @@ export default function AuthPage() {
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="login">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit((values) => onSubmit(values, true))}>
