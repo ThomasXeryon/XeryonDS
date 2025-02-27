@@ -140,23 +140,49 @@ export function StationCard({ station }: { station: Station }) {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent>
         {isFullscreen ? (
           // Fullscreen layout
           <div className="grid grid-cols-[1fr,300px] gap-8">
             <div className="space-y-6">
-              <CameraFeed stationId={station.id} />
+              <div className="h-[600px]">
+                <CameraFeed stationId={station.id} />
+              </div>
               {station.sessionStart && isMySession && (
-                <SessionTimer startTime={station.sessionStart} />
+                <div className="mb-8">
+                  <SessionTimer startTime={station.sessionStart} />
+                </div>
               )}
             </div>
-            <div>
+            <div className="space-y-8">
               <AdvancedControls
                 stationId={station.id}
                 enabled={isMySession}
                 isConnected={wsConnection.connected}
                 onCommand={handleCommand}
               />
+              {station.status === "available" ? (
+                <Button 
+                  className="w-full" 
+                  onClick={() => startSession.mutate()}
+                  disabled={startSession.isPending}
+                >
+                  Start Session
+                </Button>
+              ) : isMySession ? (
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => endSession.mutate()}
+                  disabled={endSession.isPending}
+                >
+                  End Session
+                </Button>
+              ) : (
+                <Button className="w-full" disabled>
+                  Station Occupied
+                </Button>
+              )}
             </div>
           </div>
         ) : (
@@ -166,32 +192,33 @@ export function StationCard({ station }: { station: Station }) {
               <CameraFeed stationId={station.id} />
             </div>
             {station.sessionStart && isMySession && (
-              <SessionTimer startTime={station.sessionStart} />
+              <div className="mb-4">
+                <SessionTimer startTime={station.sessionStart} />
+              </div>
+            )}
+            {station.status === "available" ? (
+              <Button 
+                className="w-full" 
+                onClick={() => startSession.mutate()}
+                disabled={startSession.isPending}
+              >
+                Start Session
+              </Button>
+            ) : isMySession ? (
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => endSession.mutate()}
+                disabled={endSession.isPending}
+              >
+                End Session
+              </Button>
+            ) : (
+              <Button className="w-full" disabled>
+                Station Occupied
+              </Button>
             )}
           </div>
-        )}
-
-        {station.status === "available" ? (
-          <Button 
-            className="w-full" 
-            onClick={() => startSession.mutate()}
-            disabled={startSession.isPending}
-          >
-            Start Session
-          </Button>
-        ) : isMySession ? (
-          <Button 
-            className="w-full" 
-            variant="outline"
-            onClick={() => endSession.mutate()}
-            disabled={endSession.isPending}
-          >
-            End Session
-          </Button>
-        ) : (
-          <Button className="w-full" disabled>
-            Station Occupied
-          </Button>
         )}
       </CardContent>
     </Card>
