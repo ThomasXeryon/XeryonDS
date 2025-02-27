@@ -1,6 +1,7 @@
 import { users, stations, sessionLogs, type User, type InsertUser, type Station, type SessionLog } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -50,7 +51,7 @@ export class MemStorage implements IStorage {
       isActive: true,
     });
     this.stations.set(2, {
-      id: 2, 
+      id: 2,
       name: "Demo Station 2",
       status: "available",
       currentUserId: null,
@@ -58,11 +59,16 @@ export class MemStorage implements IStorage {
       isActive: true,
     });
 
-    // Create admin user
+    // Create admin user with properly hashed password
+    const salt = randomBytes(16).toString("hex");
+    const password = "adminpass"; // At least 6 characters
+    const hashedBuffer = scryptSync(password, salt, 64);
+    const hashedPassword = `${hashedBuffer.toString("hex")}.${salt}`;
+
     this.users.set(1, {
       id: 1,
       username: "admin",
-      password: "adminpass", // Changed to meet 6 character minimum
+      password: hashedPassword,
       isAdmin: true,
     });
   }
