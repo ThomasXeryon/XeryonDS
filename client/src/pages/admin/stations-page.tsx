@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function StationsPage() {
   const { user } = useAuth();
@@ -26,6 +26,22 @@ export default function StationsPage() {
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
   });
+
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "station_update") {
+        // Refresh stations list when receiving updates
+        queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      }
+    };
+
+    return () => ws.close();
+  }, []);
 
   const createStation = useMutation({
     mutationFn: async (name: string) => {
@@ -149,19 +165,21 @@ export default function StationsPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stations?.map((station) => (
-            <Card key={station.id} className="hover:bg-accent/5 transition-colors">
+            <Card key={station.id} className="hover:bg-accent/5 transition-colors group">
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>{station.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                    onClick={() => deleteStation.mutate(station.id)}
-                    disabled={deleteStation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
+                      onClick={() => deleteStation.mutate(station.id)}
+                      disabled={deleteStation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
