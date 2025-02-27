@@ -23,7 +23,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img 
-              src="/attached_assets/Xeryon-logo-v2.png" 
+              src="/Xeryon-logo-v2.png" 
               alt="Xeryon Logo" 
               className="h-8 object-contain"
             />
