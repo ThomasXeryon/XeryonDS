@@ -13,7 +13,7 @@ interface AdvancedControlsProps {
 
 export function AdvancedControls({ stationId, enabled, isConnected, onCommand }: AdvancedControlsProps) {
   const [stepSize, setStepSize] = useState("1.0");
-  const [speed, setSpeed] = useState([50]);
+  const [speed, setSpeed] = useState([500]); // Default to middle of range
   const [isDemoRunning, setIsDemoRunning] = useState(false);
 
   const handleSpeedChange = (value: number[]) => {
@@ -70,6 +70,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           onClick={() => onCommand("stop")}
         >
           <Square className="h-4 w-4" />
+          Stop
         </Button>
         <Button
           variant="outline"
@@ -84,11 +85,14 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
 
       {/* Speed Slider */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Speed</label>
+        <div className="flex justify-between text-sm">
+          <label className="font-medium">Speed (mm/s)</label>
+          <span>{speed[0]}</span>
+        </div>
         <Slider
           value={speed}
           onValueChange={handleSpeedChange}
-          max={100}
+          max={1000}
           step={1}
           disabled={!enabled || !isConnected}
         />

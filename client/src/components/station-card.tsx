@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CameraFeed } from "./camera-feed";
-import { ActuatorControls } from "./actuator-controls";
 import { AdvancedControls } from "./advanced-controls";
 import { SessionTimer } from "./session-timer";
 import { Station } from "@shared/schema";
@@ -10,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export function StationCard({ station }: { station: Station }) {
   const { user } = useAuth();
@@ -19,6 +19,60 @@ export function StationCard({ station }: { station: Station }) {
     connected: false,
     send: () => {} 
   });
+  const wsRef = useRef<WebSocket>();
+  const { toast } = useToast();
+
+  // WebSocket connection handling
+  useEffect(() => {
+    if (!isMySession) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    wsRef.current = new WebSocket(wsUrl);
+
+    wsRef.current.onopen = () => {
+      setWsConnection({
+        connected: true,
+        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg))
+      });
+      toast({
+        title: "Connected to control system",
+        description: "You can now control the actuator",
+      });
+    };
+
+    wsRef.current.onclose = () => {
+      setWsConnection({ connected: false, send: () => {} });
+      toast({
+        title: "Disconnected from control system",
+        description: "Please refresh the page to reconnect",
+        variant: "destructive",
+      });
+    };
+
+    wsRef.current.onerror = () => {
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to control system",
+        variant: "destructive",
+      });
+    };
+
+    wsRef.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "error") {
+        toast({
+          title: "Control system error",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    };
+
+    return () => {
+      wsRef.current?.close();
+    };
+  }, [isMySession, toast]);
 
   const startSession = useMutation({
     mutationFn: async () => {
@@ -42,11 +96,11 @@ export function StationCard({ station }: { station: Station }) {
 
   const handleCommand = (command: string, value?: number) => {
     if (wsConnection.connected) {
-      wsConnection.send(JSON.stringify({
+      wsConnection.send({
         type: command,
         value,
         stationId: station.id
-      }));
+      });
     }
   };
 
@@ -87,35 +141,22 @@ export function StationCard({ station }: { station: Station }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className={`grid ${isFullscreen ? 'grid-cols-2 gap-8' : 'grid-cols-1 gap-6'}`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <CameraFeed stationId={station.id} />
-            <ActuatorControls 
-              stationId={station.id} 
+            <AdvancedControls
+              stationId={station.id}
               enabled={isMySession}
-              onConnectionChange={(connected, sendFn) => 
-                setWsConnection({ connected, send: sendFn })}
+              isConnected={wsConnection.connected}
+              onCommand={handleCommand}
             />
           </div>
-
-          {isFullscreen && (
+          {station.sessionStart && isMySession && (
             <div className="space-y-6">
-              <AdvancedControls
-                stationId={station.id}
-                enabled={isMySession}
-                isConnected={wsConnection.connected}
-                onCommand={handleCommand}
-              />
-              {station.sessionStart && isMySession && (
-                <SessionTimer startTime={station.sessionStart} />
-              )}
+              <SessionTimer startTime={station.sessionStart} />
             </div>
           )}
         </div>
-
-        {!isFullscreen && station.sessionStart && isMySession && (
-          <SessionTimer startTime={station.sessionStart} />
-        )}
 
         {station.status === "available" ? (
           <Button 

@@ -65,11 +65,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   wss.on("connection", (ws, req) => {
     let authenticated = false;
 
-    // Authenticate WebSocket connection
+    // Authenticate WebSocket connection using session cookie
     if (req.headers.cookie) {
       const cookies = parseCookie(req.headers.cookie);
-      const sid = cookies["connect.sid"];
-      if (sid) {
+      const sessionId = cookies["session_id"]; // Match the custom session name
+      if (sessionId) {
         authenticated = true;
       }
     }
