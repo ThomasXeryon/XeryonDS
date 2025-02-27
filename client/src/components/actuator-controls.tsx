@@ -4,7 +4,13 @@ import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Square } from "lucid
 import type { WebSocketMessage } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
-export function ActuatorControls({ stationId, enabled }: { stationId: number; enabled: boolean }) {
+interface ActuatorControlsProps {
+  stationId: number;
+  enabled: boolean;
+  onConnectionChange: (connected: boolean, send: (msg: any) => void) => void;
+}
+
+export function ActuatorControls({ stationId, enabled, onConnectionChange }: ActuatorControlsProps) {
   const wsRef = useRef<WebSocket>();
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
@@ -18,6 +24,7 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
 
     wsRef.current.onopen = () => {
       setIsConnected(true);
+      onConnectionChange(true, (msg: any) => wsRef.current?.send(JSON.stringify(msg)));
       toast({
         title: "Connected to control system",
         description: "You can now control the actuator",
@@ -26,6 +33,7 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
 
     wsRef.current.onclose = () => {
       setIsConnected(false);
+      onConnectionChange(false, () => {});
       toast({
         title: "Disconnected from control system",
         description: "Please refresh the page to reconnect",
@@ -55,7 +63,7 @@ export function ActuatorControls({ stationId, enabled }: { stationId: number; en
     return () => {
       wsRef.current?.close();
     };
-  }, [enabled, toast]);
+  }, [enabled, toast, onConnectionChange]);
 
   const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
     if (!wsRef.current || !enabled || !isConnected) return;
