@@ -81,6 +81,11 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      setIsFullscreen(true); // Auto fullscreen on session start
+      toast({
+        title: "Session started",
+        description: "You now have control of the station",
+      });
     },
   });
 
@@ -91,6 +96,11 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      setIsFullscreen(false); // Back to overview on session end
+      toast({
+        title: "Session ended",
+        description: "Thank you for using the demo station",
+      });
     },
   });
 
@@ -121,7 +131,7 @@ export function StationCard({ station }: { station: Station }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 hover:bg-accent hover:text-accent-foreground"
               onClick={toggleFullscreen}
             >
               {isFullscreen ? (
@@ -163,7 +173,7 @@ export function StationCard({ station }: { station: Station }) {
               />
               {station.status === "available" ? (
                 <Button 
-                  className="w-full" 
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
                   onClick={() => startSession.mutate()}
                   disabled={startSession.isPending}
                 >
@@ -171,8 +181,8 @@ export function StationCard({ station }: { station: Station }) {
                 </Button>
               ) : isMySession ? (
                 <Button 
-                  className="w-full" 
-                  variant="outline"
+                  className="w-full hover:bg-destructive/90 transition-colors"
+                  variant="destructive"
                   onClick={() => endSession.mutate()}
                   disabled={endSession.isPending}
                 >
@@ -198,7 +208,7 @@ export function StationCard({ station }: { station: Station }) {
             )}
             {station.status === "available" ? (
               <Button 
-                className="w-full" 
+                className="w-full bg-primary hover:bg-primary/90 transition-colors"
                 onClick={() => startSession.mutate()}
                 disabled={startSession.isPending}
               >
@@ -206,8 +216,8 @@ export function StationCard({ station }: { station: Station }) {
               </Button>
             ) : isMySession ? (
               <Button 
-                className="w-full" 
-                variant="outline"
+                className="w-full hover:bg-destructive/90 transition-colors"
+                variant="destructive"
                 onClick={() => endSession.mutate()}
                 disabled={endSession.isPending}
               >

@@ -7,6 +7,10 @@ import type { WebSocketMessage } from "@shared/schema";
 import { parse as parseCookie } from "cookie";
 import type { Session } from "express-session";
 
+function isAdmin(req: Express.Request) {
+  return req.isAuthenticated() && req.user?.isAdmin;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
@@ -17,6 +21,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const stations = await storage.getStations();
     res.json(stations);
+  });
+
+  // Admin routes
+  app.get("/api/admin/users", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    const users = await storage.getAllUsers();
+    res.json(users);
+  });
+
+  app.get("/api/admin/session-logs", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    const logs = await storage.getSessionLogs();
+    res.json(logs);
+  });
+
+  app.post("/api/admin/stations", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ message: "Name is required" });
+
+    const station = await storage.createStation(name);
+    res.status(201).json(station);
+  });
+
+  app.delete("/api/admin/stations/:id", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    await storage.deleteStation(parseInt(req.params.id));
+    res.sendStatus(200);
   });
 
   app.post("/api/stations/:id/session", async (req, res) => {

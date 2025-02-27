@@ -1,4 +1,4 @@
-import { users, stations, type User, type InsertUser, type Station } from "@shared/schema";
+import { users, stations, sessionLogs, type User, type InsertUser, type Station, type SessionLog } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
@@ -8,23 +8,33 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+  getAllUsers(): Promise<User[]>;
+
   getStations(): Promise<Station[]>;
   getStation(id: number): Promise<Station | undefined>;
+  createStation(name: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
-  
+  deleteStation(id: number): Promise<void>;
+
+  getSessionLogs(): Promise<SessionLog[]>;
+  createSessionLog(stationId: number, userId: number): Promise<SessionLog>;
+  updateSessionLog(id: number, endTime: Date): Promise<SessionLog>;
+  incrementCommandCount(sessionLogId: number): Promise<void>;
+
   sessionStore: session.SessionStore;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private stations: Map<number, Station>;
+  private sessionLogs: Map<number, SessionLog>;
   currentId: number;
   sessionStore: session.SessionStore;
 
   constructor() {
     this.users = new Map();
     this.stations = new Map();
+    this.sessionLogs = new Map();
     this.currentId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
@@ -37,6 +47,7 @@ export class MemStorage implements IStorage {
       status: "available",
       currentUserId: null,
       sessionStart: null,
+      isActive: true,
     });
     this.stations.set(2, {
       id: 2, 
@@ -44,6 +55,15 @@ export class MemStorage implements IStorage {
       status: "available",
       currentUserId: null,
       sessionStart: null,
+      isActive: true,
+    });
+
+    // Create admin user
+    this.users.set(1, {
+      id: 1,
+      username: "admin",
+      password: "admin", // This should be hashed in production
+      isAdmin: true,
     });
   }
 
@@ -57,19 +77,37 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, isAdmin: false };
     this.users.set(id, user);
     return user;
   }
 
   async getStations(): Promise<Station[]> {
-    return Array.from(this.stations.values());
+    return Array.from(this.stations.values()).filter(station => station.isActive);
   }
 
   async getStation(id: number): Promise<Station | undefined> {
     return this.stations.get(id);
+  }
+
+  async createStation(name: string): Promise<Station> {
+    const id = this.currentId++;
+    const station: Station = {
+      id,
+      name,
+      status: "available",
+      currentUserId: null,
+      sessionStart: null,
+      isActive: true,
+    };
+    this.stations.set(id, station);
+    return station;
   }
 
   async updateStationSession(id: number, userId: number | null): Promise<Station> {
@@ -82,9 +120,68 @@ export class MemStorage implements IStorage {
       currentUserId: userId,
       sessionStart: userId ? new Date() : null,
     };
-    
+
     this.stations.set(id, updatedStation);
+
+    if (userId) {
+      // Create session log when starting session
+      await this.createSessionLog(id, userId);
+    } else {
+      // Update session log when ending session
+      const log = Array.from(this.sessionLogs.values())
+        .find(log => log.stationId === id && !log.endTime);
+      if (log) {
+        await this.updateSessionLog(log.id, new Date());
+      }
+    }
+
     return updatedStation;
+  }
+
+  async deleteStation(id: number): Promise<void> {
+    const station = await this.getStation(id);
+    if (station) {
+      station.isActive = false;
+      this.stations.set(id, station);
+    }
+  }
+
+  async getSessionLogs(): Promise<SessionLog[]> {
+    return Array.from(this.sessionLogs.values());
+  }
+
+  async createSessionLog(stationId: number, userId: number): Promise<SessionLog> {
+    const id = this.currentId++;
+    const log: SessionLog = {
+      id,
+      stationId,
+      userId,
+      startTime: new Date(),
+      endTime: null,
+      commandCount: 0,
+    };
+    this.sessionLogs.set(id, log);
+    return log;
+  }
+
+  async updateSessionLog(id: number, endTime: Date): Promise<SessionLog> {
+    const log = this.sessionLogs.get(id);
+    if (!log) throw new Error("Session log not found");
+
+    const updatedLog: SessionLog = {
+      ...log,
+      endTime,
+    };
+    this.sessionLogs.set(id, updatedLog);
+    return updatedLog;
+  }
+
+  async incrementCommandCount(sessionLogId: number): Promise<void> {
+    const log = this.sessionLogs.get(sessionLogId);
+    if (!log) throw new Error("Session log not found");
+
+    log.commandCount++;
+    this.sessionLogs.set(sessionLogId, log);
   }
 }
 
