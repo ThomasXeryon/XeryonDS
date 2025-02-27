@@ -15,9 +15,20 @@ import { SiteTour } from "@/components/site-tour";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useAuth } from "@/hooks/use-auth";
 
-function Router() {
+function AuthenticatedComponents() {
   const { user } = useAuth();
 
+  if (!user) return null;
+
+  return (
+    <>
+      <SiteTour isAdmin={user.isAdmin} />
+      <FeedbackDialog />
+    </>
+  );
+}
+
+function Router() {
   return (
     <>
       <Switch>
@@ -29,8 +40,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>
-      <SiteTour isAdmin={user?.isAdmin} />
-      <FeedbackDialog />
+      <AuthenticatedComponents />
     </>
   );
 }

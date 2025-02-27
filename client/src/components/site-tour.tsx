@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { useLocation } from 'wouter';
+import { useAuth } from '@/hooks/use-auth';
 
 interface SiteTourProps {
   isAdmin?: boolean;
@@ -9,16 +10,17 @@ interface SiteTourProps {
 
 export function SiteTour({ isAdmin }: SiteTourProps) {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Only show tour on home page
-    if (location !== '/') return;
+    // Only show tour on home page and when user is authenticated
+    if (location !== '/' || !user) return;
 
     // Check if this is the user's first visit
-    const hasSeenTour = localStorage.getItem('hasSeenTour');
+    const hasSeenTour = localStorage.getItem(`hasSeenTour_${user.id}`);
     if (hasSeenTour) return;
 
-    // Add a slight delay to ensure all elements are rendered
+    // Add a delay to ensure all elements are rendered after login
     const tourTimeout = setTimeout(() => {
       const driverObj = driver({
         showProgress: true,
@@ -77,12 +79,12 @@ export function SiteTour({ isAdmin }: SiteTourProps) {
       // Start the tour
       driverObj.drive();
 
-      // Mark the tour as seen
-      localStorage.setItem('hasSeenTour', 'true');
-    }, 1000); // 1 second delay
+      // Mark the tour as seen for this specific user
+      localStorage.setItem(`hasSeenTour_${user.id}`, 'true');
+    }, 2000); // Increased delay to 2 seconds to ensure everything is loaded
 
     return () => clearTimeout(tourTimeout);
-  }, [location, isAdmin]);
+  }, [location, isAdmin, user]);
 
   return null;
 }
