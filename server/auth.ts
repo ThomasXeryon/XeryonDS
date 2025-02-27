@@ -12,6 +12,7 @@ declare global {
   }
 }
 
+// Use the same hashing function as storage.ts
 function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hashedBuffer = scryptSync(password, salt, 64);
