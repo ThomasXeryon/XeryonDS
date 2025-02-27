@@ -103,7 +103,10 @@ export class MemStorage implements IStorage {
   }
 
   async createStation(name: string): Promise<Station> {
-    const id = this.currentId++;
+    // Find the highest ID currently in use
+    const maxId = Math.max(...Array.from(this.stations.keys()), 0);
+    const id = maxId + 1;
+
     const station: Station = {
       id,
       name,

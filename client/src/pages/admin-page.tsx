@@ -1,14 +1,27 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Station, SessionLog, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter"; // Fixed import from useNavigate
-import { Settings, Users, Activity, PlusCircle } from "lucide-react";
+import { useLocation } from "wouter";
+import { Settings, Users, Activity, PlusCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation(); // Fixed from useNavigate
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [newStationName, setNewStationName] = useState("");
 
   const { data: stations } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -20,6 +33,28 @@ export default function AdminPage() {
 
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
+  });
+
+  const createStation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await apiRequest("POST", "/api/admin/stations", { name });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      toast({
+        title: "Station created",
+        description: "New demo station has been added successfully",
+      });
+      setNewStationName("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create station",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   if (!user?.isAdmin) {
@@ -52,6 +87,38 @@ export default function AdminPage() {
             />
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 transition-colors">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Station
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Demo Station</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <Input
+                  placeholder="Station Name"
+                  value={newStationName}
+                  onChange={(e) => setNewStationName(e.target.value)}
+                />
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  onClick={() => createStation.mutate(newStationName)}
+                  disabled={createStation.isPending || !newStationName.trim()}
+                >
+                  {createStation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                  )}
+                  Create Station
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -93,18 +160,6 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-2xl font-bold">{sessionLogs?.length || 0}</div>
               <p className="text-sm text-muted-foreground">Total Sessions</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:bg-accent/5 transition-colors cursor-pointer" onClick={() => setLocation("/admin/stations/new")}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PlusCircle className="h-5 w-5" />
-                <span>Add Station</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Create a new demo station</p>
             </CardContent>
           </Card>
         </div>
