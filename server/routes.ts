@@ -69,6 +69,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Settings routes
+  app.get("/api/admin/settings", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    try {
+      const settings = await storage.getSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error getting settings:", error);
+      res.status(500).json({ message: "Failed to get settings" });
+    }
+  });
+
+  app.post("/api/admin/settings", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    const { rpiHost, rpiPort, rpiUsername, rpiPassword } = req.body;
+
+    try {
+      const settings = await storage.updateSettings({
+        rpiHost,
+        rpiPort,
+        rpiUsername,
+        rpiPassword
+      });
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
   // Other admin routes
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);

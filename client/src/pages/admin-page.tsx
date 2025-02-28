@@ -189,6 +189,17 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">User Submissions</p>
             </CardContent>
           </Card>
+          <Card className="hover:bg-accent/5 transition-colors cursor-pointer" onClick={() => setLocation("/admin/settings")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                <span>Settings</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Configure connection parameters</p>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

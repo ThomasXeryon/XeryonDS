@@ -9,6 +9,7 @@ import AdminPage from "@/pages/admin-page";
 import AnalyticsPage from "@/pages/admin/analytics-page";
 import StationsPage from "@/pages/admin/stations-page";
 import UsersPage from "@/pages/admin/users-page";
+import SettingsPage from "@/pages/admin/settings-page"; //New import
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
 import { SiteTour } from "@/components/site-tour";
@@ -39,6 +40,7 @@ function Router() {
         <ProtectedRoute path="/admin/stations" component={StationsPage} />
         <ProtectedRoute path="/admin/users" component={UsersPage} />
         <ProtectedRoute path="/admin/feedback" component={FeedbackPage} />
+        <ProtectedRoute path="/admin/settings" component={SettingsPage} /> {/* New route */}
         <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>
