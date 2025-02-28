@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Station, SessionLog, User } from "@shared/schema";
+import { Station, SessionLog, User, Feedback } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
@@ -22,8 +22,6 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
-  const [feedbackItems, setFeedbackItems] = useState<any[]>([]); // Added state for feedback items
-
 
   const { data: stations } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -37,13 +35,9 @@ export default function AdminPage() {
     queryKey: ["/api/admin/users"],
   });
 
-  const { data: feedback } = useQuery<any[]>({ // Added query for feedback
+  const { data: feedback } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
-    onSuccess: (data) => {
-      setFeedbackItems(data);
-    }
   });
-
 
   const createStation = useMutation({
     mutationFn: async (name: string) => {
@@ -191,7 +185,7 @@ export default function AdminPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{feedbackItems?.length || 0}</div>
+              <div className="text-2xl font-bold">{feedback?.length || 0}</div>
               <p className="text-sm text-muted-foreground">User Submissions</p>
             </CardContent>
           </Card>
