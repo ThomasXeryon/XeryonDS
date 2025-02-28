@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,16 +16,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
 export default function StationsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
-  const [xAxis, setXAxis] = useState("");
-  const [yAxis, setYAxis] = useState("");
-  const [zAxis, setZAxis] = useState("");
+  const [ipAddress, setIpAddress] = useState("");
+  const [port, setPort] = useState("");
+  const [secretKey, setSecretKey] = useState("");
 
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -47,8 +48,8 @@ export default function StationsPage() {
   }, []);
 
   const createStation = useMutation({
-    mutationFn: async ({ name, xAxis, yAxis, zAxis }: { name: string; xAxis: string; yAxis: string; zAxis: string }) => {
-      const res = await apiRequest("POST", "/api/admin/stations", { name, xAxis, yAxis, zAxis });
+    mutationFn: async ({ name, ipAddress, port, secretKey }: { name: string; ipAddress: string; port: string; secretKey: string }) => {
+      const res = await apiRequest("POST", "/api/admin/stations", { name, ipAddress, port, secretKey });
       return await res.json();
     },
     onSuccess: () => {
@@ -58,9 +59,9 @@ export default function StationsPage() {
         description: "New demo station has been added successfully",
       });
       setNewStationName("");
-      setXAxis("");
-      setYAxis("");
-      setZAxis("");
+      setIpAddress("");
+      setPort("");
+      setSecretKey("");
     },
     onError: (error: Error) => {
       toast({
@@ -150,27 +151,28 @@ export default function StationsPage() {
                   value={newStationName}
                   onChange={(e) => setNewStationName(e.target.value)}
                 />
-                <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-4">
                   <Input
-                    placeholder="X Axis Value"
-                    name="xAxis"
-                    onChange={(e) => setXAxis(e.target.value)}
+                    placeholder="IP Address (e.g. 192.168.1.100)"
+                    value={ipAddress}
+                    onChange={(e) => setIpAddress(e.target.value)}
                   />
                   <Input
-                    placeholder="Y Axis Value"
-                    name="yAxis"
-                    onChange={(e) => setYAxis(e.target.value)}
+                    placeholder="Port (e.g. 8080)"
+                    value={port}
+                    onChange={(e) => setPort(e.target.value)}
                   />
                   <Input
-                    placeholder="Z Axis Value"
-                    name="zAxis"
-                    onChange={(e) => setZAxis(e.target.value)}
+                    placeholder="Secret Key"
+                    type="password"
+                    value={secretKey}
+                    onChange={(e) => setSecretKey(e.target.value)}
                   />
                 </div>
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => createStation.mutate({ name: newStationName, xAxis, yAxis, zAxis })}
-                  disabled={createStation.isPending || !newStationName.trim()}
+                  onClick={() => createStation.mutate({ name: newStationName, ipAddress, port, secretKey })}
+                  disabled={createStation.isPending || !newStationName.trim() || !ipAddress.trim() || !port.trim() || !secretKey.trim()}
                 >
                   {createStation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -217,22 +219,16 @@ export default function StationsPage() {
                       {station.status === "available" ? "Available" : "In Use"}
                     </span>
                   </div>
-                  {station.xAxis && (
+                  {station.ipAddress && (
                     <div className="flex justify-between text-sm">
-                      <span>X Axis</span>
-                      <span>{station.xAxis}</span>
+                      <span>IP Address</span>
+                      <span>{station.ipAddress}</span>
                     </div>
                   )}
-                  {station.yAxis && (
+                  {station.port && (
                     <div className="flex justify-between text-sm">
-                      <span>Y Axis</span>
-                      <span>{station.yAxis}</span>
-                    </div>
-                  )}
-                  {station.zAxis && (
-                    <div className="flex justify-between text-sm">
-                      <span>Z Axis</span>
-                      <span>{station.zAxis}</span>
+                      <span>Port</span>
+                      <span>{station.port}</span>
                     </div>
                   )}
                   {station.currentUserId && (
