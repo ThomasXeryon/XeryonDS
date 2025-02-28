@@ -34,6 +34,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
+  // Helper function to broadcast session time updates
+  const broadcastSessionTimeUpdate = (stationId: number, remainingTime: number) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "session_time_update",
+          stationId,
+          remainingTime,
+        }));
+      }
+    });
+  };
+
+  // WebSocket handling with improved authentication and logging
+  wss.on("connection", (ws, req) => {
+    console.log("New WebSocket connection attempt");
+    console.log("Cookie header:", req.headers.cookie);
+
+    let authenticated = false;
+    if (req.headers.cookie) {
+      const cookies = parseCookie(req.headers.cookie);
+      const sessionId = cookies["connect.sid"];
+      console.log("Session ID from cookie:", sessionId);
+
+      if (sessionId) {
+        authenticated = true;
+        console.log("WebSocket connection authenticated");
+      }
+    }
+
+    if (!authenticated) {
+      console.log("WebSocket connection not authenticated, closing");
+      ws.close(1008, "Authentication required");
+      return;
+    }
+
+    ws.on("message", async (data) => {
+      try {
+        const message = JSON.parse(data.toString()) as WebSocketMessage;
+        console.log("Received WebSocket message:", message);
+        ws.send(JSON.stringify({ type: "command_received", ...message }));
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
+        ws.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
+      }
+    });
+
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
+    });
+
+    // Send initial connection success message
+    ws.send(JSON.stringify({ type: "connected" }));
+  });
+
+  // Station routes
   app.get("/api/stations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const stations = await storage.getStations();
@@ -51,6 +107,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
 
     res.json(stationsWithQueue);
+  });
+
+  // Session management
+  app.post("/api/stations/:id/session", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const station = await storage.getStation(parseInt(req.params.id));
+
+    if (!station) {
+      return res.status(404).send("Station not found");
+    }
+
+    if (station.status === "in_use") {
+      return res.status(400).send("Station is in use");
+    }
+
+    const userPosition = await storage.getQueuePosition(station.id, req.user.id);
+    if (userPosition !== 1) {
+      return res.status(403).send("You are not next in queue");
+    }
+
+    const updatedStation = await storage.updateStationSession(station.id, req.user.id);
+    res.json(updatedStation);
+
+    // Start session timer updates
+    const sessionDuration = 5 * 60 * 1000; // 5 minutes
+    const updateInterval = 1000; // Update every second
+    const startTime = Date.now();
+
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, (sessionDuration - elapsed) / 1000 / 60); // Convert to minutes
+      broadcastSessionTimeUpdate(station.id, remaining);
+
+      if (elapsed >= sessionDuration) {
+        clearInterval(timer);
+      }
+    }, updateInterval);
+
+    // End session after 5 minutes
+    setTimeout(async () => {
+      await storage.updateStationSession(station.id, null);
+      await storage.checkQueueAndUpdateSession(station.id);
+      await broadcastQueueUpdate(station.id);
+      clearInterval(timer);
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
+        }
+      });
+    }, sessionDuration);
   });
 
   // Queue management routes
@@ -80,124 +186,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Existing feedback routes...
-  app.post("/api/feedback", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { type, message } = req.body;
-
-    console.log("Received feedback:", { type, message, userId: req.user.id });
-
-    if (!type || !message) {
-      return res.status(400).json({ message: "Type and message are required" });
-    }
-
-    try {
-      const feedback = await storage.createFeedback(req.user.id, { type, message });
-      console.log("Created feedback:", feedback);
-      res.json(feedback);
-    } catch (error) {
-      console.error("Error creating feedback:", error);
-      res.status(500).json({ message: "Failed to create feedback" });
-    }
-  });
-
-  app.get("/api/admin/feedback", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    try {
-      const feedback = await storage.getFeedback();
-      console.log("Retrieved feedback:", feedback);
-      res.json(feedback);
-    } catch (error) {
-      console.error("Error getting feedback:", error);
-      res.status(500).json({ message: "Failed to get feedback" });
-    }
-  });
-
-  // Modified session management
-  app.post("/api/stations/:id/session", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const station = await storage.getStation(parseInt(req.params.id));
-
-    if (!station) {
-      return res.status(404).send("Station not found");
-    }
-
-    if (station.status === "in_use") {
-      return res.status(400).send("Station is in use");
-    }
-
-    const userPosition = await storage.getQueuePosition(station.id, req.user.id);
-    if (userPosition !== 1) {
-      return res.status(403).send("You are not next in queue");
-    }
-
-    const updatedStation = await storage.updateStationSession(station.id, req.user.id);
-    res.json(updatedStation);
-
-    // End session after 5 minutes
-    setTimeout(async () => {
-      await storage.updateStationSession(station.id, null);
-      await storage.checkQueueAndUpdateSession(station.id);
-      await broadcastQueueUpdate(station.id);
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
-        }
-      });
-    }, 5 * 60 * 1000);
-  });
-
-  app.delete("/api/stations/:id/session", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const station = await storage.getStation(parseInt(req.params.id));
-
-    if (!station) {
-      return res.status(404).send("Station not found");
-    }
-
-    if (station.currentUserId !== req.user.id) {
-      return res.status(403).send("Not your session");
-    }
-
-    const updatedStation = await storage.updateStationSession(station.id, null);
-    res.json(updatedStation);
-  });
-
-  // WebSocket handling
-  wss.on("connection", (ws, req) => {
-    let authenticated = false;
-
-    if (req.headers.cookie) {
-      const cookies = parseCookie(req.headers.cookie);
-      const sessionId = cookies["session_id"];
-      if (sessionId) {
-        authenticated = true;
-      }
-    }
-
-    if (!authenticated) {
-      ws.close(1008, "Authentication required");
-      return;
-    }
-
-    ws.on("message", async (data) => {
-      try {
-        const message = JSON.parse(data.toString()) as WebSocketMessage;
-        console.log("Received command:", message);
-        ws.send(JSON.stringify({ type: "command_received", ...message }));
-      } catch (err) {
-        console.error("Failed to parse message:", err);
-        ws.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
-      }
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-
-    ws.send(JSON.stringify({ type: "connected" }));
-  });
-
   // Other admin routes
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);
@@ -213,7 +201,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.deleteStation(parseInt(req.params.id));
     res.sendStatus(200);
   });
-
 
   return httpServer;
 }

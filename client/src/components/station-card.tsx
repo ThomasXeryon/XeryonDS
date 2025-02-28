@@ -8,13 +8,14 @@ import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Maximize2, Minimize2, Loader2 } from "lucide-react";
+import { Maximize2, Minimize2, Loader2, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type ExtendedStation = Station & {
   queueLength?: number;
   userPosition?: number | null;
   estimatedWaitTime?: number;
+  remainingTime?: number;
 };
 
 export function StationCard({ station }: { station: ExtendedStation }) {
@@ -25,60 +26,94 @@ export function StationCard({ station }: { station: ExtendedStation }) {
     connected: false,
     send: () => {} 
   });
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const wsRef = useRef<WebSocket>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
 
-  // WebSocket connection handling
+  // WebSocket connection handling with reconnection
   useEffect(() => {
     if (!isMySession) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    wsRef.current = new WebSocket(wsUrl);
+    const connect = () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        console.log("WebSocket already connected");
+        return;
+      }
 
-    wsRef.current.onopen = () => {
-      setWsConnection({
-        connected: true,
-        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg))
-      });
-      toast({
-        title: "Connected to control system",
-        description: "You can now control the actuator",
-      });
-    };
+      console.log("Attempting WebSocket connection...");
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+      wsRef.current = ws;
 
-    wsRef.current.onclose = () => {
-      setWsConnection({ connected: false, send: () => {} });
-      toast({
-        title: "Disconnected from control system",
-        description: "Please refresh the page to reconnect",
-        variant: "destructive",
-      });
-    };
-
-    wsRef.current.onerror = () => {
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to control system",
-        variant: "destructive",
-      });
-    };
-
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "error") {
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+        setWsConnection({
+          connected: true,
+          send: (msg: any) => {
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+              wsRef.current.send(JSON.stringify(msg));
+            }
+          }
+        });
         toast({
-          title: "Control system error",
-          description: data.message,
+          title: "Connected to control system",
+          description: "You can now control the actuator",
+        });
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected, scheduling reconnect...");
+        setWsConnection({ connected: false, send: () => {} });
+
+        // Try to reconnect after 3 seconds
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log("Attempting to reconnect...");
+          connect();
+        }, 3000);
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        toast({
+          title: "Connection error",
+          description: "Failed to connect to control system",
           variant: "destructive",
         });
-      }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Received WebSocket message:", data);
+
+          if (data.type === "session_time_update" && data.stationId === station.id) {
+            setRemainingTime(data.remainingTime);
+          } else if (data.type === "error") {
+            toast({
+              title: "Control system error",
+              description: data.message,
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Failed to parse WebSocket message:", error);
+        }
+      };
     };
 
+    connect();
+
     return () => {
-      wsRef.current?.close();
+      console.log("Cleaning up WebSocket connection");
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
+      }
     };
-  }, [isMySession, toast]);
+  }, [isMySession, station.id, toast]);
 
   const startSession = useMutation({
     mutationFn: async () => {
@@ -167,6 +202,13 @@ export function StationCard({ station }: { station: ExtendedStation }) {
     if (station.status === "in_use" && !isMySession) {
       return (
         <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>Time Remaining:</span>
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>{Math.ceil(remainingTime || station.remainingTime || 0)} minutes</span>
+            </div>
+          </div>
           <p className="text-sm text-muted-foreground">
             Queue Length: {station.queueLength || 0} users
           </p>
@@ -178,6 +220,16 @@ export function StationCard({ station }: { station: ExtendedStation }) {
               <p className="text-sm text-muted-foreground">
                 Estimated Wait: ~{station.estimatedWaitTime} minutes
               </p>
+              <Button 
+                className="w-full bg-destructive hover:bg-destructive/90 transition-colors"
+                onClick={() => leaveQueue.mutate()}
+                disabled={leaveQueue.isPending}
+              >
+                {leaveQueue.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Leave Queue
+              </Button>
             </>
           ) : (
             <Button 
@@ -188,7 +240,7 @@ export function StationCard({ station }: { station: ExtendedStation }) {
               {joinQueue.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Join Queue
+              Reserve Next Session
             </Button>
           )}
         </div>
@@ -203,18 +255,20 @@ export function StationCard({ station }: { station: ExtendedStation }) {
         <CardTitle className="flex justify-between items-center">
           <span>{station.name}</span>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-accent hover:text-accent-foreground"
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
-            </Button>
+            {isMySession && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-accent hover:text-accent-foreground"
+                onClick={toggleFullscreen}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
             <span className={`text-sm px-2 py-1 rounded-full ${
               station.status === "available" 
                 ? "bg-green-100 text-green-700" 
@@ -227,7 +281,6 @@ export function StationCard({ station }: { station: ExtendedStation }) {
       </CardHeader>
       <CardContent>
         {isFullscreen ? (
-          // Fullscreen layout
           <div className="grid grid-cols-[1fr,300px] gap-8">
             <div className="space-y-6">
               <div className="h-[600px]">
@@ -260,29 +313,16 @@ export function StationCard({ station }: { station: ExtendedStation }) {
                 </Button>
               ) : isMySession ? (
                 <Button 
-                  className="w-full hover:bg-destructive/90 transition-colors"
-                  variant="destructive"
+                  className="w-full bg-destructive hover:bg-destructive/90 transition-colors"
                   onClick={() => endSession.mutate()}
                   disabled={endSession.isPending}
                 >
                   End Session
                 </Button>
-              ) : station.userPosition ? (
-                <Button 
-                  className="w-full bg-destructive hover:bg-destructive/90 transition-colors"
-                  onClick={() => leaveQueue.mutate()}
-                  disabled={leaveQueue.isPending}
-                >
-                  {leaveQueue.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
-                  Leave Queue
-                </Button>
               ) : null}
             </div>
           </div>
         ) : (
-          // Overview layout
           <div className="space-y-6">
             <div className="aspect-video">
               <CameraFeed stationId={station.id} />
@@ -293,32 +333,6 @@ export function StationCard({ station }: { station: ExtendedStation }) {
               </div>
             )}
             {renderQueueStatus()}
-            {station.status === "available" ? (
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                onClick={() => startSession.mutate()}
-                disabled={startSession.isPending || station.userPosition !== 1}
-              >
-                Start Session
-              </Button>
-            ) : isMySession ? (
-              <Button 
-                className="w-full hover:bg-destructive/90 transition-colors"
-                variant="destructive"
-                onClick={() => endSession.mutate()}
-                disabled={endSession.isPending}
-              >
-                End Session
-              </Button>
-            ) : station.userPosition ? (
-              <Button 
-                className="w-full bg-destructive hover:bg-destructive/90 transition-colors"
-                onClick={() => leaveQueue.mutate()}
-                disabled={leaveQueue.isPending}
-              >
-                Leave Queue
-              </Button>
-            ) : null}
           </div>
         )}
       </CardContent>

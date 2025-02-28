@@ -78,10 +78,11 @@ export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type WebSocketMessage = {
-  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop" | "queue_update";
+  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop" | "queue_update" | "session_time_update";
   direction?: "up" | "down" | "left" | "right";
   value?: number;
   stationId: number;
   queuePosition?: number;
   estimatedWaitTime?: number;
+  remainingTime?: number;
 };
