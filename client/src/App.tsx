@@ -14,6 +14,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { SiteTour } from "@/components/site-tour";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import FeedbackPage from "@/pages/admin/feedback-page";
 
 function AuthenticatedComponents() {
   const { user } = useAuth();
@@ -37,6 +38,7 @@ function Router() {
         <ProtectedRoute path="/admin/analytics" component={AnalyticsPage} />
         <ProtectedRoute path="/admin/stations" component={StationsPage} />
         <ProtectedRoute path="/admin/users" component={UsersPage} />
+        <ProtectedRoute path="/admin/feedback" component={FeedbackPage} />
         <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>

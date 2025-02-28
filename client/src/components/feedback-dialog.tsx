@@ -22,10 +22,7 @@ export function FeedbackDialog() {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      
-      // For now, we'll just console.log the feedback
-      // In a real application, this would be sent to a backend endpoint
-      console.log('Feedback submitted:', {
+      await apiRequest("POST", "/api/feedback", {
         type,
         message: feedback
       });

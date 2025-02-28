@@ -5,6 +5,18 @@ import { hashPassword } from "@shared/auth-utils";
 
 const MemoryStore = createMemoryStore(session);
 
+//Inferring types based on context.  This is an assumption, you might need to adjust based on your actual schema.
+type Feedback = {
+    id: number;
+    userId: number;
+    comment: string;
+    createdAt: Date;
+    status: "pending" | "reviewed" | "resolved";
+};
+
+type InsertFeedback = Omit<Feedback, 'id' | 'createdAt' | 'status'>;
+
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -22,6 +34,10 @@ export interface IStorage {
   updateSessionLog(id: number, endTime: Date): Promise<SessionLog>;
   incrementCommandCount(sessionLogId: number): Promise<void>;
 
+  getFeedback(): Promise<Feedback[]>;
+  createFeedback(userId: number, feedback: InsertFeedback): Promise<Feedback>;
+  updateFeedbackStatus(id: number, status: "pending" | "reviewed" | "resolved"): Promise<Feedback>;
+
   sessionStore: session.SessionStore;
 }
 
@@ -29,6 +45,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private stations: Map<number, Station>;
   private sessionLogs: Map<number, SessionLog>;
+  private feedback: Map<number, Feedback>; // Added feedback map
   private currentId: number;
   sessionStore: session.SessionStore;
 
@@ -36,6 +53,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.stations = new Map();
     this.sessionLogs = new Map();
+    this.feedback = new Map(); // Initialize feedback map
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
@@ -190,6 +208,35 @@ export class MemStorage implements IStorage {
 
     log.commandCount++;
     this.sessionLogs.set(sessionLogId, log);
+  }
+
+  async getFeedback(): Promise<Feedback[]> {
+    return Array.from(this.feedback.values());
+  }
+
+  async createFeedback(userId: number, insertFeedback: InsertFeedback): Promise<Feedback> {
+    const id = this.currentId++;
+    const feedback: Feedback = {
+      id,
+      userId,
+      ...insertFeedback,
+      createdAt: new Date(),
+      status: "pending"
+    };
+    this.feedback.set(id, feedback);
+    return feedback;
+  }
+
+  async updateFeedbackStatus(id: number, status: "pending" | "reviewed" | "resolved"): Promise<Feedback> {
+    const feedback = this.feedback.get(id);
+    if (!feedback) throw new Error("Feedback not found");
+
+    const updatedFeedback: Feedback = {
+      ...feedback,
+      status
+    };
+    this.feedback.set(id, updatedFeedback);
+    return updatedFeedback;
   }
 }
 

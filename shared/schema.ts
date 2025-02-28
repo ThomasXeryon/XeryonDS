@@ -27,6 +27,15 @@ export const sessionLogs = pgTable("session_logs", {
   commandCount: integer("command_count").notNull().default(0),
 });
 
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  type: text("type").notNull(), // 'feedback' or 'bug'
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").notNull().default(Date.now()),
+  status: text("status").notNull().default("pending"), // pending, reviewed, resolved
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -36,10 +45,21 @@ export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback)
+  .pick({
+    type: true,
+    message: true,
+  })
+  .extend({
+    type: z.enum(["feedback", "bug"]),
+  });
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Station = typeof stations.$inferSelect;
 export type SessionLog = typeof sessionLogs.$inferSelect;
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type WebSocketMessage = {
   type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop";

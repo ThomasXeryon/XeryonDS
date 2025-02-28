@@ -4,7 +4,7 @@ import { Station, SessionLog, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { Settings, Users, Activity, PlusCircle, Loader2, Home } from "lucide-react";
+import { Settings, Users, Activity, PlusCircle, Loader2, Home, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,8 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
+  const [feedbackItems, setFeedbackItems] = useState<any[]>([]); // Added state for feedback items
+
 
   const { data: stations } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -34,6 +36,14 @@ export default function AdminPage() {
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
   });
+
+  const { data: feedback } = useQuery<any[]>({ // Added query for feedback
+    queryKey: ["/api/admin/feedback"],
+    onSuccess: (data) => {
+      setFeedbackItems(data);
+    }
+  });
+
 
   const createStation = useMutation({
     mutationFn: async (name: string) => {
@@ -80,9 +90,9 @@ export default function AdminPage() {
       <header className="border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img 
-              src="/Xeryon-logo-v2.png" 
-              alt="Xeryon Logo" 
+            <img
+              src="/Xeryon-logo-v2.png"
+              alt="Xeryon Logo"
               className="h-8 object-contain cursor-pointer"
               onClick={() => setLocation("/")}
             />
@@ -114,7 +124,7 @@ export default function AdminPage() {
                     value={newStationName}
                     onChange={(e) => setNewStationName(e.target.value)}
                   />
-                  <Button 
+                  <Button
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => createStation.mutate(newStationName)}
                     disabled={createStation.isPending || !newStationName.trim()}
@@ -171,6 +181,18 @@ export default function AdminPage() {
             <CardContent>
               <div className="text-2xl font-bold">{sessionLogs?.length || 0}</div>
               <p className="text-sm text-muted-foreground">Total Sessions</p>
+            </CardContent>
+          </Card>
+          <Card className="hover:bg-accent/5 transition-colors cursor-pointer" onClick={() => setLocation("/admin/feedback")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                <span>Feedback</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{feedbackItems?.length || 0}</div>
+              <p className="text-sm text-muted-foreground">User Submissions</p>
             </CardContent>
           </Card>
         </div>
