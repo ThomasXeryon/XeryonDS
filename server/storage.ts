@@ -25,7 +25,7 @@ export interface IStorage {
 
   getStations(): Promise<Station[]>;
   getStation(id: number): Promise<Station | undefined>;
-  createStation(name: string): Promise<Station>;
+  createStation(name: string, description?: string | null, rpiHost?: string | null, rpiPort?: number | null, rpiAuthToken?: string | null): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
 
@@ -133,17 +133,28 @@ export class MemStorage implements IStorage {
     return this.stations.get(id);
   }
 
-  async createStation(name: string): Promise<Station> {
+  async createStation(
+    name: string,
+    description?: string | null,
+    rpiHost?: string | null,
+    rpiPort?: number | null,
+    rpiAuthToken?: string | null
+  ): Promise<Station> {
     const id = this.currentId++;
     const station: Station = {
       id,
       name,
+      description,
       status: "available",
       currentUserId: null,
       sessionStart: null,
       isActive: true,
+      rpiHost,
+      rpiPort,
+      rpiAuthToken,
     };
     this.stations.set(id, station);
+    this.queue.set(id, []);
     return station;
   }
 

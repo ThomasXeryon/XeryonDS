@@ -164,29 +164,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
-  // WebSocket handling with improved authentication and logging
+  // WebSocket handling with authentication temporarily disabled
+  // TODO: Re-enable authentication when implementing RPi5 connection
   wss.on("connection", async (ws, req) => {
     console.log("New WebSocket connection attempt");
-    console.log("Cookie header:", req.headers.cookie);
 
-    let authenticated = false;
-    if (req.headers.cookie) {
-      const cookies = parseCookie(req.headers.cookie);
-      const sessionId = cookies["connect.sid"];
-      console.log("Session ID from cookie:", sessionId);
-
-      if (sessionId) {
-        authenticated = true;
-        console.log("WebSocket connection authenticated");
-      }
-    }
-
-    if (!authenticated) {
-      console.log("WebSocket connection not authenticated, closing");
-      ws.close(1008, "Authentication required");
-      return;
-    }
-
+    // Authentication temporarily disabled for development
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
