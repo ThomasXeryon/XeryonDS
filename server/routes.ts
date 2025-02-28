@@ -47,48 +47,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
-  // WebSocket handling with improved authentication and logging
-  wss.on("connection", (ws, req) => {
-    console.log("New WebSocket connection attempt");
-    console.log("Cookie header:", req.headers.cookie);
-
-    let authenticated = false;
-    if (req.headers.cookie) {
-      const cookies = parseCookie(req.headers.cookie);
-      const sessionId = cookies["connect.sid"];
-      console.log("Session ID from cookie:", sessionId);
-
-      if (sessionId) {
-        authenticated = true;
-        console.log("WebSocket connection authenticated");
-      }
-    }
-
-    if (!authenticated) {
-      console.log("WebSocket connection not authenticated, closing");
-      ws.close(1008, "Authentication required");
-      return;
-    }
-
-    ws.on("message", async (data) => {
-      try {
-        const message = JSON.parse(data.toString()) as WebSocketMessage;
-        console.log("Received WebSocket message:", message);
-        ws.send(JSON.stringify({ type: "command_received", ...message }));
-      } catch (err) {
-        console.error("Failed to parse WebSocket message:", err);
-        ws.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
-      }
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-
-    // Send initial connection success message
-    ws.send(JSON.stringify({ type: "connected" }));
-  });
-
   // Station routes
   app.get("/api/stations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -168,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const position = await storage.joinQueue(stationId, req.user.id);
       await broadcastQueueUpdate(stationId);
       res.json({ position, estimatedWaitTime: position * 5 });
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
@@ -181,25 +139,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.leaveQueue(stationId, req.user.id);
       await broadcastQueueUpdate(stationId);
       res.sendStatus(200);
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  // Other admin routes
+  // Admin routes
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);
-    const { name } = req.body;
+    const { name, description, rpiHost, rpiPort, rpiAuthToken } = req.body;
     if (!name) return res.status(400).json({ message: "Name is required" });
 
-    const station = await storage.createStation(name);
-    res.status(201).json(station);
+    try {
+      const station = await storage.createStation(name, description, rpiHost, rpiPort, rpiAuthToken);
+      res.status(201).json(station);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   app.delete("/api/admin/stations/:id", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);
     await storage.deleteStation(parseInt(req.params.id));
     res.sendStatus(200);
+  });
+
+  // WebSocket handling with improved authentication and logging
+  wss.on("connection", async (ws, req) => {
+    console.log("New WebSocket connection attempt");
+    console.log("Cookie header:", req.headers.cookie);
+
+    let authenticated = false;
+    if (req.headers.cookie) {
+      const cookies = parseCookie(req.headers.cookie);
+      const sessionId = cookies["connect.sid"];
+      console.log("Session ID from cookie:", sessionId);
+
+      if (sessionId) {
+        authenticated = true;
+        console.log("WebSocket connection authenticated");
+      }
+    }
+
+    if (!authenticated) {
+      console.log("WebSocket connection not authenticated, closing");
+      ws.close(1008, "Authentication required");
+      return;
+    }
+
+    ws.on("message", async (data) => {
+      try {
+        const message = JSON.parse(data.toString()) as WebSocketMessage;
+        console.log("Received WebSocket message:", message);
+        ws.send(JSON.stringify({ type: "command_received", ...message }));
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
+        ws.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
+      }
+    });
+
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
+    });
+
+    // Send initial connection success message
+    ws.send(JSON.stringify({ type: "connected" }));
   });
 
   return httpServer;

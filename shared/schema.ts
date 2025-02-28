@@ -12,10 +12,15 @@ export const users = pgTable("users", {
 export const stations = pgTable("stations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  description: text("description"),
   status: text("status").notNull().default("available"),
   currentUserId: integer("current_user_id").references(() => users.id),
   sessionStart: timestamp("session_start"),
   isActive: boolean("is_active").notNull().default(true),
+  // RPi connection details
+  rpiHost: text("rpi_host"),
+  rpiPort: integer("rpi_port"),
+  rpiAuthToken: text("rpi_auth_token"),
 });
 
 export const stationQueue = pgTable("station_queue", {
@@ -44,7 +49,6 @@ export const feedback = pgTable("feedback", {
   status: text("status").notNull().default("pending"), // pending, reviewed, resolved
 });
 
-// Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -52,6 +56,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
+  description: true,
+  rpiHost: true,
+  rpiPort: true,
+  rpiAuthToken: true,
 });
 
 export const insertQueueSchema = createInsertSchema(stationQueue).pick({
@@ -68,7 +76,6 @@ export const insertFeedbackSchema = createInsertSchema(feedback)
     type: z.enum(["feedback", "bug"]),
   });
 
-// Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Station = typeof stations.$inferSelect;
