@@ -18,6 +18,13 @@ type Feedback = {
 type InsertFeedback = Omit<Feedback, 'id' | 'createdAt' | 'status'>;
 
 
+interface StationUpdate {
+  name: string;
+  ipAddress: string;
+  port: string;
+  secretKey: string;
+}
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -29,6 +36,7 @@ export interface IStorage {
   createStation(name: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
+  updateStation(id: number, update: StationUpdate): Promise<Station>;
 
   getSessionLogs(): Promise<SessionLog[]>;
   createSessionLog(stationId: number, userId: number): Promise<SessionLog>;
@@ -238,6 +246,22 @@ export class MemStorage implements IStorage {
     };
     this.feedback.set(id, updatedFeedback);
     return updatedFeedback;
+  }
+
+  async updateStation(id: number, update: StationUpdate): Promise<Station> {
+    const station = await this.getStation(id);
+    if (!station) throw new Error("Station not found");
+
+    const updatedStation: Station = {
+      ...station,
+      name: update.name,
+      ipAddress: update.ipAddress,
+      port: update.port,
+      secretKey: update.secretKey,
+    };
+
+    this.stations.set(id, updatedStation);
+    return updatedStation;
   }
 }
 
