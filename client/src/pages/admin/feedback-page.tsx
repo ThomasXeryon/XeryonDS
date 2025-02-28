@@ -13,6 +13,7 @@ export default function FeedbackPage() {
 
   const { data: feedbackItems, isLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   if (!user?.isAdmin) {

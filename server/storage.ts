@@ -9,7 +9,8 @@ const MemoryStore = createMemoryStore(session);
 type Feedback = {
     id: number;
     userId: number;
-    comment: string;
+    type: string;
+    message: string;
     createdAt: Date;
     status: "pending" | "reviewed" | "resolved";
 };
@@ -45,7 +46,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private stations: Map<number, Station>;
   private sessionLogs: Map<number, SessionLog>;
-  private feedback: Map<number, Feedback>; // Added feedback map
+  private feedback: Map<number, Feedback>;
   private currentId: number;
   sessionStore: session.SessionStore;
 
@@ -53,7 +54,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.stations = new Map();
     this.sessionLogs = new Map();
-    this.feedback = new Map(); // Initialize feedback map
+    this.feedback = new Map();
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });

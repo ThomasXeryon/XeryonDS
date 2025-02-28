@@ -36,6 +36,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
 
+  // Feedback routes
+  app.post("/api/feedback", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { type, message } = req.body;
+
+    console.log("Received feedback:", { type, message, userId: req.user.id });
+
+    if (!type || !message) {
+      return res.status(400).json({ message: "Type and message are required" });
+    }
+
+    try {
+      const feedback = await storage.createFeedback(req.user.id, { type, message });
+      console.log("Created feedback:", feedback);
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error creating feedback:", error);
+      res.status(500).json({ message: "Failed to create feedback" });
+    }
+  });
+
+  app.get("/api/admin/feedback", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    try {
+      const feedback = await storage.getFeedback();
+      console.log("Retrieved feedback:", feedback);
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error getting feedback:", error);
+      res.status(500).json({ message: "Failed to get feedback" });
+    }
+  });
+
+  // Other admin routes
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);
     const { name } = req.body;

@@ -22,10 +22,14 @@ export function FeedbackDialog() {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      await apiRequest("POST", "/api/feedback", {
+      console.log("Submitting feedback:", { type, message: feedback });
+
+      const response = await apiRequest("POST", "/api/feedback", {
         type,
         message: feedback
       });
+
+      console.log("Feedback submission response:", await response.json());
 
       toast({
         title: "Thank you for your feedback!",
@@ -35,6 +39,7 @@ export function FeedbackDialog() {
       setFeedback('');
       setIsOpen(false);
     } catch (error) {
+      console.error("Failed to submit feedback:", error);
       toast({
         title: "Failed to submit feedback",
         description: "Please try again later.",
