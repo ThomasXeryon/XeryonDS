@@ -36,6 +36,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
 
+  app.patch("/api/admin/stations/:id", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    const { name, ipAddress, port, secretKey } = req.body;
+    const stationId = parseInt(req.params.id);
+
+    try {
+      const station = await storage.updateStation(stationId, {
+        name,
+        ipAddress,
+        port,
+        secretKey
+      });
+      res.json(station);
+    } catch (error) {
+      console.error("Error updating station:", error);
+      res.status(500).json({ message: "Failed to update station" });
+    }
+  });
+
   // Feedback routes
   app.post("/api/feedback", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

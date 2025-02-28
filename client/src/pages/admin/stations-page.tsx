@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,8 @@ export default function StationsPage() {
   const [ipAddress, setIpAddress] = useState("");
   const [port, setPort] = useState("");
   const [secretKey, setSecretKey] = useState("");
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -39,7 +41,6 @@ export default function StationsPage() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "station_update") {
-        // Refresh stations list when receiving updates
         queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
       }
     };
@@ -72,6 +73,34 @@ export default function StationsPage() {
     },
   });
 
+  const updateStation = useMutation({
+    mutationFn: async (station: Station) => {
+      const res = await apiRequest("PATCH", `/api/admin/stations/${station.id}`, {
+        name: station.name,
+        ipAddress: station.ipAddress,
+        port: station.port,
+        secretKey: station.secretKey,
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      toast({
+        title: "Station updated",
+        description: "Station details have been updated successfully",
+      });
+      setSelectedStation(null);
+      setIsEditDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update station",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteStation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/admin/stations/${id}`);
@@ -93,16 +122,18 @@ export default function StationsPage() {
     },
   });
 
+  const handleStationClick = (station: Station) => {
+    setSelectedStation(station);
+    setIsEditDialogOpen(true);
+  };
+
   if (!user?.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card>
           <CardContent className="pt-6">
             <p>You don't have permission to access this page.</p>
-            <Button
-              className="mt-4"
-              onClick={() => setLocation("/")}
-            >
+            <Button className="mt-4" onClick={() => setLocation("/")}>
               Return to Home
             </Button>
           </CardContent>
@@ -190,7 +221,11 @@ export default function StationsPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stations?.map((station) => (
-            <Card key={station.id} className="hover:bg-accent/5 transition-colors group">
+            <Card 
+              key={station.id} 
+              className="hover:bg-accent/5 transition-colors group cursor-pointer"
+              onClick={() => handleStationClick(station)}
+            >
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>{station.name}</span>
@@ -199,7 +234,10 @@ export default function StationsPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
-                      onClick={() => deleteStation.mutate(station.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteStation.mutate(station.id);
+                      }}
                       disabled={deleteStation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -243,6 +281,54 @@ export default function StationsPage() {
           ))}
         </div>
       </main>
+
+      {/* Edit Station Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Station</DialogTitle>
+          </DialogHeader>
+          {selectedStation && (
+            <div className="space-y-4 pt-4">
+              <Input
+                placeholder="Station Name"
+                value={selectedStation.name}
+                onChange={(e) => setSelectedStation({ ...selectedStation, name: e.target.value })}
+              />
+              <div className="space-y-4">
+                <Input
+                  placeholder="IP Address (e.g. 192.168.1.100)"
+                  value={selectedStation.ipAddress || ""}
+                  onChange={(e) => setSelectedStation({ ...selectedStation, ipAddress: e.target.value })}
+                />
+                <Input
+                  placeholder="Port (e.g. 8080)"
+                  value={selectedStation.port || ""}
+                  onChange={(e) => setSelectedStation({ ...selectedStation, port: e.target.value })}
+                />
+                <Input
+                  placeholder="Secret Key"
+                  type="password"
+                  value={selectedStation.secretKey || ""}
+                  onChange={(e) => setSelectedStation({ ...selectedStation, secretKey: e.target.value })}
+                />
+              </div>
+              <Button
+                className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                onClick={() => updateStation.mutate(selectedStation)}
+                disabled={updateStation.isPending}
+              >
+                {updateStation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Settings className="h-4 w-4 mr-2" />
+                )}
+                Update Station
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

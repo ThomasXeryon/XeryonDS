@@ -22,6 +22,9 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
+  const [ipAddress, setIpAddress] = useState("");
+  const [port, setPort] = useState("");
+  const [secretKey, setSecretKey] = useState("");
 
   const { data: stations } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -40,8 +43,8 @@ export default function AdminPage() {
   });
 
   const createStation = useMutation({
-    mutationFn: async (name: string) => {
-      const res = await apiRequest("POST", "/api/admin/stations", { name });
+    mutationFn: async ({ name, ipAddress, port, secretKey }: { name: string; ipAddress: string; port: string; secretKey: string }) => {
+      const res = await apiRequest("POST", "/api/admin/stations", { name, ipAddress, port, secretKey });
       return await res.json();
     },
     onSuccess: () => {
@@ -51,6 +54,9 @@ export default function AdminPage() {
         description: "New demo station has been added successfully",
       });
       setNewStationName("");
+      setIpAddress("");
+      setPort("");
+      setSecretKey("");
     },
     onError: (error: Error) => {
       toast({
@@ -118,10 +124,28 @@ export default function AdminPage() {
                     value={newStationName}
                     onChange={(e) => setNewStationName(e.target.value)}
                   />
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="IP Address (e.g. 192.168.1.100)"
+                      value={ipAddress}
+                      onChange={(e) => setIpAddress(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Port (e.g. 8080)"
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Secret Key"
+                      type="password"
+                      value={secretKey}
+                      onChange={(e) => setSecretKey(e.target.value)}
+                    />
+                  </div>
                   <Button
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                    onClick={() => createStation.mutate(newStationName)}
-                    disabled={createStation.isPending || !newStationName.trim()}
+                    onClick={() => createStation.mutate({ name: newStationName, ipAddress, port, secretKey })}
+                    disabled={createStation.isPending || !newStationName.trim() || !ipAddress.trim() || !port.trim() || !secretKey.trim()}
                   >
                     {createStation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
