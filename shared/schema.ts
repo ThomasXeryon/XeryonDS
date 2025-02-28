@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, sql } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -18,6 +18,14 @@ export const stations = pgTable("stations", {
   isActive: boolean("is_active").notNull().default(true),
 });
 
+export const stationQueue = pgTable("station_queue", {
+  id: serial("id").primaryKey(),
+  stationId: integer("station_id").references(() => stations.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  joinedAt: timestamp("joined_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  position: integer("position").notNull(),
+});
+
 export const sessionLogs = pgTable("session_logs", {
   id: serial("id").primaryKey(),
   stationId: integer("station_id").references(() => stations.id),
@@ -32,10 +40,11 @@ export const feedback = pgTable("feedback", {
   userId: integer("user_id").references(() => users.id),
   type: text("type").notNull(), // 'feedback' or 'bug'
   message: text("message").notNull(),
-  createdAt: timestamp("created_at").notNull().default(Date.now()),
+  createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   status: text("status").notNull().default("pending"), // pending, reviewed, resolved
 });
 
+// Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -43,6 +52,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
+});
+
+export const insertQueueSchema = createInsertSchema(stationQueue).pick({
+  stationId: true,
+  userId: true,
 });
 
 export const insertFeedbackSchema = createInsertSchema(feedback)
@@ -54,16 +68,20 @@ export const insertFeedbackSchema = createInsertSchema(feedback)
     type: z.enum(["feedback", "bug"]),
   });
 
+// Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Station = typeof stations.$inferSelect;
+export type StationQueue = typeof stationQueue.$inferSelect;
 export type SessionLog = typeof sessionLogs.$inferSelect;
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type WebSocketMessage = {
-  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop";
+  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop" | "queue_update";
   direction?: "up" | "down" | "left" | "right";
   value?: number;
   stationId: number;
+  queuePosition?: number;
+  estimatedWaitTime?: number;
 };

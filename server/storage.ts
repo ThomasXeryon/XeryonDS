@@ -1,4 +1,4 @@
-import { users, stations, sessionLogs, type User, type InsertUser, type Station, type SessionLog } from "@shared/schema";
+import { users, stations, sessionLogs, stationQueue, type User, type InsertUser, type Station, type SessionLog, type StationQueue } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { hashPassword } from "@shared/auth-utils";
@@ -17,7 +17,6 @@ type Feedback = {
 
 type InsertFeedback = Omit<Feedback, 'id' | 'createdAt' | 'status'>;
 
-
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -29,6 +28,13 @@ export interface IStorage {
   createStation(name: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
+
+  // Queue operations
+  joinQueue(stationId: number, userId: number): Promise<number>; // Returns position in queue
+  leaveQueue(stationId: number, userId: number): Promise<void>;
+  getQueuePosition(stationId: number, userId: number): Promise<number | null>;
+  getQueueLength(stationId: number): Promise<number>;
+  checkQueueAndUpdateSession(stationId: number): Promise<void>;
 
   getSessionLogs(): Promise<SessionLog[]>;
   createSessionLog(stationId: number, userId: number): Promise<SessionLog>;
@@ -47,6 +53,7 @@ export class MemStorage implements IStorage {
   private stations: Map<number, Station>;
   private sessionLogs: Map<number, SessionLog>;
   private feedback: Map<number, Feedback>;
+  private queue: Map<number, StationQueue[]>; // stationId -> queue entries
   private currentId: number;
   sessionStore: session.SessionStore;
 
@@ -55,6 +62,7 @@ export class MemStorage implements IStorage {
     this.stations = new Map();
     this.sessionLogs = new Map();
     this.feedback = new Map();
+    this.queue = new Map();
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
@@ -92,6 +100,8 @@ export class MemStorage implements IStorage {
 
     this.stations.set(station1.id, station1);
     this.stations.set(station2.id, station2);
+    this.queue.set(station1.id, []);
+    this.queue.set(station2.id, []);
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -238,6 +248,64 @@ export class MemStorage implements IStorage {
     };
     this.feedback.set(id, updatedFeedback);
     return updatedFeedback;
+  }
+
+  async joinQueue(stationId: number, userId: number): Promise<number> {
+    const station = await this.getStation(stationId);
+    if (!station) throw new Error("Station not found");
+
+    const existingQueue = this.queue.get(stationId) || [];
+    const existingPosition = existingQueue.findIndex(entry => entry.userId === userId);
+
+    if (existingPosition !== -1) {
+      return existingPosition + 1; // Return current position if already in queue
+    }
+
+    const queueEntry: StationQueue = {
+      id: this.currentId++,
+      stationId,
+      userId,
+      joinedAt: new Date(),
+      position: existingQueue.length + 1,
+    };
+
+    this.queue.set(stationId, [...existingQueue, queueEntry]);
+    return queueEntry.position;
+  }
+
+  async leaveQueue(stationId: number, userId: number): Promise<void> {
+    const existingQueue = this.queue.get(stationId) || [];
+    const updatedQueue = existingQueue.filter(entry => entry.userId !== userId);
+
+    // Update positions for remaining entries
+    updatedQueue.forEach((entry, index) => {
+      entry.position = index + 1;
+    });
+
+    this.queue.set(stationId, updatedQueue);
+  }
+
+  async getQueuePosition(stationId: number, userId: number): Promise<number | null> {
+    const existingQueue = this.queue.get(stationId) || [];
+    const entry = existingQueue.find(entry => entry.userId === userId);
+    return entry ? entry.position : null;
+  }
+
+  async getQueueLength(stationId: number): Promise<number> {
+    const existingQueue = this.queue.get(stationId) || [];
+    return existingQueue.length;
+  }
+
+  async checkQueueAndUpdateSession(stationId: number): Promise<void> {
+    const station = await this.getStation(stationId);
+    if (!station || station.status !== "available") return;
+
+    const existingQueue = this.queue.get(stationId) || [];
+    if (existingQueue.length === 0) return;
+
+    const nextInQueue = existingQueue[0];
+    await this.leaveQueue(stationId, nextInQueue.userId);
+    await this.updateStationSession(stationId, nextInQueue.userId);
   }
 }
 

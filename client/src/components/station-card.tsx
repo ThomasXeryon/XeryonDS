@@ -8,10 +8,16 @@ import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export function StationCard({ station }: { station: Station }) {
+type ExtendedStation = Station & {
+  queueLength?: number;
+  userPosition?: number | null;
+  estimatedWaitTime?: number;
+};
+
+export function StationCard({ station }: { station: ExtendedStation }) {
   const { user } = useAuth();
   const isMySession = station.currentUserId === user?.id;
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -81,10 +87,17 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(true); // Auto fullscreen on session start
+      setIsFullscreen(true);
       toast({
         title: "Session started",
         description: "You now have control of the station",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to start session",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -96,10 +109,38 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(false); // Back to overview on session end
+      setIsFullscreen(false);
       toast({
         title: "Session ended",
         description: "Thank you for using the demo station",
+      });
+    },
+  });
+
+  const joinQueue = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/stations/${station.id}/queue`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      toast({
+        title: "Joined queue",
+        description: `You are position ${data.position} in line. Estimated wait time: ${data.estimatedWaitTime} minutes`,
+      });
+    },
+  });
+
+  const leaveQueue = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/stations/${station.id}/queue`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      toast({
+        title: "Left queue",
+        description: "You have been removed from the queue",
       });
     },
   });
@@ -121,6 +162,40 @@ export function StationCard({ station }: { station: Station }) {
   const cardClasses = isFullscreen 
     ? "fixed inset-0 z-50 m-0 rounded-none overflow-auto bg-background"
     : "";
+
+  const renderQueueStatus = () => {
+    if (station.status === "in_use" && !isMySession) {
+      return (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Queue Length: {station.queueLength || 0} users
+          </p>
+          {station.userPosition ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Your Position: {station.userPosition}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Estimated Wait: ~{station.estimatedWaitTime} minutes
+              </p>
+            </>
+          ) : (
+            <Button 
+              className="w-full bg-primary hover:bg-primary/90 transition-colors"
+              onClick={() => joinQueue.mutate()}
+              disabled={joinQueue.isPending}
+            >
+              {joinQueue.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Join Queue
+            </Button>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <Card className={cardClasses}>
@@ -171,12 +246,16 @@ export function StationCard({ station }: { station: Station }) {
                 isConnected={wsConnection.connected}
                 onCommand={handleCommand}
               />
+              {renderQueueStatus()}
               {station.status === "available" ? (
                 <Button 
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
                   onClick={() => startSession.mutate()}
-                  disabled={startSession.isPending}
+                  disabled={startSession.isPending || station.userPosition !== 1}
                 >
+                  {startSession.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
                   Start Session
                 </Button>
               ) : isMySession ? (
@@ -188,11 +267,18 @@ export function StationCard({ station }: { station: Station }) {
                 >
                   End Session
                 </Button>
-              ) : (
-                <Button className="w-full" disabled>
-                  Station Occupied
+              ) : station.userPosition ? (
+                <Button 
+                  className="w-full bg-destructive hover:bg-destructive/90 transition-colors"
+                  onClick={() => leaveQueue.mutate()}
+                  disabled={leaveQueue.isPending}
+                >
+                  {leaveQueue.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  Leave Queue
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         ) : (
@@ -206,11 +292,12 @@ export function StationCard({ station }: { station: Station }) {
                 <SessionTimer startTime={station.sessionStart} />
               </div>
             )}
+            {renderQueueStatus()}
             {station.status === "available" ? (
               <Button 
                 className="w-full bg-primary hover:bg-primary/90 transition-colors"
                 onClick={() => startSession.mutate()}
-                disabled={startSession.isPending}
+                disabled={startSession.isPending || station.userPosition !== 1}
               >
                 Start Session
               </Button>
@@ -223,11 +310,15 @@ export function StationCard({ station }: { station: Station }) {
               >
                 End Session
               </Button>
-            ) : (
-              <Button className="w-full" disabled>
-                Station Occupied
+            ) : station.userPosition ? (
+              <Button 
+                className="w-full bg-destructive hover:bg-destructive/90 transition-colors"
+                onClick={() => leaveQueue.mutate()}
+                disabled={leaveQueue.isPending}
+              >
+                Leave Queue
               </Button>
-            )}
+            ) : null}
           </div>
         )}
       </CardContent>
