@@ -16,7 +16,7 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Form,
   FormControl,
@@ -97,20 +97,6 @@ export default function StationsPage() {
       });
     },
   });
-
-  useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "station_update") {
-        queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      }
-    };
-
-    return () => ws.close();
-  }, []);
 
   if (!user?.isAdmin) {
     return (
@@ -299,10 +285,15 @@ export default function StationsPage() {
                       {station.status === "available" ? "Available" : "In Use"}
                     </span>
                   </div>
-                  {station.currentUserId && (
-                    <div className="flex justify-between text-sm">
-                      <span>Current Session</span>
-                      <span>Active</span>
+                  {station.description && (
+                    <p className="text-sm text-muted-foreground">
+                      {station.description}
+                    </p>
+                  )}
+                  {station.rpiHost && (
+                    <div className="text-sm text-muted-foreground">
+                      <p>Host: {station.rpiHost}</p>
+                      <p>Port: {station.rpiPort}</p>
                     </div>
                   )}
                 </div>
