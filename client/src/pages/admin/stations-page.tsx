@@ -79,8 +79,7 @@ export default function StationsPage() {
 
   const deleteStation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/stations/${id}`);
-      return await res.json();
+      await apiRequest("DELETE", `/api/admin/stations/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
@@ -202,7 +201,7 @@ export default function StationsPage() {
                     name="rpiPort"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>WebSocket Port</FormLabel>
+                        <FormLabel>Port</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -212,7 +211,7 @@ export default function StationsPage() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Port number for the WebSocket server on the RPi
+                          Port number for the server on the RPi
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
