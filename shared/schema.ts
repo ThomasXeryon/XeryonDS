@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, sql } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,23 +12,10 @@ export const users = pgTable("users", {
 export const stations = pgTable("stations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  description: text("description"),
   status: text("status").notNull().default("available"),
   currentUserId: integer("current_user_id").references(() => users.id),
   sessionStart: timestamp("session_start"),
   isActive: boolean("is_active").notNull().default(true),
-  // RPi connection details
-  rpiHost: text("rpi_host"),
-  rpiPort: integer("rpi_port"),
-  rpiAuthToken: text("rpi_auth_token"),
-});
-
-export const stationQueue = pgTable("station_queue", {
-  id: serial("id").primaryKey(),
-  stationId: integer("station_id").references(() => stations.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  joinedAt: timestamp("joined_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-  position: integer("position").notNull(),
 });
 
 export const sessionLogs = pgTable("session_logs", {
@@ -45,7 +32,7 @@ export const feedback = pgTable("feedback", {
   userId: integer("user_id").references(() => users.id),
   type: text("type").notNull(), // 'feedback' or 'bug'
   message: text("message").notNull(),
-  createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().default(Date.now()),
   status: text("status").notNull().default("pending"), // pending, reviewed, resolved
 });
 
@@ -56,15 +43,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
-  description: true,
-  rpiHost: true,
-  rpiPort: true,
-  rpiAuthToken: true,
-});
-
-export const insertQueueSchema = createInsertSchema(stationQueue).pick({
-  stationId: true,
-  userId: true,
 });
 
 export const insertFeedbackSchema = createInsertSchema(feedback)
@@ -79,17 +57,13 @@ export const insertFeedbackSchema = createInsertSchema(feedback)
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Station = typeof stations.$inferSelect;
-export type StationQueue = typeof stationQueue.$inferSelect;
 export type SessionLog = typeof sessionLogs.$inferSelect;
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type WebSocketMessage = {
-  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop" | "queue_update" | "session_time_update";
+  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop";
   direction?: "up" | "down" | "left" | "right";
   value?: number;
   stationId: number;
-  queuePosition?: number;
-  estimatedWaitTime?: number;
-  remainingTime?: number;
 };
