@@ -6,8 +6,8 @@ const statusVariants = cva(
   {
     variants: {
       status: {
-        available: "bg-green-500",
-        in_use: "bg-yellow-500",
+        available: "bg-emerald-500",
+        in_use: "bg-amber-500",
         connecting: "bg-blue-500",
       },
     },
@@ -23,17 +23,20 @@ interface StatusIndicatorProps extends VariantProps<typeof statusVariants> {
 
 export function StatusIndicator({ status, className }: StatusIndicatorProps) {
   return (
-    <div className="relative flex items-center">
-      <span className={cn(statusVariants({ status }), className)}>
-        <span className={cn(
-          "absolute inset-0 rounded-full animate-ping",
-          status === "available" && "bg-green-500/50",
-          status === "in_use" && "bg-yellow-500/50",
-          status === "connecting" && "bg-blue-500/50"
-        )} />
-      </span>
-      <span className="ml-2 text-sm capitalize">
-        {status === "in_use" ? "In Use" : status}
+    <div className="relative flex items-center gap-2">
+      <div className="relative">
+        <span className={cn(statusVariants({ status }), className)} />
+        <span
+          className={cn(
+            "absolute inset-0 rounded-full animate-ping opacity-75",
+            status === "available" && "bg-emerald-500",
+            status === "in_use" && "bg-amber-500",
+            status === "connecting" && "bg-blue-500"
+          )}
+        />
+      </div>
+      <span className="text-sm font-medium">
+        {status === "in_use" ? "In Use" : status === "connecting" ? "Connecting" : "Available"}
       </span>
     </div>
   );

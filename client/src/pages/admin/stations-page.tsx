@@ -247,34 +247,33 @@ export default function StationsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span>Status</span>
-                    <StatusIndicator
-                      status={station.status as "available" | "in_use" | "connecting"}
-                      className="animate-pulse"
-                    />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Status</span>
+                      <StatusIndicator
+                        status={station.status as "available" | "in_use" | "connecting"}
+                      />
+                    </div>
+                    {station.ipAddress && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">IP Address</span>
+                        <span>{station.ipAddress}</span>
+                      </div>
+                    )}
+                    {station.port && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Port</span>
+                        <span>{station.port}</span>
+                      </div>
+                    )}
+                    {station.currentUserId && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Current Session</span>
+                        <span>Active</span>
+                      </div>
+                    )}
                   </div>
-                  {station.ipAddress && (
-                    <div className="flex justify-between text-sm">
-                      <span>IP Address</span>
-                      <span>{station.ipAddress}</span>
-                    </div>
-                  )}
-                  {station.port && (
-                    <div className="flex justify-between text-sm">
-                      <span>Port</span>
-                      <span>{station.port}</span>
-                    </div>
-                  )}
-                  {station.currentUserId && (
-                    <div className="flex justify-between text-sm">
-                      <span>Current Session</span>
-                      <span>Active</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
+                </CardContent>
             </Card>
           ))}
         </div>
