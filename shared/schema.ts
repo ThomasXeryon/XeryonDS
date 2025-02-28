@@ -16,6 +16,10 @@ export const stations = pgTable("stations", {
   currentUserId: integer("current_user_id").references(() => users.id),
   sessionStart: timestamp("session_start"),
   isActive: boolean("is_active").notNull().default(true),
+  // New fields
+  xAxis: text("x_axis"),
+  yAxis: text("y_axis"),
+  zAxis: text("z_axis"),
 });
 
 export const sessionLogs = pgTable("session_logs", {
@@ -43,6 +47,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
+  xAxis: true,
+  yAxis: true,
+  zAxis: true,
 });
 
 export const insertFeedbackSchema = createInsertSchema(feedback)

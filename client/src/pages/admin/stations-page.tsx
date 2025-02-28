@@ -22,6 +22,9 @@ export default function StationsPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
+  const [xAxis, setXAxis] = useState("");
+  const [yAxis, setYAxis] = useState("");
+  const [zAxis, setZAxis] = useState("");
 
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -44,8 +47,8 @@ export default function StationsPage() {
   }, []);
 
   const createStation = useMutation({
-    mutationFn: async (name: string) => {
-      const res = await apiRequest("POST", "/api/admin/stations", { name });
+    mutationFn: async ({ name, xAxis, yAxis, zAxis }: { name: string; xAxis: string; yAxis: string; zAxis: string }) => {
+      const res = await apiRequest("POST", "/api/admin/stations", { name, xAxis, yAxis, zAxis });
       return await res.json();
     },
     onSuccess: () => {
@@ -55,6 +58,9 @@ export default function StationsPage() {
         description: "New demo station has been added successfully",
       });
       setNewStationName("");
+      setXAxis("");
+      setYAxis("");
+      setZAxis("");
     },
     onError: (error: Error) => {
       toast({
@@ -144,9 +150,26 @@ export default function StationsPage() {
                   value={newStationName}
                   onChange={(e) => setNewStationName(e.target.value)}
                 />
-                <Button 
+                <div className="grid grid-cols-3 gap-4">
+                  <Input
+                    placeholder="X Axis Value"
+                    name="xAxis"
+                    onChange={(e) => setXAxis(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Y Axis Value"
+                    name="yAxis"
+                    onChange={(e) => setYAxis(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Z Axis Value"
+                    name="zAxis"
+                    onChange={(e) => setZAxis(e.target.value)}
+                  />
+                </div>
+                <Button
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => createStation.mutate(newStationName)}
+                  onClick={() => createStation.mutate({ name: newStationName, xAxis, yAxis, zAxis })}
                   disabled={createStation.isPending || !newStationName.trim()}
                 >
                   {createStation.isPending ? (
@@ -187,13 +210,31 @@ export default function StationsPage() {
                   <div className="flex justify-between text-sm">
                     <span>Status</span>
                     <span className={`px-2 py-0.5 rounded-full ${
-                      station.status === "available" 
-                        ? "bg-green-100 text-green-700" 
+                      station.status === "available"
+                        ? "bg-green-100 text-green-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}>
                       {station.status === "available" ? "Available" : "In Use"}
                     </span>
                   </div>
+                  {station.xAxis && (
+                    <div className="flex justify-between text-sm">
+                      <span>X Axis</span>
+                      <span>{station.xAxis}</span>
+                    </div>
+                  )}
+                  {station.yAxis && (
+                    <div className="flex justify-between text-sm">
+                      <span>Y Axis</span>
+                      <span>{station.yAxis}</span>
+                    </div>
+                  )}
+                  {station.zAxis && (
+                    <div className="flex justify-between text-sm">
+                      <span>Z Axis</span>
+                      <span>{station.zAxis}</span>
+                    </div>
+                  )}
                   {station.currentUserId && (
                     <div className="flex justify-between text-sm">
                       <span>Current Session</span>
