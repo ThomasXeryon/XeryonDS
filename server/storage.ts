@@ -33,7 +33,7 @@ export interface IStorage {
 
   getStations(): Promise<Station[]>;
   getStation(id: number): Promise<Station | undefined>;
-  createStation(name: string): Promise<Station>;
+  createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
   updateStation(id: number, update: StationUpdate): Promise<Station>;
@@ -87,6 +87,9 @@ export class MemStorage implements IStorage {
       currentUserId: null,
       sessionStart: null,
       isActive: true,
+      ipAddress: null,
+      port: null,
+      secretKey: null,
     };
 
     const station2: Station = {
@@ -96,6 +99,9 @@ export class MemStorage implements IStorage {
       currentUserId: null,
       sessionStart: null,
       isActive: true,
+      ipAddress: null,
+      port: null,
+      secretKey: null,
     };
 
     this.stations.set(station1.id, station1);
@@ -131,7 +137,7 @@ export class MemStorage implements IStorage {
     return this.stations.get(id);
   }
 
-  async createStation(name: string): Promise<Station> {
+  async createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station> {
     const id = this.currentId++;
     const station: Station = {
       id,
@@ -140,6 +146,9 @@ export class MemStorage implements IStorage {
       currentUserId: null,
       sessionStart: null,
       isActive: true,
+      ipAddress,
+      port,
+      secretKey,
     };
     this.stations.set(id, station);
     return station;

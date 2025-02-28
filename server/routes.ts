@@ -121,11 +121,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Other admin routes
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);
-    const { name } = req.body;
+    const { name, ipAddress, port, secretKey } = req.body;
     if (!name) return res.status(400).json({ message: "Name is required" });
 
-    const station = await storage.createStation(name);
-    res.status(201).json(station);
+    try {
+      const station = await storage.createStation(name);
+      // Update the station with connection parameters right after creation
+      const updatedStation = await storage.updateStation(station.id, {
+        name,
+        ipAddress,
+        port,
+        secretKey
+      });
+      res.status(201).json(updatedStation);
+    } catch (error) {
+      console.error("Error creating station:", error);
+      res.status(500).json({ message: "Failed to create station" });
+    }
   });
 
   app.delete("/api/admin/stations/:id", async (req, res) => {
