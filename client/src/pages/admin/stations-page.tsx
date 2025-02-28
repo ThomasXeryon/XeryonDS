@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useEffect } from "react";
+import { StatusIndicator } from "@/components/station-status";
 
 export default function StationsPage() {
   const { user } = useAuth();
@@ -221,8 +222,8 @@ export default function StationsPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stations?.map((station) => (
-            <Card 
-              key={station.id} 
+            <Card
+              key={station.id}
               className="hover:bg-accent/5 transition-colors group cursor-pointer"
               onClick={() => handleStationClick(station)}
             >
@@ -247,15 +248,12 @@ export default function StationsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between items-center text-sm">
                     <span>Status</span>
-                    <span className={`px-2 py-0.5 rounded-full ${
-                      station.status === "available"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                      {station.status === "available" ? "Available" : "In Use"}
-                    </span>
+                    <StatusIndicator
+                      status={station.status as "available" | "in_use" | "connecting"}
+                      className="animate-pulse"
+                    />
                   </div>
                   {station.ipAddress && (
                     <div className="flex justify-between text-sm">
