@@ -248,7 +248,7 @@ export default function StationsPage() {
               </CardHeader>
               <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-accent/5 group-hover:bg-accent/10 transition-colors">
                       <span className="text-sm text-muted-foreground">Status</span>
                       <StatusIndicator
                         status={station.status as "available" | "in_use" | "connecting"}
