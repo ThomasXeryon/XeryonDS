@@ -300,7 +300,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add static file serving for converted models
+  app.post('/api/models/upload', async (req, res) => {
+    if (!req.body.file || !req.body.filename) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    try {
+      // Create models directory if it doesn't exist
+      await fs.mkdir('public/models', { recursive: true });
+
+      // Decode base64 and save to file
+      const base64Data = req.body.file.replace(/^data:.*;base64,/, '');
+      const filename = `${Date.now()}_${req.body.filename}`;
+      const filepath = path.join('public/models', filename);
+      await fs.writeFile(filepath, Buffer.from(base64Data, 'base64'));
+
+      res.json({
+        url: `/models/${filename}`
+      });
+    } catch (error) {
+      console.error('Error saving model file:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Failed to save model file' });
+    }
+  });
+
+  // Add static file serving for models
   app.use('/models', express.static('public/models'));
 
   return httpServer;

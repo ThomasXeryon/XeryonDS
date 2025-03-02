@@ -39,7 +39,7 @@ export function ModelViewer({ modelUrl }: { modelUrl?: string }) {
 
       const base64Data = await base64Promise;
 
-      const res = await apiRequest("POST", "/api/models/convert", {
+      const res = await apiRequest("POST", "/api/models/upload", {
         file: base64Data,
         filename: file.name
       });
@@ -65,10 +65,10 @@ export function ModelViewer({ modelUrl }: { modelUrl?: string }) {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (!file.name.toLowerCase().endsWith('.stp')) {
+      if (!file.name.toLowerCase().endsWith('.gltf') && !file.name.toLowerCase().endsWith('.glb')) {
         toast({
           title: "Invalid file format",
-          description: "Please upload a STEP (.stp) file",
+          description: "Please upload a GLTF or GLB file",
           variant: "destructive",
         });
         return;
@@ -82,7 +82,7 @@ export function ModelViewer({ modelUrl }: { modelUrl?: string }) {
       <div className="absolute top-4 right-4 z-10">
         <input
           type="file"
-          accept=".stp"
+          accept=".gltf,.glb"
           onChange={handleFileUpload}
           className="hidden"
           id="model-upload"
@@ -96,7 +96,7 @@ export function ModelViewer({ modelUrl }: { modelUrl?: string }) {
             {uploadMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Upload STEP File'
+              'Upload GLTF/GLB File'
             )}
           </Button>
         </label>
