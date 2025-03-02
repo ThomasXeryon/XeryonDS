@@ -8,7 +8,7 @@ import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function StationCard({ station }: { station: Station }) {
@@ -163,6 +163,13 @@ export function StationCard({ station }: { station: Station }) {
                   <SessionTimer startTime={station.sessionStart} />
                 </div>
               )}
+              <Button
+                className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
+                onClick={() => window.open('https://xeryon.com/products/development-kits/', '_blank')}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Buy Development Kit
+              </Button>
             </div>
             <div className="space-y-8">
               <AdvancedControls
@@ -206,28 +213,37 @@ export function StationCard({ station }: { station: Station }) {
                 <SessionTimer startTime={station.sessionStart} />
               </div>
             )}
-            {station.status === "available" ? (
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                onClick={() => startSession.mutate()}
-                disabled={startSession.isPending}
+            <div className="space-y-4">
+              <Button
+                className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
+                onClick={() => window.open('https://xeryon.com/products/development-kits/', '_blank')}
               >
-                Start Session
+                <CreditCard className="h-4 w-4 mr-2" />
+                Buy Development Kit
               </Button>
-            ) : isMySession ? (
-              <Button 
-                className="w-full hover:bg-destructive/90 transition-colors"
-                variant="destructive"
-                onClick={() => endSession.mutate()}
-                disabled={endSession.isPending}
-              >
-                End Session
-              </Button>
-            ) : (
-              <Button className="w-full" disabled>
-                Station Occupied
-              </Button>
-            )}
+              {station.status === "available" ? (
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  onClick={() => startSession.mutate()}
+                  disabled={startSession.isPending}
+                >
+                  Start Session
+                </Button>
+              ) : isMySession ? (
+                <Button 
+                  className="w-full hover:bg-destructive/90 transition-colors"
+                  variant="destructive"
+                  onClick={() => endSession.mutate()}
+                  disabled={endSession.isPending}
+                >
+                  End Session
+                </Button>
+              ) : (
+                <Button className="w-full" disabled>
+                  Station Occupied
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
