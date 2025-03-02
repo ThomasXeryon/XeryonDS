@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ModelViewer } from './model-viewer';
 
 export function StationCard({ station }: { station: Station }) {
   const { user } = useAuth();
@@ -246,8 +247,11 @@ export function StationCard({ station }: { station: Station }) {
           ) : (
             // Overview layout
             <div className="space-y-6">
-              <div className="aspect-video">
-                <CameraFeed stationId={station.id} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="aspect-video">
+                  <CameraFeed stationId={station.id} />
+                </div>
+                <ModelViewer />
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
