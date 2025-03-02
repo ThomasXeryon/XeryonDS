@@ -8,13 +8,21 @@ import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Maximize2, Minimize2, CreditCard } from "lucide-react";
+import { Maximize2, Minimize2, CreditCard, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export function StationCard({ station }: { station: Station }) {
   const { user } = useAuth();
   const isMySession = station.currentUserId === user?.id;
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [wsConnection, setWsConnection] = useState<{connected: boolean, send: (msg: any) => void}>({ 
     connected: false,
     send: () => {} 
@@ -97,10 +105,7 @@ export function StationCard({ station }: { station: Station }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
       setIsFullscreen(false); // Back to overview on session end
-      toast({
-        title: "Session ended",
-        description: "Thank you for using the demo station",
-      });
+      setShowThankYouDialog(true); // Show thank you dialog
     },
   });
 
@@ -118,135 +123,159 @@ export function StationCard({ station }: { station: Station }) {
     setIsFullscreen(!isFullscreen);
   };
 
+  const handleContactUs = () => {
+    window.location.href = "mailto:info@xeryon.com";
+  };
+
+  const handlePurchase = () => {
+    window.open('https://xeryon.com/products/development-kits/', '_blank');
+  };
+
   const cardClasses = isFullscreen 
     ? "fixed inset-0 z-50 m-0 rounded-none overflow-auto bg-background"
     : "";
 
   return (
-    <Card className={cardClasses}>
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>{station.name}</span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-accent hover:text-accent-foreground"
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
-            </Button>
-            <span className={`text-sm px-2 py-1 rounded-full ${
-              station.status === "available" 
-                ? "bg-green-100 text-green-700" 
-                : "bg-yellow-100 text-yellow-700"
-            }`}>
-              {station.status === "available" ? "Available" : "In Use"}
-            </span>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isFullscreen ? (
-          // Fullscreen layout
-          <div className="grid grid-cols-[1fr,300px] gap-8">
+    <>
+      <Card className={cardClasses}>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>{station.name}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-accent hover:text-accent-foreground"
+                onClick={toggleFullscreen}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+              <span className={`text-sm px-2 py-1 rounded-full ${
+                station.status === "available" 
+                  ? "bg-green-100 text-green-700" 
+                  : "bg-yellow-100 text-yellow-700"
+              }`}>
+                {station.status === "available" ? "Available" : "In Use"}
+              </span>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isFullscreen ? (
+            // Fullscreen layout
+            <div className="grid grid-cols-[1fr,300px] gap-8">
+              <div className="space-y-6">
+                <div className="h-[600px]">
+                  <CameraFeed stationId={station.id} />
+                </div>
+                {station.sessionStart && isMySession && (
+                  <div className="mb-8">
+                    <SessionTimer startTime={station.sessionStart} />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-8">
+                <AdvancedControls
+                  stationId={station.id}
+                  enabled={isMySession}
+                  isConnected={wsConnection.connected}
+                  onCommand={handleCommand}
+                />
+                {station.status === "available" ? (
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    onClick={() => startSession.mutate()}
+                    disabled={startSession.isPending}
+                  >
+                    Start Session
+                  </Button>
+                ) : isMySession ? (
+                  <Button 
+                    className="w-full hover:bg-destructive/90 transition-colors"
+                    variant="destructive"
+                    onClick={() => endSession.mutate()}
+                    disabled={endSession.isPending}
+                  >
+                    End Session
+                  </Button>
+                ) : (
+                  <Button className="w-full" disabled>
+                    Station Occupied
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Overview layout
             <div className="space-y-6">
-              <div className="h-[600px]">
+              <div className="aspect-video">
                 <CameraFeed stationId={station.id} />
               </div>
               {station.sessionStart && isMySession && (
-                <div className="mb-8">
+                <div className="mb-4">
                   <SessionTimer startTime={station.sessionStart} />
                 </div>
               )}
-              <Button
-                className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
-                onClick={() => window.open('https://xeryon.com/products/development-kits/', '_blank')}
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Buy Development Kit
-              </Button>
-            </div>
-            <div className="space-y-8">
-              <AdvancedControls
-                stationId={station.id}
-                enabled={isMySession}
-                isConnected={wsConnection.connected}
-                onCommand={handleCommand}
-              />
-              {station.status === "available" ? (
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => startSession.mutate()}
-                  disabled={startSession.isPending}
-                >
-                  Start Session
-                </Button>
-              ) : isMySession ? (
-                <Button 
-                  className="w-full hover:bg-destructive/90 transition-colors"
-                  variant="destructive"
-                  onClick={() => endSession.mutate()}
-                  disabled={endSession.isPending}
-                >
-                  End Session
-                </Button>
-              ) : (
-                <Button className="w-full" disabled>
-                  Station Occupied
-                </Button>
-              )}
-            </div>
-          </div>
-        ) : (
-          // Overview layout
-          <div className="space-y-6">
-            <div className="aspect-video">
-              <CameraFeed stationId={station.id} />
-            </div>
-            {station.sessionStart && isMySession && (
-              <div className="mb-4">
-                <SessionTimer startTime={station.sessionStart} />
+              <div className="space-y-4">
+                {station.status === "available" ? (
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    onClick={() => startSession.mutate()}
+                    disabled={startSession.isPending}
+                  >
+                    Start Session
+                  </Button>
+                ) : isMySession ? (
+                  <Button 
+                    className="w-full hover:bg-destructive/90 transition-colors"
+                    variant="destructive"
+                    onClick={() => endSession.mutate()}
+                    disabled={endSession.isPending}
+                  >
+                    End Session
+                  </Button>
+                ) : (
+                  <Button className="w-full" disabled>
+                    Station Occupied
+                  </Button>
+                )}
               </div>
-            )}
-            <div className="space-y-4">
-              <Button
-                className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
-                onClick={() => window.open('https://xeryon.com/products/development-kits/', '_blank')}
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Buy Development Kit
-              </Button>
-              {station.status === "available" ? (
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => startSession.mutate()}
-                  disabled={startSession.isPending}
-                >
-                  Start Session
-                </Button>
-              ) : isMySession ? (
-                <Button 
-                  className="w-full hover:bg-destructive/90 transition-colors"
-                  variant="destructive"
-                  onClick={() => endSession.mutate()}
-                  disabled={endSession.isPending}
-                >
-                  End Session
-                </Button>
-              ) : (
-                <Button className="w-full" disabled>
-                  Station Occupied
-                </Button>
-              )}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={showThankYouDialog} onOpenChange={setShowThankYouDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thank You for Using Our Demo Station!</DialogTitle>
+            <DialogDescription className="pt-4">
+              We hope you enjoyed experiencing our high-precision actuators. Would you like to learn more about our products or get in touch with us?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 pt-4">
+            <Button
+              className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
+              onClick={handlePurchase}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Purchase Development Kit
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleContactUs}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Contact Us
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
