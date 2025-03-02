@@ -20,6 +20,7 @@ interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  updateUserAdmin(id: number, isAdmin: boolean): Promise<User>;
 
   getStations(): Promise<Station[]>;
   getStation(id: number): Promise<Station | undefined>;
@@ -216,6 +217,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(feedback.id, id))
       .returning();
     return result;
+  }
+  async updateUserAdmin(id: number, isAdmin: boolean): Promise<User> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ isAdmin })
+        .where(eq(users.id, id))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error("Error updating user admin status:", error);
+      throw error;
+    }
   }
 }
 
