@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { hashPassword } from "@shared/auth-utils";
 
 const app = express();
 app.use(express.json());
@@ -41,6 +43,25 @@ app.use((req, res, next) => {
 setupAuth(app);
 
 (async () => {
+  // Initialize admin user if it doesn't exist
+  try {
+    const admin = await storage.getUserByUsername("admin");
+    if (!admin) {
+      console.log("Creating admin user...");
+      const hashedPassword = await hashPassword("adminpass");
+      const user = await storage.createUser({
+        username: "admin",
+        password: hashedPassword,
+      });
+
+      // Update user to be admin after creation
+      await storage.updateUserAdmin(user.id, true);
+      console.log("Admin user created successfully");
+    }
+  } catch (error) {
+    console.error("Error initializing admin user:", error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

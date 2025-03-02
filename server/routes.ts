@@ -6,7 +6,6 @@ import { storage } from "./storage";
 import type { WebSocketMessage } from "@shared/schema";
 import { parse as parseCookie } from "cookie";
 import type { Session } from "express-session";
-import { hashPassword } from "@shared/auth-utils";
 
 function isAdmin(req: Express.Request) {
   return req.isAuthenticated() && req.user?.isAdmin;
@@ -17,30 +16,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
-
-  // Initialize admin user if it doesn't exist
-  app.get("/api/init", async (req, res) => {
-    try {
-      const admin = await storage.getUserByUsername("admin");
-      if (!admin) {
-        const hashedPassword = await hashPassword("adminpass");
-        const user = await storage.createUser({
-          username: "admin",
-          password: hashedPassword,
-        });
-
-        // Update user to be admin after creation
-        await storage.updateUserAdmin(user.id, true);
-        res.json({ message: "Admin user initialized" });
-      } else {
-        res.json({ message: "Admin user already exists" });
-      }
-    } catch (error) {
-      console.error("Error initializing admin:", error);
-      res.status(500).json({ message: "Failed to initialize admin user" });
-    }
-  });
-
 
   app.get("/api/stations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
