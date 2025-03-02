@@ -47,13 +47,14 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
 
-        const isValidPassword = comparePasswords(password, user.password);
+        const isValidPassword = await comparePasswords(password, user.password);
         console.log(`Password validation result for ${username}: ${isValidPassword}`);
 
         if (!isValidPassword) {
           return done(null, false, { message: "Invalid username or password" });
         }
 
+        console.log(`User authenticated successfully: ${username}`);
         return done(null, user);
       } catch (err) {
         console.error("Authentication error:", err);
@@ -67,10 +68,13 @@ export function setupAuth(app: Express) {
     try {
       const user = await storage.getUser(id);
       if (!user) {
+        console.log(`User not found during deserialization: ${id}`);
         return done(null, false);
       }
+      console.log(`User deserialized successfully: ${user.username}`);
       done(null, user);
     } catch (err) {
+      console.error("Deserialization error:", err);
       done(err);
     }
   });
@@ -82,9 +86,8 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const hashedPassword = hashPassword(req.body.password);
+      const hashedPassword = await hashPassword(req.body.password);
       console.log(`Registering new user: ${req.body.username}`);
-      console.log(`Hashed password format: ${hashedPassword.split('.').length} parts`);
 
       const user = await storage.createUser({
         ...req.body,
