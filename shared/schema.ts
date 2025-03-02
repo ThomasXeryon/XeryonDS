@@ -21,6 +21,8 @@ export const stations = pgTable("stations", {
   ipAddress: text("ip_address"),
   port: text("port"),
   secretKey: text("secret_key"),
+  // Preview image
+  previewImage: text("preview_image"), // URL or base64 of the preview image
 });
 
 export const sessionLogs = pgTable("session_logs", {

@@ -6,6 +6,9 @@ import { storage } from "./storage";
 import type { WebSocketMessage } from "@shared/schema";
 import { parse as parseCookie } from "cookie";
 import type { Session } from "express-session";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
 
 function isAdmin(req: Express.Request) {
   return req.isAuthenticated() && req.user?.isAdmin;
@@ -227,6 +230,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Send initial connection success message
     ws.send(JSON.stringify({ type: "connected" }));
   });
+
+  // Configure multer for image uploads
+  const upload = multer({
+    dest: 'uploads/',
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (_req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type'));
+      }
+    }
+  });
+
+  // Add image upload endpoint
+  app.post("/api/admin/stations/:id/image",
+    upload.single('image'),
+    async (req, res) => {
+      if (!isAdmin(req)) return res.sendStatus(403);
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+      const stationId = parseInt(req.params.id);
+      const staticPath = path.join(process.cwd(), 'public', 'uploads');
+
+      try {
+        // Ensure upload directory exists
+        await fs.mkdir(staticPath, { recursive: true });
+
+        // Move file to public directory
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        await fs.rename(req.file.path, path.join(staticPath, filename));
+
+        // Update station with image URL
+        const imageUrl = `/uploads/${filename}`;
+        await storage.updateStation(stationId, {
+          ...req.body,
+          previewImage: imageUrl
+        });
+
+        res.json({ url: imageUrl });
+      } catch (error) {
+        console.error("Error handling image upload:", error);
+        res.status(500).json({ message: "Failed to process image upload" });
+      }
+    }
+  );
 
   return httpServer;
 }

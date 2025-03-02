@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,7 @@ export default function StationsPage() {
   const [secretKey, setSecretKey] = useState("");
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -122,6 +123,36 @@ export default function StationsPage() {
       });
     },
   });
+
+  const uploadImage = useMutation({
+    mutationFn: async ({ stationId, file }: { stationId: number; file: File }) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`/api/admin/stations/${stationId}/image`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Failed to upload image');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      toast({
+        title: "Image uploaded",
+        description: "Preview image has been updated successfully",
+      });
+      setSelectedImage(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to upload image",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
 
   const handleStationClick = (station: Station) => {
     setSelectedStation(station);
@@ -231,6 +262,29 @@ export default function StationsPage() {
                 <CardTitle className="flex justify-between items-center">
                   <span>{station.name}</span>
                   <div className="flex items-center gap-2">
+                    <label
+                      className="cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            uploadImage.mutate({ stationId: station.id, file });
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-all"
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    </label>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -247,33 +301,42 @@ export default function StationsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-accent/5 group-hover:bg-accent/10 transition-colors">
-                      <span className="text-sm text-muted-foreground">Status</span>
-                      <StatusIndicator
-                        status={station.status as "available" | "in_use" | "connecting"}
+                <div className="space-y-4">
+                  {station.previewImage && (
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={station.previewImage}
+                        alt={`${station.name} preview`}
+                        className="w-full h-full object-cover"
                       />
                     </div>
-                    {station.ipAddress && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">IP Address</span>
-                        <span>{station.ipAddress}</span>
-                      </div>
-                    )}
-                    {station.port && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Port</span>
-                        <span>{station.port}</span>
-                      </div>
-                    )}
-                    {station.currentUserId && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Current Session</span>
-                        <span>Active</span>
-                      </div>
-                    )}
+                  )}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-accent/5 group-hover:bg-accent/10 transition-colors">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <StatusIndicator
+                      status={station.status as "available" | "in_use" | "connecting"}
+                    />
                   </div>
-                </CardContent>
+                  {station.ipAddress && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">IP Address</span>
+                      <span>{station.ipAddress}</span>
+                    </div>
+                  )}
+                  {station.port && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Port</span>
+                      <span>{station.port}</span>
+                    </div>
+                  )}
+                  {station.currentUserId && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Current Session</span>
+                      <span>Active</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>

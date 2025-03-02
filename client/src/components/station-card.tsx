@@ -200,7 +200,7 @@ export function StationCard({ station }: { station: Station }) {
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
-            // Fullscreen layout
+            // Fullscreen layout - keep camera feed full width
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
@@ -244,10 +244,25 @@ export function StationCard({ station }: { station: Station }) {
               </div>
             </div>
           ) : (
-            // Overview layout
+            // Overview layout - 50/50 split
             <div className="space-y-6">
-              <div className="aspect-video">
-                <CameraFeed stationId={station.id} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="aspect-video relative">
+                  <CameraFeed stationId={station.id} />
+                </div>
+                <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
+                  {station.previewImage ? (
+                    <img 
+                      src={station.previewImage} 
+                      alt={`${station.name} preview`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      No preview image available
+                    </div>
+                  )}
+                </div>
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
