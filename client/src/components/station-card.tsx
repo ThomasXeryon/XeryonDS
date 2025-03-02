@@ -8,7 +8,7 @@ import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Maximize2, Minimize2, CreditCard, Mail } from "lucide-react";
+import { Maximize2, Minimize2, CreditCard, Mail, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -16,13 +16,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export function StationCard({ station }: { station: Station }) {
   const { user } = useAuth();
   const isMySession = station.currentUserId === user?.id;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const [wsConnection, setWsConnection] = useState<{connected: boolean, send: (msg: any) => void}>({ 
     connected: false,
     send: () => {} 
@@ -109,6 +113,30 @@ export function StationCard({ station }: { station: Station }) {
     },
   });
 
+  const submitFeedback = useMutation({
+    mutationFn: async (feedback: string) => {
+      const res = await apiRequest("POST", "/api/feedback", {
+        type: "feedback",
+        message: feedback,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thank you for your feedback!",
+        description: "Your feedback has been submitted successfully.",
+      });
+      setFeedback("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit feedback",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCommand = (command: string, value?: number) => {
     if (wsConnection.connected) {
       wsConnection.send({
@@ -124,11 +152,17 @@ export function StationCard({ station }: { station: Station }) {
   };
 
   const handleContactUs = () => {
-    window.location.href = "mailto:info@xeryon.com";
+    window.open('https://xeryon.com/contact/', '_blank');
   };
 
   const handlePurchase = () => {
     window.open('https://xeryon.com/products/development-kits/', '_blank');
+  };
+
+  const handleFeedbackSubmit = () => {
+    if (feedback.trim()) {
+      submitFeedback.mutate(feedback);
+    }
   };
 
   const cardClasses = isFullscreen 
@@ -257,22 +291,43 @@ export function StationCard({ station }: { station: Station }) {
               We hope you enjoyed experiencing our high-precision actuators. Would you like to learn more about our products or get in touch with us?
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4 pt-4">
-            <Button
-              className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
-              onClick={handlePurchase}
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Purchase Development Kit
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleContactUs}
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Contact Us
-            </Button>
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4">
+              <Button
+                className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
+                onClick={handlePurchase}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Purchase Development Kit
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleContactUs}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Us
+              </Button>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <Label htmlFor="feedback">Quick Feedback</Label>
+              <Textarea
+                id="feedback"
+                placeholder="Share your experience with the demo station..."
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <Button 
+                className="w-full"
+                onClick={handleFeedbackSubmit}
+                disabled={submitFeedback.isPending || !feedback.trim()}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Submit Feedback
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
