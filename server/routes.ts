@@ -6,9 +6,10 @@ import { storage } from "./storage";
 import type { WebSocketMessage } from "@shared/schema";
 import { parse as parseCookie } from "cookie";
 import type { Session } from "express-session";
-import path from 'path';
-import fs from 'fs/promises';
-import express from 'express';
+
+function isAdmin(req: Express.Request) {
+  return req.isAuthenticated() && req.user?.isAdmin;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -84,6 +85,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting feedback:", error);
       res.status(500).json({ message: "Failed to get feedback" });
+    }
+  });
+
+  // Settings routes
+  app.get("/api/admin/settings", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    try {
+      const settings = await storage.getSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error getting settings:", error);
+      res.status(500).json({ message: "Failed to get settings" });
+    }
+  });
+
+  app.post("/api/admin/settings", async (req, res) => {
+    if (!isAdmin(req)) return res.sendStatus(403);
+    const { rpiHost, rpiPort, rpiUsername, rpiPassword } = req.body;
+
+    try {
+      const settings = await storage.updateSettings({
+        rpiHost,
+        rpiPort,
+        rpiUsername,
+        rpiPassword
+      });
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      res.status(500).json({ message: "Failed to update settings" });
     }
   });
 
@@ -197,12 +228,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.send(JSON.stringify({ type: "connected" }));
   });
 
-  // Add static file serving for images
-  app.use(express.static('public'));
-
   return httpServer;
-}
-
-function isAdmin(req: Express.Request) {
-  return req.isAuthenticated() && req.user?.isAdmin;
 }

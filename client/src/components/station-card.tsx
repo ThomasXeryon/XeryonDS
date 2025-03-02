@@ -137,9 +137,13 @@ export function StationCard({ station }: { station: Station }) {
     },
   });
 
-  const handleFeedbackSubmit = () => {
-    if (feedback.trim()) {
-      submitFeedback.mutate(feedback);
+  const handleCommand = (command: string, value?: number) => {
+    if (wsConnection.connected) {
+      wsConnection.send({
+        type: command,
+        value,
+        stationId: station.id
+      });
     }
   };
 
@@ -153,6 +157,12 @@ export function StationCard({ station }: { station: Station }) {
 
   const handlePurchase = () => {
     window.open('https://xeryon.com/products/development-kits/', '_blank');
+  };
+
+  const handleFeedbackSubmit = () => {
+    if (feedback.trim()) {
+      submitFeedback.mutate(feedback);
+    }
   };
 
   const cardClasses = isFullscreen 
@@ -193,17 +203,8 @@ export function StationCard({ station }: { station: Station }) {
             // Fullscreen layout
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="aspect-video rounded-lg overflow-hidden">
-                    <CameraFeed stationId={station.id} />
-                  </div>
-                  <div className="aspect-video bg-accent/5 rounded-lg flex items-center justify-center overflow-hidden">
-                    <img 
-                      src="/actuator-preview.jpg" 
-                      alt="Xeryon Actuator"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                <div className="h-[600px]">
+                  <CameraFeed stationId={station.id} />
                 </div>
                 {station.sessionStart && isMySession && (
                   <div className="mb-8">
@@ -245,17 +246,8 @@ export function StationCard({ station }: { station: Station }) {
           ) : (
             // Overview layout
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="aspect-video rounded-lg overflow-hidden">
-                  <CameraFeed stationId={station.id} />
-                </div>
-                <div className="aspect-video bg-accent/5 rounded-lg flex items-center justify-center overflow-hidden">
-                  <img 
-                    src="/actuator-preview.jpg" 
-                    alt="Xeryon Actuator"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              <div className="aspect-video">
+                <CameraFeed stationId={station.id} />
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
