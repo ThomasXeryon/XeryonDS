@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { sql as drizzleSql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -36,7 +37,7 @@ export const feedback = pgTable("feedback", {
   userId: integer("user_id").references(() => users.id),
   type: text("type").notNull(), // 'feedback' or 'bug'
   message: text("message").notNull(),
-  createdAt: timestamp("created_at").notNull().default(Date.now()),
+  createdAt: timestamp("created_at").notNull().default(drizzleSql`CURRENT_TIMESTAMP`),
   status: text("status").notNull().default("pending"), // pending, reviewed, resolved
 });
 

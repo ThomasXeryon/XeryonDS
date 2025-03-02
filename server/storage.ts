@@ -1,22 +1,12 @@
-import { users, stations, sessionLogs, type User, type InsertUser, type Station, type SessionLog } from "@shared/schema";
+import type { SessionStore } from 'express-session';
+import { users, stations, sessionLogs, feedback, type User, type InsertUser, type Station, type SessionLog, type Feedback, type InsertFeedback } from "@shared/schema";
+import { db } from "./db";
+import { eq, sql } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
-import { hashPassword } from "@shared/auth-utils";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
-
-//Inferring types based on context.  This is an assumption, you might need to adjust based on your actual schema.
-type Feedback = {
-    id: number;
-    userId: number;
-    type: string;
-    message: string;
-    createdAt: Date;
-    status: "pending" | "reviewed" | "resolved";
-};
-
-type InsertFeedback = Omit<Feedback, 'id' | 'createdAt' | 'status'>;
-
+const PostgresSessionStore = connectPg(session);
 
 interface StationUpdate {
   name: string;
@@ -25,7 +15,7 @@ interface StationUpdate {
   secretKey: string;
 }
 
-export interface IStorage {
+interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -47,231 +37,166 @@ export interface IStorage {
   createFeedback(userId: number, feedback: InsertFeedback): Promise<Feedback>;
   updateFeedbackStatus(id: number, status: "pending" | "reviewed" | "resolved"): Promise<Feedback>;
 
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private stations: Map<number, Station>;
-  private sessionLogs: Map<number, SessionLog>;
-  private feedback: Map<number, Feedback>;
-  private currentId: number;
-  sessionStore: session.SessionStore;
+export class DatabaseStorage implements IStorage {
+  sessionStore: SessionStore;
 
   constructor() {
-    this.users = new Map();
-    this.stations = new Map();
-    this.sessionLogs = new Map();
-    this.feedback = new Map();
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
-
-    // Set initial ID to be higher than any pre-initialized data
-    this.currentId = 1;
-
-    // Initialize admin user first
-    const adminUser: User = {
-      id: this.currentId++,
-      username: "admin",
-      password: hashPassword("adminpass"),
-      isAdmin: true,
-    };
-    this.users.set(adminUser.id, adminUser);
-
-    // Initialize demo stations
-    const station1: Station = {
-      id: this.currentId++,
-      name: "Demo Station 1",
-      status: "available",
-      currentUserId: null,
-      sessionStart: null,
-      isActive: true,
-      ipAddress: null,
-      port: null,
-      secretKey: null,
-    };
-
-    const station2: Station = {
-      id: this.currentId++,
-      name: "Demo Station 2",
-      status: "available",
-      currentUserId: null,
-      sessionStart: null,
-      isActive: true,
-      ipAddress: null,
-      port: null,
-      secretKey: null,
-    };
-
-    this.stations.set(station1.id, station1);
-    this.stations.set(station2.id, station2);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id, isAdmin: false };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getStations(): Promise<Station[]> {
-    return Array.from(this.stations.values()).filter(station => station.isActive);
+    return await db.select().from(stations).where(eq(stations.isActive, true));
   }
 
   async getStation(id: number): Promise<Station | undefined> {
-    return this.stations.get(id);
+    const [station] = await db.select().from(stations).where(eq(stations.id, id));
+    return station;
   }
 
   async createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station> {
-    const id = this.currentId++;
-    const station: Station = {
-      id,
-      name,
-      status: "available",
-      currentUserId: null,
-      sessionStart: null,
-      isActive: true,
-      ipAddress,
-      port,
-      secretKey,
-    };
-    this.stations.set(id, station);
+    const [station] = await db
+      .insert(stations)
+      .values({
+        name,
+        ipAddress,
+        port,
+        secretKey,
+        status: "available",
+        isActive: true,
+      })
+      .returning();
     return station;
   }
 
   async updateStationSession(id: number, userId: number | null): Promise<Station> {
-    const station = await this.getStation(id);
-    if (!station) throw new Error("Station not found");
-
-    const updatedStation: Station = {
-      ...station,
-      status: userId ? "in_use" : "available",
-      currentUserId: userId,
-      sessionStart: userId ? new Date() : null,
-    };
-
-    this.stations.set(id, updatedStation);
+    const [station] = await db
+      .update(stations)
+      .set({
+        status: userId ? "in_use" : "available",
+        currentUserId: userId,
+        sessionStart: userId ? new Date() : null,
+      })
+      .where(eq(stations.id, id))
+      .returning();
 
     if (userId) {
-      // Create session log when starting session
       await this.createSessionLog(id, userId);
     } else {
-      // Update session log when ending session
-      const log = Array.from(this.sessionLogs.values())
-        .find(log => log.stationId === id && !log.endTime);
+      const [log] = await db
+        .select()
+        .from(sessionLogs)
+        .where(eq(sessionLogs.stationId, id))
+        .where(eq(sessionLogs.endTime, null));
+
       if (log) {
         await this.updateSessionLog(log.id, new Date());
       }
     }
 
-    return updatedStation;
+    return station;
   }
 
   async deleteStation(id: number): Promise<void> {
-    const station = await this.getStation(id);
-    if (station) {
-      station.isActive = false;
-      this.stations.set(id, station);
-    }
+    await db
+      .update(stations)
+      .set({ isActive: false })
+      .where(eq(stations.id, id));
+  }
+
+  async updateStation(id: number, update: StationUpdate): Promise<Station> {
+    const [station] = await db
+      .update(stations)
+      .set(update)
+      .where(eq(stations.id, id))
+      .returning();
+    return station;
   }
 
   async getSessionLogs(): Promise<SessionLog[]> {
-    return Array.from(this.sessionLogs.values());
+    return await db.select().from(sessionLogs);
   }
 
   async createSessionLog(stationId: number, userId: number): Promise<SessionLog> {
-    const id = this.currentId++;
-    const log: SessionLog = {
-      id,
-      stationId,
-      userId,
-      startTime: new Date(),
-      endTime: null,
-      commandCount: 0,
-    };
-    this.sessionLogs.set(id, log);
+    const [log] = await db
+      .insert(sessionLogs)
+      .values({
+        stationId,
+        userId,
+        startTime: new Date(),
+        commandCount: 0,
+      })
+      .returning();
     return log;
   }
 
   async updateSessionLog(id: number, endTime: Date): Promise<SessionLog> {
-    const log = this.sessionLogs.get(id);
-    if (!log) throw new Error("Session log not found");
-
-    const updatedLog: SessionLog = {
-      ...log,
-      endTime,
-    };
-    this.sessionLogs.set(id, updatedLog);
-    return updatedLog;
+    const [log] = await db
+      .update(sessionLogs)
+      .set({ endTime })
+      .where(eq(sessionLogs.id, id))
+      .returning();
+    return log;
   }
 
   async incrementCommandCount(sessionLogId: number): Promise<void> {
-    const log = this.sessionLogs.get(sessionLogId);
-    if (!log) throw new Error("Session log not found");
-
-    log.commandCount++;
-    this.sessionLogs.set(sessionLogId, log);
+    await db
+      .update(sessionLogs)
+      .set({
+        commandCount: sql`${sessionLogs.commandCount} + 1`
+      })
+      .where(eq(sessionLogs.id, sessionLogId));
   }
 
   async getFeedback(): Promise<Feedback[]> {
-    return Array.from(this.feedback.values());
+    return await db.select().from(feedback);
   }
 
-  async createFeedback(userId: number, insertFeedback: InsertFeedback): Promise<Feedback> {
-    const id = this.currentId++;
-    const feedback: Feedback = {
-      id,
-      userId,
-      ...insertFeedback,
-      createdAt: new Date(),
-      status: "pending"
-    };
-    this.feedback.set(id, feedback);
-    return feedback;
+  async createFeedback(userId: number, feedbackData: InsertFeedback): Promise<Feedback> {
+    const [result] = await db
+      .insert(feedback)
+      .values({
+        userId,
+        ...feedbackData,
+        createdAt: new Date(),
+        status: "pending",
+      })
+      .returning();
+    return result;
   }
 
   async updateFeedbackStatus(id: number, status: "pending" | "reviewed" | "resolved"): Promise<Feedback> {
-    const feedback = this.feedback.get(id);
-    if (!feedback) throw new Error("Feedback not found");
-
-    const updatedFeedback: Feedback = {
-      ...feedback,
-      status
-    };
-    this.feedback.set(id, updatedFeedback);
-    return updatedFeedback;
-  }
-
-  async updateStation(id: number, update: StationUpdate): Promise<Station> {
-    const station = await this.getStation(id);
-    if (!station) throw new Error("Station not found");
-
-    const updatedStation: Station = {
-      ...station,
-      name: update.name,
-      ipAddress: update.ipAddress,
-      port: update.port,
-      secretKey: update.secretKey,
-    };
-
-    this.stations.set(id, updatedStation);
-    return updatedStation;
+    const [result] = await db
+      .update(feedback)
+      .set({ status })
+      .where(eq(feedback.id, id))
+      .returning();
+    return result;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
