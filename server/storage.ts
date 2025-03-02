@@ -51,13 +51,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      return undefined;
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -65,12 +75,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    try {
+      const [user] = await db.insert(users).values(insertUser).returning();
+      return user;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
   }
 
   async getStations(): Promise<Station[]> {
-    return await db.select().from(stations).where(eq(stations.isActive, true));
+    try {
+      return await db.select().from(stations).where(eq(stations.isActive, true));
+    } catch (error) {
+      console.error("Error getting stations:", error);
+      return [];
+    }
   }
 
   async getStation(id: number): Promise<Station | undefined> {
@@ -111,7 +131,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(sessionLogs)
         .where(eq(sessionLogs.stationId, id))
-        .where(eq(sessionLogs.endTime, null));
+        .where(sql`${sessionLogs.endTime} IS NULL`);
 
       if (log) {
         await this.updateSessionLog(log.id, new Date());
