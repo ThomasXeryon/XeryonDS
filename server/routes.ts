@@ -6,6 +6,14 @@ import { storage } from "./storage";
 import type { WebSocketMessage } from "@shared/schema";
 import { parse as parseCookie } from "cookie";
 import type { Session } from "express-session";
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs/promises';
+import express from 'express';
+
+
+const execAsync = promisify(exec);
 
 function isAdmin(req: Express.Request) {
   return req.isAuthenticated() && req.user?.isAdmin;
@@ -227,6 +235,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Send initial connection success message
     ws.send(JSON.stringify({ type: "connected" }));
   });
+
+  // Add more detailed error handling and logging for model conversion
+  app.post('/api/models/convert', async (req, res) => {
+    if (!req.body.file || !req.body.filename) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    try {
+      // Create uploads directory if it doesn't exist
+      await fs.mkdir('uploads', { recursive: true });
+      await fs.mkdir('public/models', { recursive: true });
+
+      // Decode base64 and save to file
+      const base64Data = req.body.file.replace(/^data:.*;base64,/, '');
+      const inputPath = path.join('uploads', req.body.filename);
+      await fs.writeFile(inputPath, Buffer.from(base64Data, 'base64'));
+
+      const outputPath = path.join('public/models', `${Date.now()}.glb`);
+
+      // Test the command execution environment
+      try {
+        const { stdout: testOutput } = await execAsync('which DRAWEXE');
+        console.log('OpenCascade DRAWEXE location:', testOutput);
+      } catch (cmdError) {
+        console.error('Error finding OpenCascade DRAWEXE:', cmdError);
+        throw new Error('OpenCascade DRAWEXE not found');
+      }
+
+      // Convert STEP to GLB using OpenCascade
+      try {
+        // Note: This command needs to be adjusted based on the correct DRAWEXE arguments
+        const drawScript = `
+          pload MODELING
+          stepread ${inputPath}
+          inclib
+          write -binary ${outputPath}
+          quit
+        `;
+
+        const scriptPath = path.join('uploads', 'convert.tcl');
+        await fs.writeFile(scriptPath, drawScript);
+
+        const { stdout, stderr } = await execAsync(`DRAWEXE ${scriptPath}`);
+        console.log('Conversion output:', stdout);
+        if (stderr) console.error('Conversion stderr:', stderr);
+
+        // Clean up script file
+        await fs.unlink(scriptPath);
+      } catch (convError) {
+        console.error('Conversion error:', convError);
+        throw new Error('Failed to convert 3D model');
+      }
+
+      // Clean up input file
+      await fs.unlink(inputPath);
+
+      res.json({
+        url: `/models/${path.basename(outputPath)}`
+      });
+    } catch (error) {
+      console.error('Error converting file:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Failed to convert file' });
+    }
+  });
+
+  // Add static file serving for converted models
+  app.use('/models', express.static('public/models'));
 
   return httpServer;
 }
