@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2, Settings, Image } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -36,21 +36,6 @@ export default function StationsPage() {
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
   });
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "station_update") {
-        queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      }
-    };
-
-    return () => ws.close();
-  }, []);
 
   const createStation = useMutation({
     mutationFn: async ({ name, ipAddress, port, secretKey }: { name: string; ipAddress: string; port: string; secretKey: string }) => {
@@ -122,8 +107,7 @@ export default function StationsPage() {
 
   const deleteStation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/stations/${id}`);
-      return await res.json();
+      await apiRequest("DELETE", `/api/admin/stations/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
@@ -169,7 +153,6 @@ export default function StationsPage() {
       });
     },
   });
-
 
   const handleStationClick = (station: Station) => {
     setSelectedStation(station);
@@ -413,23 +396,37 @@ export default function StationsPage() {
           </DialogHeader>
           {selectedStation && (
             <div className="space-y-4 pt-4">
-              <Input
-                placeholder="Station Name"
-                value={selectedStation.name}
-                onChange={(e) => setSelectedStation({ ...selectedStation, name: e.target.value })}
-              />
-              <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Station Name</Label>
                 <Input
+                  id="edit-name"
+                  placeholder="Station Name"
+                  value={selectedStation.name}
+                  onChange={(e) => setSelectedStation({ ...selectedStation, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-ip">IP Address</Label>
+                <Input
+                  id="edit-ip"
                   placeholder="IP Address (e.g. 192.168.1.100)"
                   value={selectedStation.ipAddress || ""}
                   onChange={(e) => setSelectedStation({ ...selectedStation, ipAddress: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-port">Port</Label>
                 <Input
+                  id="edit-port"
                   placeholder="Port (e.g. 8080)"
                   value={selectedStation.port || ""}
                   onChange={(e) => setSelectedStation({ ...selectedStation, port: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-secret">Secret Key</Label>
                 <Input
+                  id="edit-secret"
                   placeholder="Secret Key"
                   type="password"
                   value={selectedStation.secretKey || ""}
