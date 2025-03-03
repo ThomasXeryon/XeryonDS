@@ -280,10 +280,15 @@ export default function StationsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-all"
+                        className="h-8 w-8 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-colors"
                         title="Upload preview image"
+                        disabled={uploadImage.isPending}
                       >
-                        <Upload className="h-4 w-4" />
+                        {uploadImage.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
                       </Button>
                     </label>
                     <Button
