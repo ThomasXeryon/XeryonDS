@@ -9,6 +9,7 @@ import type { Session } from "express-session";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
+import express from "express";
 
 function isAdmin(req: Express.Request) {
   return req.isAuthenticated() && req.user?.isAdmin;
@@ -19,6 +20,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
   app.get("/api/stations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -268,7 +272,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update station with image URL
         const imageUrl = `/uploads/${filename}`;
         await storage.updateStation(stationId, {
-          ...req.body,
+          name: req.body.name || '',
+          ipAddress: req.body.ipAddress || '',
+          port: req.body.port || '',
+          secretKey: req.body.secretKey || '',
           previewImage: imageUrl
         });
 
