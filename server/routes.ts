@@ -22,7 +22,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
   // Serve uploaded files statically
-  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+  const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+  // Ensure uploads directory exists
+  fs.mkdir(uploadsPath, { recursive: true })
+    .catch(err => console.error('Error creating uploads directory:', err));
+  app.use('/uploads', express.static(uploadsPath));
 
   app.get("/api/stations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -237,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Configure multer for image uploads
   const upload = multer({
-    dest: 'uploads/',
+    dest: uploadsPath,
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB limit
     },
@@ -262,8 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const staticPath = path.join(process.cwd(), 'public', 'uploads');
 
       try {
-        // Ensure upload directory exists
-        await fs.mkdir(staticPath, { recursive: true });
+        // Ensure upload directory exists - This is now redundant due to earlier mkdir call.
+        //await fs.mkdir(staticPath, { recursive: true });
 
         // Move file to public directory
         const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
