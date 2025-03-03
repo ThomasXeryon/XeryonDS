@@ -9,7 +9,7 @@ import AdminPage from "@/pages/admin-page";
 import AnalyticsPage from "@/pages/admin/analytics-page";
 import StationsPage from "@/pages/admin/stations-page";
 import UsersPage from "@/pages/admin/users-page";
-import SettingsPage from "@/pages/admin/settings-page"; //New import
+import SettingsPage from "@/pages/admin/settings-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
 import { SiteTour } from "@/components/site-tour";
@@ -32,20 +32,17 @@ function AuthenticatedComponents() {
 
 function Router() {
   return (
-    <>
-      <Switch>
-        <ProtectedRoute path="/" component={HomePage} />
-        <ProtectedRoute path="/admin" component={AdminPage} />
-        <ProtectedRoute path="/admin/analytics" component={AnalyticsPage} />
-        <ProtectedRoute path="/admin/stations" component={StationsPage} />
-        <ProtectedRoute path="/admin/users" component={UsersPage} />
-        <ProtectedRoute path="/admin/feedback" component={FeedbackPage} />
-        <ProtectedRoute path="/admin/settings" component={SettingsPage} /> {/* New route */}
-        <Route path="/auth" component={AuthPage} />
-        <Route component={NotFound} />
-      </Switch>
-      <AuthenticatedComponents />
-    </>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/" component={HomePage} />
+      <ProtectedRoute path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/admin/stations" component={StationsPage} />
+      <ProtectedRoute path="/admin/users" component={UsersPage} />
+      <ProtectedRoute path="/admin/analytics" component={AnalyticsPage} />
+      <ProtectedRoute path="/admin/feedback" component={FeedbackPage} />
+      <ProtectedRoute path="/admin/settings" component={SettingsPage} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
@@ -55,6 +52,7 @@ function App() {
       <AuthProvider>
         <Router />
         <Toaster />
+        <AuthenticatedComponents />
       </AuthProvider>
     </QueryClientProvider>
   );
