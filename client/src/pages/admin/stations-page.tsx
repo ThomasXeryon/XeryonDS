@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useEffect } from "react";
 import { StatusIndicator } from "@/components/station-status";
 
@@ -30,6 +31,7 @@ export default function StationsPage() {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { data: stations, isLoading } = useQuery<Station[]>({
     queryKey: ["/api/stations"],
@@ -53,7 +55,20 @@ export default function StationsPage() {
   const createStation = useMutation({
     mutationFn: async ({ name, ipAddress, port, secretKey }: { name: string; ipAddress: string; port: string; secretKey: string }) => {
       const res = await apiRequest("POST", "/api/admin/stations", { name, ipAddress, port, secretKey });
-      return await res.json();
+      const station = await res.json();
+
+      // If we have a selected image, upload it right after creating the station
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        await fetch(`/api/admin/stations/${station.id}/image`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+      }
+
+      return station;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
@@ -65,6 +80,8 @@ export default function StationsPage() {
       setIpAddress("");
       setPort("");
       setSecretKey("");
+      setSelectedImage(null);
+      setIsAddDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({
@@ -197,7 +214,7 @@ export default function StationsPage() {
             </Button>
             <h1 className="text-2xl font-bold">Manage Stations</h1>
           </div>
-          <Dialog>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90 transition-colors">
                 <Plus className="h-4 w-4 mr-2" />
@@ -209,29 +226,69 @@ export default function StationsPage() {
                 <DialogTitle>Add New Demo Station</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
-                <Input
-                  placeholder="Station Name"
-                  value={newStationName}
-                  onChange={(e) => setNewStationName(e.target.value)}
-                />
-                <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Station Name</Label>
                   <Input
+                    id="name"
+                    placeholder="Station Name"
+                    value={newStationName}
+                    onChange={(e) => setNewStationName(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="preview">Preview Image</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="preview"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedImage(file);
+                        }
+                      }}
+                    />
+                    {selectedImage && (
+                      <div className="text-sm text-muted-foreground">
+                        {selectedImage.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ip">IP Address</Label>
+                  <Input
+                    id="ip"
                     placeholder="IP Address (e.g. 192.168.1.100)"
                     value={ipAddress}
                     onChange={(e) => setIpAddress(e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="port">Port</Label>
                   <Input
+                    id="port"
                     placeholder="Port (e.g. 8080)"
                     value={port}
                     onChange={(e) => setPort(e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="secret">Secret Key</Label>
                   <Input
+                    id="secret"
                     placeholder="Secret Key"
                     type="password"
                     value={secretKey}
                     onChange={(e) => setSecretKey(e.target.value)}
                   />
                 </div>
+
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
                   onClick={() => createStation.mutate({ name: newStationName, ipAddress, port, secretKey })}
