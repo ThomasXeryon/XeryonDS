@@ -9,10 +9,11 @@ import { pool } from "./db";
 const PostgresSessionStore = connectPg(session);
 
 interface StationUpdate {
-  name: string;
-  ipAddress: string;
-  port: string;
-  secretKey: string;
+  name?: string;
+  ipAddress?: string;
+  port?: string;
+  secretKey?: string;
+  isActive?: boolean;
 }
 
 interface IStorage {
@@ -27,7 +28,7 @@ interface IStorage {
   createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
-  updateStation(id: number, update: StationUpdate & { isActive?: boolean }): Promise<Station>;
+  updateStation(id: number, update: Partial<StationUpdate>): Promise<Station>;
 
   getSessionLogs(): Promise<SessionLog[]>;
   createSessionLog(stationId: number, userId: number): Promise<SessionLog>;
@@ -150,7 +151,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(stations.id, id));
   }
 
-  async updateStation(id: number, update: StationUpdate & { isActive?: boolean }): Promise<Station> {
+  async updateStation(id: number, update: Partial<StationUpdate>): Promise<Station> {
     // Remove undefined values from the update object
     const filteredUpdate = Object.fromEntries(
       Object.entries(update).filter(([_, value]) => value !== undefined)
@@ -161,12 +162,17 @@ export class DatabaseStorage implements IStorage {
       throw new Error("No valid update values provided");
     }
 
-    const [station] = await db
-      .update(stations)
-      .set(filteredUpdate)
-      .where(eq(stations.id, id))
-      .returning();
-    return station;
+    try {
+      const [station] = await db
+        .update(stations)
+        .set(filteredUpdate)
+        .where(eq(stations.id, id))
+        .returning();
+      return station;
+    } catch (error) {
+      console.error("Error updating station:", error);
+      throw new Error(`Failed to update station: ${error.message}`);
+    }
   }
 
   async getSessionLogs(): Promise<SessionLog[]> {
