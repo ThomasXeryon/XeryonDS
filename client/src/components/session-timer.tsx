@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 
 const SESSION_DURATION = 5 * 60; // 5 minutes in seconds
 
-export function SessionTimer({ startTime }: { startTime: Date }) {
+export function SessionTimer({ startTime, onTimeout }: { startTime: Date; onTimeout: () => void }) {
   const [timeLeft, setTimeLeft] = useState(SESSION_DURATION);
 
   useEffect(() => {
@@ -14,11 +14,12 @@ export function SessionTimer({ startTime }: { startTime: Date }) {
 
       if (remaining === 0) {
         clearInterval(interval);
+        onTimeout(); // Trigger session end when time is up
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [startTime]);
+  }, [startTime, onTimeout]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

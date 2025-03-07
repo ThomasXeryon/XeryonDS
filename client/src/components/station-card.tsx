@@ -56,8 +56,8 @@ export function StationCard({ station }: { station: Station }) {
     wsRef.current.onclose = () => {
       setWsConnection({ connected: false, send: () => {} });
       toast({
-        title: "Disconnected from control system",
-        description: "Please refresh the page to reconnect",
+        title: "Connection lost",
+        description: "Your session has ended. Thank you for using our demo station.",
         variant: "destructive",
       });
     };
@@ -208,7 +208,13 @@ export function StationCard({ station }: { station: Station }) {
                 </div>
                 {station.sessionStart && isMySession && (
                   <div className="mb-8">
-                    <SessionTimer startTime={station.sessionStart} />
+                    <SessionTimer 
+                      startTime={station.sessionStart} 
+                      onTimeout={() => {
+                        // Automatically end session when timer expires
+                        endSession.mutate();
+                      }}
+                    />
                   </div>
                 )}
               </div>
@@ -266,7 +272,7 @@ export function StationCard({ station }: { station: Station }) {
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
-                  <SessionTimer startTime={station.sessionStart} />
+                  <SessionTimer startTime={station.sessionStart} onTimeout={() => endSession.mutate()}/>
                 </div>
               )}
               <div className="space-y-4">
