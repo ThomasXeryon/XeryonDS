@@ -37,6 +37,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Start a station session
+  app.post("/api/stations/:id/start", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+
+    try {
+      const station = await storage.startSession(id, req.user!.id);
+      res.json(station);
+    } catch (error) {
+      res.status(404).json({ message: "Station not found or unavailable" });
+    }
+  });
+
+  // End a station session
+  app.post("/api/stations/:id/end", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+
+    try {
+      const station = await storage.endSession(id);
+      res.json(station);
+    } catch (error) {
+      res.status(404).json({ message: "Station not found" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);

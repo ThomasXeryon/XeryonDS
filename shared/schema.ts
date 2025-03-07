@@ -18,6 +18,10 @@ export type Station = {
   id: number;
   name: string;
   status: "available" | "in_use";
+  currentSession?: {
+    userId: number;
+    startTime: string;
+  };
 };
 
 export type InsertUser = typeof insertUserSchema._type;

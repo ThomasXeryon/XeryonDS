@@ -17,7 +17,9 @@ interface IStorage {
 
   // Station methods
   getStations(): Promise<Station[]>;
-  updateStationStatus(id: number, status: "available" | "in_use"): Promise<Station>;
+  updateStationStatus(id: number, status: "available" | "in_use", userId?: number): Promise<Station>;
+  startSession(stationId: number, userId: number): Promise<Station>;
+  endSession(stationId: number): Promise<Station>;
 
   sessionStore: SessionStore;
 }
@@ -124,14 +126,30 @@ export class FileStorage implements IStorage {
     return this.stations;
   }
 
-  async updateStationStatus(id: number, status: "available" | "in_use"): Promise<Station> {
+  async updateStationStatus(id: number, status: "available" | "in_use", userId?: number): Promise<Station> {
     const station = this.stations.find(s => s.id === id);
     if (!station) {
       throw new Error('Station not found');
     }
     station.status = status;
+    if (status === "in_use" && userId) {
+      station.currentSession = {
+        userId,
+        startTime: new Date().toISOString()
+      };
+    } else if (status === "available") {
+      delete station.currentSession;
+    }
     await this.saveStations();
     return station;
+  }
+
+  async startSession(stationId: number, userId: number): Promise<Station> {
+    return this.updateStationStatus(stationId, "in_use", userId);
+  }
+
+  async endSession(stationId: number): Promise<Station> {
+    return this.updateStationStatus(stationId, "available");
   }
 }
 
