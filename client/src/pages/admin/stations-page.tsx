@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -149,29 +149,6 @@ export default function StationsPage() {
     onError: (error: Error) => {
       toast({
         title: "Failed to upload image",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const toggleStation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/admin/stations/${id}`, {
-        isActive
-      });
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      toast({
-        title: "Station updated",
-        description: "Station visibility has been updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update station",
         description: error.message,
         variant: "destructive",
       });
@@ -355,30 +332,6 @@ export default function StationsPage() {
                         )}
                       </Button>
                     </label>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-8 w-8 opacity-0 group-hover:opacity-100 transition-all",
-                        station.isActive
-                          ? "hover:bg-destructive hover:text-destructive-foreground"
-                          : "hover:bg-primary hover:text-primary-foreground"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleStation.mutate({ id: station.id, isActive: !station.isActive });
-                      }}
-                      disabled={toggleStation.isPending}
-                      title={station.isActive ? "Disable station" : "Enable station"}
-                    >
-                      {toggleStation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : station.isActive ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
