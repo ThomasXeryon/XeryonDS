@@ -1,0 +1,61 @@
+const express = require('express');
+const { WebSocketServer } = require('ws');
+const path = require('path');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+const server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
+
+const wss = new WebSocketServer({ server });
+const rpis = new Map(); // Store RPi connections
+const uiClients = new Set(); // Store UI clients
+
+wss.on('connection', (ws, req) => {
+    const url = req.url;
+
+    if (url.startsWith('/rpi/')) {
+        const rpiId = url.split('/')[2]; // e.g., /rpi/rpi1 -> rpi1
+        rpis.set(rpiId, ws);
+        console.log(`RPi ${rpiId} connected`);
+
+        ws.on('message', (message) => {
+            console.log(`From ${rpiId}: ${message}`);
+            const data = JSON.parse(message);
+            // Relay RPi response to UI clients
+            uiClients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({ rpiId, message: data.message }));
+                }
+            });
+        });
+
+        ws.on('close', () => {
+            rpis.delete(rpiId);
+            console.log(`RPi ${rpiId} disconnected`);
+        });
+    } else {
+        uiClients.add(ws);
+        console.log('UI client connected');
+
+        ws.on('message', (message) => {
+            const data = JSON.parse(message);
+            const targetRpi = rpis.get(data.rpiId);
+            if (targetRpi && targetRpi.readyState === WebSocket.OPEN) {
+                targetRpi.send(JSON.stringify({ command: data.command }));
+                console.log(`Sent to ${data.rpiId}: ${data.command}`);
+            } else {
+                ws.send(JSON.stringify({ error: `RPi ${data.rpiId} not connected` }));
+            }
+        });
+
+        ws.on('close', () => {
+            uiClients.delete(ws);
+            console.log('UI client disconnected');
+        });
+    }
+});

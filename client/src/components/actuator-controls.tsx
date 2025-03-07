@@ -6,11 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ActuatorControlsProps {
   stationId: number;
+  rpiId: string; // Add RPi ID prop
   enabled: boolean;
   onConnectionChange: (connected: boolean, send: (msg: any) => void) => void;
 }
 
-export function ActuatorControls({ stationId, enabled, onConnectionChange }: ActuatorControlsProps) {
+export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange }: ActuatorControlsProps) {
   const wsRef = useRef<WebSocket>();
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
@@ -35,8 +36,8 @@ export function ActuatorControls({ stationId, enabled, onConnectionChange }: Act
       setIsConnected(false);
       onConnectionChange(false, () => {});
       toast({
-        title: "Disconnected from control system",
-        description: "Please refresh the page to reconnect",
+        title: "Connection lost",
+        description: "Your session has ended. Thank you for using our demo station.",
         variant: "destructive",
       });
     };
@@ -68,10 +69,11 @@ export function ActuatorControls({ stationId, enabled, onConnectionChange }: Act
   const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
     if (!wsRef.current || !enabled || !isConnected) return;
 
-    const message: WebSocketMessage = {
+    const message: WebSocketMessage & { rpiId: string } = {
       type,
       direction,
       stationId,
+      rpiId, // Include RPi ID in message
     };
 
     wsRef.current.send(JSON.stringify(message));
