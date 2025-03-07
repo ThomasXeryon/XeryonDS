@@ -6,23 +6,57 @@ import * as schema from "@shared/schema";
 // Configure the WebSocket constructor for Neon
 neonConfig.webSocketConstructor = ws;
 
-// Ensure DATABASE_URL is set
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
-}
+// Validate and construct connection string
+const constructConnectionString = () => {
+  const { DATABASE_URL, PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT } = process.env;
 
-console.log('Connecting to database...');
+  // If DATABASE_URL is provided and properly formatted, use it
+  if (DATABASE_URL && (DATABASE_URL.startsWith('postgres://') || DATABASE_URL.startsWith('postgresql://'))) {
+    return DATABASE_URL;
+  }
 
-// Create a new pool
+  // Construct from individual components
+  if (!PGHOST || !PGUSER || !PGPASSWORD || !PGDATABASE) {
+    throw new Error("Database configuration missing. Required: PGHOST, PGUSER, PGPASSWORD, PGDATABASE");
+  }
+
+  return `postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT || '5432'}/${PGDATABASE}`;
+};
+
+// Get database URL
+const dbUrl = constructConnectionString();
+
+// Log connection attempt (without credentials)
+const logUrl = new URL(dbUrl);
+console.log(`Connecting to database at ${logUrl.host}${logUrl.pathname}...`);
+
+// Create a new pool with proper error handling
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  ssl: true
+  connectionString: dbUrl,
+  ssl: {
+    rejectUnauthorized: false // Required for Neon database
+  },
+  connectionTimeoutMillis: 5000, // 5 second timeout
+  max: 20 // Maximum number of clients in the pool
 });
 
-// Test the connection
+// Test the connection with detailed error handling
 pool.connect()
-  .then(() => console.log('Successfully connected to database'))
-  .catch(err => console.error('Error connecting to database:', err));
+  .then(() => {
+    console.log('Successfully connected to database');
+  })
+  .catch(err => {
+    console.error('Error connecting to database:', {
+      code: err.code,
+      message: err.message,
+      detail: err.detail,
+      hint: err.hint,
+      position: err.position,
+      host: logUrl.host,
+      database: logUrl.pathname.slice(1)
+    });
+    // Don't throw here, let the application handle reconnection
+  });
 
 // Create drizzle database instance
 export const db = drizzle(pool, { schema });

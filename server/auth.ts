@@ -90,8 +90,9 @@ export function setupAuth(app: Express) {
       console.log(`Registering new user: ${req.body.username}`);
 
       const user = await storage.createUser({
-        ...req.body,
+        username: req.body.username,
         password: hashedPassword,
+        isAdmin: false
       });
 
       req.login(user, (err) => {
@@ -99,6 +100,7 @@ export function setupAuth(app: Express) {
         res.status(201).json(user);
       });
     } catch (err) {
+      console.error("Registration error:", err);
       next(err);
     }
   });
