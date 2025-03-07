@@ -87,6 +87,7 @@ export class DatabaseStorage implements IStorage {
 
   async getStations(): Promise<Station[]> {
     try {
+      // Only return active stations for regular users
       return await db.select().from(stations).where(eq(stations.isActive, true));
     } catch (error) {
       console.error("Error getting stations:", error);
@@ -150,9 +151,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateStation(id: number, update: StationUpdate & { isActive?: boolean }): Promise<Station> {
+    // Remove undefined values from the update object
+    const filteredUpdate = Object.fromEntries(
+      Object.entries(update).filter(([_, value]) => value !== undefined)
+    );
+
+    // Ensure we have values to update
+    if (Object.keys(filteredUpdate).length === 0) {
+      throw new Error("No valid update values provided");
+    }
+
     const [station] = await db
       .update(stations)
-      .set(update)
+      .set(filteredUpdate)
       .where(eq(stations.id, id))
       .returning();
     return station;
