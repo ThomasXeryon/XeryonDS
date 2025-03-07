@@ -1,15 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import type { WebSocketMessage } from "@shared/schema";
-import { parse as parseCookie } from "cookie";
-import type { Session } from "express-session";
+import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
-import express from "express";
 
 function isAdmin(req: Express.Request) {
   return req.isAuthenticated() && req.user?.isAdmin;
@@ -19,7 +15,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
   // Serve uploaded files statically
   const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
@@ -175,11 +170,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // End session after 5 minutes
     setTimeout(async () => {
       await storage.updateStationSession(station.id, null);
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
-        }
-      });
     }, 5 * 60 * 1000);
   });
 
@@ -197,46 +187,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updatedStation = await storage.updateStationSession(station.id, null);
     res.json(updatedStation);
-  });
-
-  // WebSocket authentication and message handling
-  wss.on("connection", (ws, req) => {
-    let authenticated = false;
-
-    // Authenticate WebSocket connection using session cookie
-    if (req.headers.cookie) {
-      const cookies = parseCookie(req.headers.cookie);
-      const sessionId = cookies["session_id"]; // Match the custom session name
-      if (sessionId) {
-        authenticated = true;
-      }
-    }
-
-    if (!authenticated) {
-      ws.close(1008, "Authentication required");
-      return;
-    }
-
-    ws.on("message", async (data) => {
-      try {
-        const message = JSON.parse(data.toString()) as WebSocketMessage;
-        // Forward message to RPI control system
-        console.log("Received command:", message);
-
-        // Echo back confirmation
-        ws.send(JSON.stringify({ type: "command_received", ...message }));
-      } catch (err) {
-        console.error("Failed to parse message:", err);
-        ws.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
-      }
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-
-    // Send initial connection success message
-    ws.send(JSON.stringify({ type: "connected" }));
   });
 
   // Configure multer for image uploads
@@ -266,9 +216,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const staticPath = path.join(process.cwd(), 'public', 'uploads');
 
       try {
-        // Ensure upload directory exists - This is now redundant due to earlier mkdir call.
-        //await fs.mkdir(staticPath, { recursive: true });
-
         // Move file to public directory
         const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
         await fs.rename(req.file.path, path.join(staticPath, filename));
