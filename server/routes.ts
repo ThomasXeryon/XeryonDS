@@ -48,14 +48,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on("message", (data) => {
       try {
-        const message = JSON.parse(data.toString()) as RPiResponse;
+        const response = JSON.parse(data.toString()) as RPiResponse;
         // Broadcast RPi response to all connected UI clients
         wssUI.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({
               type: "rpi_response",
               rpiId,
-              ...message
+              message: response.message,
+              status: response.status
             }));
           }
         });
@@ -81,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Authenticate WebSocket connection using session cookie
     if (req.headers.cookie) {
       const cookies = parseCookie(req.headers.cookie);
-      const sessionId = cookies["session_id"];
+      const sessionId = cookies["connect.sid"]; // Use the correct session cookie name
       if (sessionId) {
         authenticated = true;
       }
@@ -106,18 +107,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Forward command to specific RPi
-        rpiWs.send(JSON.stringify({
+        const commandMessage = {
           type: message.type,
           command: message.command,
           direction: message.direction
-        }));
+        };
+
+        rpiWs.send(JSON.stringify(commandMessage));
 
         // Echo back confirmation
-        ws.send(JSON.stringify({ 
-          type: "command_sent", 
-          rpiId: message.rpiId,
-          ...message 
-        }));
+        const confirmationMessage = {
+          type: "command_sent",
+          message: `Command sent to ${message.rpiId}`,
+          ...commandMessage
+        };
+
+        ws.send(JSON.stringify(confirmationMessage));
       } catch (err) {
         console.error("Failed to parse message:", err);
         ws.send(JSON.stringify({ 

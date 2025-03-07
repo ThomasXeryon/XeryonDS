@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ActuatorControlsProps {
   stationId: number;
-  rpiId: string; // Add RPi ID prop
+  rpiId: string;
   enabled: boolean;
   onConnectionChange: (connected: boolean, send: (msg: any) => void) => void;
 }
@@ -40,6 +40,26 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
         description: "Your session has ended. Thank you for using our demo station.",
         variant: "destructive",
       });
+    };
+
+    wsRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "error") {
+          toast({
+            title: "Control system error",
+            description: data.message,
+            variant: "destructive",
+          });
+        } else if (data.type === "rpi_response") {
+          toast({
+            title: "RPi Response",
+            description: data.message,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
+      }
     };
 
     wsRef.current.onerror = () => {
