@@ -55,7 +55,8 @@ pool.connect()
       host: logUrl.host,
       database: logUrl.pathname.slice(1)
     });
-    // Don't throw here, let the application handle reconnection
+    // Throw an error with deployment-friendly message
+    throw new Error(`Failed to connect to database. Please ensure all database environment variables are properly configured in your deployment settings. Error: ${err.message}`);
   });
 
 // Create drizzle database instance
