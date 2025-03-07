@@ -1,0 +1,11 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "a6aeaffe6932d7da9f8fd46c001d5db8068cea4c6ca60940263747ff0de82e96b4db2748a2fb5e8bdf9a4d2e87fc32baacc7d029cab4562dc33b3ac851d0346d.c0990db4a1df2fc54819bf42c9e61493",
+      "isAdmin": true
+    }
+  ],
+  "nextId": 2
+}

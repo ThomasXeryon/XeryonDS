@@ -1,12 +1,11 @@
 import type { SessionStore } from 'express-session';
 import { users, type User, type InsertUser } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import createMemoryStore from "memorystore";
+import fs from 'fs/promises';
+import path from 'path';
 
-const PostgresSessionStore = connectPg(session);
+const MemoryStore = createMemoryStore(session);
 
 interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -17,63 +16,82 @@ interface IStorage {
   sessionStore: SessionStore;
 }
 
-export class DatabaseStorage implements IStorage {
+export class FileStorage implements IStorage {
+  private filePath: string;
   sessionStore: SessionStore;
+  private users: User[] = [];
+  private nextId = 1;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({
-      pool,
-      createTableIfMissing: true,
+    this.filePath = path.join(process.cwd(), 'data', 'users.json');
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // 24h
     });
+    this.initializeStorage();
+  }
+
+  private async initializeStorage() {
+    try {
+      // Create data directory if it doesn't exist
+      await fs.mkdir(path.join(process.cwd(), 'data'), { recursive: true });
+
+      try {
+        const data = await fs.readFile(this.filePath, 'utf-8');
+        const parsed = JSON.parse(data);
+        this.users = parsed.users;
+        this.nextId = parsed.nextId;
+      } catch (error) {
+        // File doesn't exist or is invalid, start fresh
+        this.users = [];
+        this.nextId = 1;
+        await this.saveToFile();
+      }
+    } catch (error) {
+      console.error('Error initializing storage:', error);
+      throw error;
+    }
+  }
+
+  private async saveToFile() {
+    const data = JSON.stringify({
+      users: this.users,
+      nextId: this.nextId
+    }, null, 2);
+    await fs.writeFile(this.filePath, data, 'utf-8');
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.id, id));
-      return user;
-    } catch (error) {
-      console.error("Error getting user:", error);
-      return undefined;
-    }
+    return this.users.find(u => u.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.username, username));
-      return user;
-    } catch (error) {
-      console.error("Error getting user by username:", error);
-      return undefined;
-    }
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    return this.users.find(u => u.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    try {
-      const [user] = await db.insert(users).values(insertUser).returning();
-      return user;
-    } catch (error) {
-      console.error("Error creating user:", error);
-      throw error;
-    }
+    const user: User = {
+      id: this.nextId++,
+      ...insertUser,
+      isAdmin: false
+    };
+    this.users.push(user);
+    await this.saveToFile();
+    return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return this.users;
   }
 
   async updateUserAdmin(id: number, isAdmin: boolean): Promise<User> {
-    try {
-      const [user] = await db
-        .update(users)
-        .set({ isAdmin })
-        .where(eq(users.id, id))
-        .returning();
-      return user;
-    } catch (error) {
-      console.error("Error updating user admin status:", error);
-      throw error;
+    const user = await this.getUser(id);
+    if (!user) {
+      throw new Error('User not found');
     }
+    user.isAdmin = isAdmin;
+    await this.saveToFile();
+    return user;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new FileStorage();
