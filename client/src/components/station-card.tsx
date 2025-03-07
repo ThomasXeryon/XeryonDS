@@ -206,17 +206,6 @@ export function StationCard({ station }: { station: Station }) {
                 <div className="h-[600px]">
                   <CameraFeed stationId={station.id} />
                 </div>
-                {station.sessionStart && isMySession && (
-                  <div className="mb-8">
-                    <SessionTimer 
-                      startTime={station.sessionStart} 
-                      onTimeout={() => {
-                        // Automatically end session when timer expires
-                        endSession.mutate();
-                      }}
-                    />
-                  </div>
-                )}
               </div>
               <div className="space-y-8">
                 <AdvancedControls
@@ -225,6 +214,17 @@ export function StationCard({ station }: { station: Station }) {
                   isConnected={wsConnection.connected}
                   onCommand={handleCommand}
                 />
+                {station.sessionStart && isMySession && (
+                  <div>
+                    <SessionTimer 
+                      startTime={station.sessionStart} 
+                      onTimeout={() => {
+                        endSession.mutate();
+                        setShowThankYouDialog(true);
+                      }}
+                    />
+                  </div>
+                )}
                 {station.status === "available" ? (
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
@@ -237,7 +237,10 @@ export function StationCard({ station }: { station: Station }) {
                   <Button 
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
-                    onClick={() => endSession.mutate()}
+                    onClick={() => {
+                      endSession.mutate();
+                      setShowThankYouDialog(true);
+                    }}
                     disabled={endSession.isPending}
                   >
                     End Session
@@ -272,7 +275,13 @@ export function StationCard({ station }: { station: Station }) {
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
-                  <SessionTimer startTime={station.sessionStart} onTimeout={() => endSession.mutate()}/>
+                  <SessionTimer 
+                    startTime={station.sessionStart} 
+                    onTimeout={() => {
+                      endSession.mutate();
+                      setShowThankYouDialog(true);
+                    }}
+                  />
                 </div>
               )}
               <div className="space-y-4">
@@ -288,7 +297,10 @@ export function StationCard({ station }: { station: Station }) {
                   <Button 
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
-                    onClick={() => endSession.mutate()}
+                    onClick={() => {
+                      endSession.mutate();
+                      setShowThankYouDialog(true);
+                    }}
                     disabled={endSession.isPending}
                   >
                     End Session
