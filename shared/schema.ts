@@ -13,5 +13,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+// Simple station schema
+export type Station = {
+  id: number;
+  name: string;
+  status: "available" | "in_use";
+};
+
 export type InsertUser = typeof insertUserSchema._type;
 export type User = typeof users.$inferSelect;

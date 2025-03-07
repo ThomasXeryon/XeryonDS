@@ -16,6 +16,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
+  // Get available stations
+  app.get("/api/stations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const stations = await storage.getStations();
+    res.json(stations);
+  });
+
+  // Update station status
+  app.post("/api/stations/:id/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { status } = req.body;
+    const id = parseInt(req.params.id);
+
+    try {
+      const station = await storage.updateStationStatus(id, status);
+      res.json(station);
+    } catch (error) {
+      res.status(404).json({ message: "Station not found" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
     if (!isAdmin(req)) return res.sendStatus(403);
