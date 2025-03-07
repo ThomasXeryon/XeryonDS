@@ -50,17 +50,6 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       });
     };
 
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "error") {
-        toast({
-          title: "Control system error",
-          description: data.message,
-          variant: "destructive",
-        });
-      }
-    };
-
     return () => {
       wsRef.current?.close();
     };
@@ -69,11 +58,12 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
     if (!wsRef.current || !enabled || !isConnected) return;
 
-    const message: WebSocketMessage & { rpiId: string } = {
+    const message: WebSocketMessage = {
       type,
       direction,
       stationId,
-      rpiId, // Include RPi ID in message
+      rpiId,
+      command: direction ? `move_${direction}` : 'stop'
     };
 
     wsRef.current.send(JSON.stringify(message));

@@ -76,5 +76,13 @@ export type WebSocketMessage = {
   direction?: "up" | "down" | "left" | "right";
   value?: number;
   stationId: number;
-  command?: string; // Add command field for RPi communication
+  rpiId: string;
+  command?: string;
+};
+
+export type RPiResponse = {
+  type: "rpi_response" | "error";
+  rpiId: string;
+  message: string;
+  status?: string;
 };

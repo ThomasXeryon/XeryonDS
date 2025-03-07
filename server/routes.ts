@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import type { WebSocketMessage } from "@shared/schema";
+import type { WebSocketMessage, RPiResponse } from "@shared/schema";
 import { parse as parseCookie } from "cookie";
 import path from "path";
 import fs from "fs/promises";
@@ -48,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on("message", (data) => {
       try {
-        const message = JSON.parse(data.toString());
+        const message = JSON.parse(data.toString()) as RPiResponse;
         // Broadcast RPi response to all connected UI clients
         wssUI.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
@@ -94,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on("message", async (data) => {
       try {
-        const message = JSON.parse(data.toString()) as WebSocketMessage & { rpiId: string };
+        const message = JSON.parse(data.toString()) as WebSocketMessage;
         const rpiWs = rpiConnections.get(message.rpiId);
 
         if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
