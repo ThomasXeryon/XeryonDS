@@ -27,7 +27,7 @@ interface IStorage {
   createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
-  updateStation(id: number, update: StationUpdate): Promise<Station>;
+  updateStation(id: number, update: StationUpdate & { isActive?: boolean }): Promise<Station>;
 
   getSessionLogs(): Promise<SessionLog[]>;
   createSessionLog(stationId: number, userId: number): Promise<SessionLog>;
@@ -149,7 +149,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(stations.id, id));
   }
 
-  async updateStation(id: number, update: StationUpdate): Promise<Station> {
+  async updateStation(id: number, update: StationUpdate & { isActive?: boolean }): Promise<Station> {
     const [station] = await db
       .update(stations)
       .set(update)
