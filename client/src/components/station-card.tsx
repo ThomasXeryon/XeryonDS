@@ -108,6 +108,8 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      setIsFullscreen(false); // Back to overview on session end
+      setShowThankYouDialog(true); // Show thank you dialog
     },
   });
 
@@ -163,16 +165,6 @@ export function StationCard({ station }: { station: Station }) {
     }
   };
 
-  const handleSessionEnd = () => {
-    endSession.mutate(undefined, {
-      onSuccess: () => {
-        setIsFullscreen(false); // Exit fullscreen mode if active
-        setShowThankYouDialog(true); // Show feedback dialog
-        queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      }
-    });
-  };
-
   const cardClasses = isFullscreen 
     ? "fixed inset-0 z-50 m-0 rounded-none overflow-auto bg-background"
     : "";
@@ -218,7 +210,10 @@ export function StationCard({ station }: { station: Station }) {
                   <div className="mb-8">
                     <SessionTimer 
                       startTime={station.sessionStart} 
-                      onTimeout={handleSessionEnd}
+                      onTimeout={() => {
+                        // Automatically end session when timer expires
+                        endSession.mutate();
+                      }}
                     />
                   </div>
                 )}
@@ -242,7 +237,7 @@ export function StationCard({ station }: { station: Station }) {
                   <Button 
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
-                    onClick={handleSessionEnd}
+                    onClick={() => endSession.mutate()}
                     disabled={endSession.isPending}
                   >
                     End Session
@@ -277,7 +272,7 @@ export function StationCard({ station }: { station: Station }) {
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
-                  <SessionTimer startTime={station.sessionStart} onTimeout={handleSessionEnd}/>
+                  <SessionTimer startTime={station.sessionStart} onTimeout={() => endSession.mutate()}/>
                 </div>
               )}
               <div className="space-y-4">
@@ -293,7 +288,7 @@ export function StationCard({ station }: { station: Station }) {
                   <Button 
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
-                    onClick={handleSessionEnd}
+                    onClick={() => endSession.mutate()}
                     disabled={endSession.isPending}
                   >
                     End Session
