@@ -1,0 +1,62 @@
+~/workspace$ ^C
+~/workspace$ npm run build
+
+> rest-express@1.0.0 build
+> tsc && vite build && mkdir -p dist/server/public && cp -r dist/public/* dist/server/public/
+
+server/routes.ts:157:11 - error TS2783: 'type' is specified more than once, so this usage will be overwritten.
+
+157           type: "command_sent",
+              ~~~~~~~~~~~~~~~~~~~~
+
+  server/routes.ts:159:11
+    159           ...commandMessage
+                  ~~~~~~~~~~~~~~~~~
+    This spread always overwrites this property.
+
+server/routes.ts:262:11 - error TS2353: Object literal may only specify known properties, and 'previewImage' does not exist in type 'Partial<StationUpdate>'.
+
+262           previewImage: imageUrl
+              ~~~~~~~~~~~~
+
+server/routes.ts:289:77 - error TS18048: 'req.user' is possibly 'undefined'.
+
+289       const updatedStation = await storage.updateStationSession(station.id, req.user.id);
+                                                                                ~~~~~~~~
+
+server/routes.ts:322:37 - error TS18048: 'req.user' is possibly 'undefined'.
+
+322       if (station.currentUserId !== req.user.id) {
+                                        ~~~~~~~~
+
+server/storage.ts:1:15 - error TS2305: Module '"express-session"' has no exported member 'SessionStore'.
+
+1 import type { SessionStore } from 'express-session';
+                ~~~~~~~~~~~~
+
+server/storage.ts:132:10 - error TS2339: Property 'where' does not exist on type 'Omit<PgSelectBase<"session_logs", { id: PgColumn<{ name: "id"; tableName: "session_logs"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; isPrimaryKey: true; ... 5 more ...; generated: undefined; }, {}, {}>; ... 4 more ...; commandCount: PgColumn<...>; ...'.
+
+132         .where(sql`${sessionLogs.endTime} IS NULL`);
+             ~~~~~
+
+server/storage.ts:169:52 - error TS18046: 'error' is of type 'unknown'.
+
+169       throw new Error(`Failed to update station: ${error.message}`);
+                                                       ~~~~~
+
+server/vite.ts:42:5 - error TS2322: Type '{ middlewareMode: true; hmr: { server: Server<typeof IncomingMessage, typeof ServerResponse>; }; allowedHosts: boolean; }' is not assignable to type 'ServerOptions'.
+  Types of property 'allowedHosts' are incompatible.
+    Type 'boolean' is not assignable to type 'true | string[] | undefined'.
+
+42     server: serverOptions,
+       ~~~~~~
+
+
+Found 8 errors in 3 files.
+
+Errors  Files
+     4  server/routes.ts:157
+     3  server/storage.ts:1
+     1  server/vite.ts:42
+ Environment updated. Reloading shell...
+~/workspace$ 
