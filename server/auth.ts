@@ -1,27 +1,14 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request } from "express"; // Added Request
+import { Express } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { hashPassword, comparePasswords } from "@shared/auth-utils";
 
-// Use SelectUser directly and extend with isAdmin
-type User = SelectUser & {
-  isAdmin?: boolean;
-};
-
 declare global {
   namespace Express {
-    interface User extends SelectUser {
-      isAdmin?: boolean;
-    }
-    // Extend Request to include Passport's login method
-    interface Request {
-      login(user: User, callback: (err: any) => void): void;
-      logout(callback: (err: any) => void): void; // Added for consistency
-      isAuthenticated(): boolean;
-    }
+    interface User extends SelectUser {}
   }
 }
 
@@ -35,13 +22,13 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
-    name: "session_id",
+    name: 'session_id', // Use a custom name instead of connect.sid
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
   };
 
   app.set("trust proxy", 1);
@@ -92,7 +79,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req: Request, res, next) => {
+  app.post("/api/register", async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
@@ -105,9 +92,10 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser({
         username: req.body.username,
         password: hashedPassword,
+        isAdmin: false
       });
 
-      req.login(user, (err: any) => { // Line 102, added type for err parameter
+      req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json(user);
       });
@@ -117,7 +105,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req: Request, res, next) => {
+  app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) {
@@ -130,14 +118,14 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req: Request, res, next) => {
+  app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
     });
   });
 
-  app.get("/api/user", (req: Request, res) => {
+  app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });

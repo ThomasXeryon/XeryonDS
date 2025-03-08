@@ -24,9 +24,9 @@ export function log(message: string, source = "express") {
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
-    middlewareMode: true as const, // Use type assertion to fix type issue
+    middlewareMode: true,
     hmr: { server },
-    allowedHosts: [true] as unknown as string[], // Fix type issue
+    allowedHosts: true,
   };
 
   const vite = await createViteServer({

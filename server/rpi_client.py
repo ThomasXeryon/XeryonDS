@@ -25,8 +25,6 @@ else:
 async def connect_to_server():
     # The server expects connections to /rpi/{rpiId}
     uri = f"{SERVER_URL}/rpi/{STATION_ID}"
-    print(f"[{datetime.now()}] Connecting with URI: {uri}")
-    print(f"[{datetime.now()}] Station ID: {STATION_ID}")
 
     # Debug output
     print(f"[{datetime.now()}] WEBSOCKET DEBUG INFO:")

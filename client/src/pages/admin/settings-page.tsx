@@ -1,56 +1,45 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "wouter";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
-import { ArrowLeft, Loader2 } from "lucide-react";
 
-// Define the Settings interface
-interface Settings {
-  rpiHost?: string;
-  rpiPort?: number;
-  rpiUsername?: string;
-  rpiPassword?: string;
-}
-
-const formSchema = z.object({
-  rpiHost: z.string().min(1, "Host is required"),
-  rpiPort: z.string().regex(/^\d+$/, "Port must be a number"),
+const settingsSchema = z.object({
+  rpiHost: z.string().min(1, "IP address is required"),
+  rpiPort: z.string().regex(/^\d+$/, "Port must be a number").transform(Number),
   rpiUsername: z.string().min(1, "Username is required"),
   rpiPassword: z.string().min(1, "Password is required"),
 });
 
+type SettingsFormData = z.infer<typeof settingsSchema>;
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  const { data: settings, isLoading } = useQuery<Settings>({
+  const { data: settings, isLoading } = useQuery({
     queryKey: ["/api/admin/settings"],
   });
 
-  const mutation = useMutation({
-    mutationFn: async (values: z.infer<typeof formSchema>) =>
-      await apiRequest("PATCH", "/api/admin/settings", values),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
-    },
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsSchema),
     defaultValues: {
       rpiHost: settings?.rpiHost || "",
       rpiPort: settings?.rpiPort?.toString() || "22",
@@ -59,16 +48,38 @@ export default function SettingsPage() {
     },
   });
 
+  const updateSettings = useMutation({
+    mutationFn: async (data: SettingsFormData) => {
+      const res = await apiRequest("POST", "/api/admin/settings", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      toast({
+        title: "Settings updated",
+        description: "Connection settings have been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update settings",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: SettingsFormData) => {
+    updateSettings.mutate(data);
+  };
+
   if (!user?.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card>
           <CardContent className="pt-6">
             <p>You don't have permission to access this page.</p>
-            <Button
-              className="mt-4"
-              onClick={() => setLocation("/")}
-            >
+            <Button className="mt-4" onClick={() => setLocation("/")}>
               Return to Home
             </Button>
           </CardContent>
@@ -80,7 +91,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -93,11 +104,12 @@ export default function SettingsPage() {
             <Button
               variant="ghost"
               size="icon"
+              className="hover:bg-accent hover:text-accent-foreground transition-colors"
               onClick={() => setLocation("/admin")}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold">Settings</h1>
+            <h1 className="text-2xl font-bold">Connection Settings</h1>
           </div>
         </div>
       </header>
@@ -105,74 +117,89 @@ export default function SettingsPage() {
       <main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
-            <CardTitle>RPi Connection Settings</CardTitle>
+            <CardTitle>RPI Connection Parameters</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-                className="space-y-6"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="rpiHost"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>RPi Host</FormLabel>
+                      <FormLabel>IP Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 192.168.1.100" {...field} />
+                        <Input placeholder="192.168.1.100" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        The IP address of your Raspberry Pi
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="rpiPort"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>RPi Port</FormLabel>
+                      <FormLabel>Port</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 22" {...field} />
+                        <Input placeholder="22" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        The port number for the connection
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="rpiUsername"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>RPi Username</FormLabel>
+                      <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., pi" {...field} />
+                        <Input placeholder="pi" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        The username for authentication
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="rpiPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>RPi Password</FormLabel>
+                      <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        The password for authentication
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <Button
                   type="submit"
-                  disabled={mutation.isPending}
                   className="w-full"
+                  disabled={updateSettings.isPending}
                 >
-                  {mutation.isPending ? (
+                  {updateSettings.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
                   Save Settings
                 </Button>
               </form>
