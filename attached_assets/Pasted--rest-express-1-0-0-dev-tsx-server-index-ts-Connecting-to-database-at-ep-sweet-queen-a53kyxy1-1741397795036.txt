@@ -1,0 +1,321 @@
+> rest-express@1.0.0 dev
+> tsx server/index.ts
+
+Connecting to database at ep-sweet-queen-a53kyxy1.us-east-2.aws.neon.tech:5432/neondb...
+Successfully connected to database
+=== DEMO STATION IDs ===
+Station ID: 8, Name: XLS-3 Demo Station, RPi ID: RPI1
+=======================
+1:35:02 AM [express] serving on port 5000
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/main.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /@vite/client: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /@react-refresh: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/App.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/index.css: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/ui/toaster.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/lib/queryClient.ts: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/hooks/use-auth.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/pages/home-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/pages/auth-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/pages/admin/stations-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/pages/admin-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/pages/admin/analytics-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/pages/admin/users-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/pages/admin/settings-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/pages/not-found.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/site-tour.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/lib/protected-route.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/feedback-dialog.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/pages/admin/feedback-page.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/hooks/use-toast.ts: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/toast.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/station-card.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/button.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /@fs/home/runner/workspace/shared/schema.ts: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/ui/card.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/ui/input.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/form.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/tabs.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/dialog.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/ui/label.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/station-status.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/ui/tooltip.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /@fs/home/runner/workspace/node_modules/driver.js/dist/driver.css: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/textarea.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/lib/utils.ts: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/camera-feed.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/advanced-controls.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/session-timer.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /src/components/ui/slider.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /src/components/ui/progress.tsx: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+1:35:09 AM [express] GET /api/user 304 in 172ms :: {"id":5,"username":"admin","password":"d9e7abb3bf…
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations: isAuthenticated=true, isAdmin=true
+User deserialized successfully: admin
+Auth status for /Xeryon-logo-v2.png: isAuthenticated=true, isAdmin=true
+1:35:10 AM [express] GET /api/stations 304 in 293ms :: [{"id":8,"name":"XLS-3 Demo Station","rpiId":…
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:10 AM [express] GET /api/stations/8/camera 200 in 251ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:11 AM [express] GET /api/stations/8/camera 200 in 238ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:12 AM [express] GET /api/stations/8/camera 200 in 239ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:13 AM [express] GET /api/stations/8/camera 200 in 239ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:14 AM [express] GET /api/stations/8/camera 200 in 241ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:15 AM [express] GET /api/stations/8/camera 200 in 235ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:17 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:18 AM [express] GET /api/stations/8/camera 200 in 257ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:18 AM [express] GET /api/stations/8/camera 200 in 242ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:19 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:20 AM [express] GET /api/stations/8/camera 200 in 233ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:21 AM [express] GET /api/stations/8/camera 200 in 238ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:22 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:23 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:24 AM [express] GET /api/stations/8/camera 200 in 235ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:25 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:26 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:27 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:28 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:29 AM [express] GET /api/stations/8/camera 200 in 234ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:30 AM [express] GET /api/stations/8/camera 200 in 239ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:31 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:33 AM [express] GET /api/stations/8/camera 200 in 238ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:33 AM [express] GET /api/stations/8/camera 200 in 238ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:34 AM [express] GET /api/stations/8/camera 200 in 235ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:35 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:36 AM [express] GET /api/stations/8/camera 200 in 235ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:38 AM [express] GET /api/stations/8/camera 200 in 252ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:39 AM [express] GET /api/stations/8/camera 200 in 238ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:39 AM [express] GET /api/stations/8/camera 200 in 234ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:41 AM [express] GET /api/stations/8/camera 200 in 262ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:41 AM [express] GET /api/stations/8/camera 200 in 239ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:42 AM [express] GET /api/stations/8/camera 200 in 242ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:43 AM [express] GET /api/stations/8/camera 200 in 235ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:45 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:45 AM [express] GET /api/stations/8/camera 200 in 236ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:46 AM [express] GET /api/stations/8/camera 200 in 239ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:47 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:48 AM [express] GET /api/stations/8/camera 200 in 239ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:49 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:51 AM [express] GET /api/stations/8/camera 200 in 235ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:51 AM [express] GET /api/stations/8/camera 200 in 237ms
+User deserialized successfully: admin
+User deserialized successfully: admin
+Auth status for /api/stations/8/camera: isAuthenticated=true, isAdmin=true
+1:35:52 AM [express] GET /api/stations/8/camera 200 in 236ms
