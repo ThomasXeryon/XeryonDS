@@ -44,6 +44,7 @@ export async function registerRoutes(app: Express) {
         pathname
       });
 
+      // Handle RPi client connections on /rpi/{rpiId}
       if (pathname.startsWith('/rpi/')) {
         const rpiId = pathname.split('/')[2];
         if (!rpiId) {
@@ -58,12 +59,19 @@ export async function registerRoutes(app: Express) {
           console.log(`RPi ${rpiId} connection upgraded successfully`);
           handleRPiConnection(ws, rpiId);
         });
-      } else if (!pathname.includes('vite')) { // Skip Vite WebSocket connections
+      } 
+      // Handle UI client connections on /ws
+      else if (pathname === '/ws') {
         console.log('UI client attempting to connect');
         wss.handleUpgrade(request, socket, head, (ws) => {
           console.log('UI client connection upgraded successfully');
           handleUIConnection(ws);
         });
+      }
+      // Skip other upgrade requests (like Vite HMR)
+      else {
+        console.log(`Ignoring upgrade request for path: ${pathname}`);
+        socket.destroy();
       }
     } catch (error) {
       console.error('Error in upgrade handler:', error);
@@ -79,32 +87,28 @@ export async function registerRoutes(app: Express) {
     ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`[RPi ${rpiId}] Message received:`, message.type);
+        console.log(`[RPi ${rpiId}] Message received: ${message.type}`);
 
         if (message.type === 'camera_frame') {
           console.log(`[RPi ${rpiId}] Received camera frame, raw data length: ${data.toString().length} bytes`);
-          console.log(`[RPi ${rpiId}] Frame format: raw base64`);
 
           // Forward frame to all UI clients
+          let forwardedCount = 0;
           wss.clients.forEach(client => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
               try {
-                const frameData = {
+                client.send(JSON.stringify({
                   type: 'camera_frame',
                   rpiId: rpiId,
                   frame: message.frame
-                };
-                console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${message.frame?.length || 0} bytes`);
-                client.send(JSON.stringify(frameData));
+                }));
+                forwardedCount++;
               } catch (err) {
-                console.error('Error forwarding frame:', err);
+                console.error(`Error forwarding frame to client:`, err);
               }
             }
           });
-
-          // Log successful forwarding
-          const clientCount = Array.from(wss.clients).filter(c => c !== ws && c.readyState === WebSocket.OPEN).length;
-          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${clientCount} clients`);
+          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardedCount} clients`);
         }
       } catch (err) {
         console.error(`[RPi ${rpiId}] Message error:`, err);

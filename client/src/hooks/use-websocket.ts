@@ -16,20 +16,18 @@ export function useWebSocket() {
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}`;
-
-    console.log(`WebSocket connecting to ${wsUrl}`);
+    const wsUrl = `${protocol}//${host}/ws`; // Use dedicated /ws path for UI clients
 
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log(`WebSocket connected to ${wsUrl}`);
+      console.log('WebSocket connected to UI endpoint');
       setConnectionStatus(true);
     };
 
-    socket.onclose = (event) => {
-      console.log("WebSocket disconnected:", event.code, event.reason);
+    socket.onclose = () => {
+      console.log('WebSocket disconnected, attempting reconnect...');
       setConnectionStatus(false);
       reconnectTimeoutRef.current = setTimeout(connect, 2000);
     };
@@ -37,17 +35,6 @@ export function useWebSocket() {
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
       socket.close();
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'camera_frame') {
-          console.log(`Received frame from RPi ${data.rpiId}, size: ${data.frame?.length || 0} bytes`);
-        }
-      } catch (err) {
-        console.error("Failed to parse message:", err);
-      }
     };
   }, []);
 
@@ -65,13 +52,6 @@ export function useWebSocket() {
 
   return {
     socket: socketRef.current,
-    connectionStatus,
-    sendMessage: useCallback((message: WebSocketMessage) => {
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify(message));
-      } else {
-        console.warn("Cannot send - WebSocket not connected");
-      }
-    }, [])
+    connectionStatus
   };
 }
