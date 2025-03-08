@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CameraFeed } from "@/components/camera-feed";
@@ -131,7 +130,7 @@ export function StationCard({ station }: { station: Station }) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     console.log("Connecting to WebSocket at:", wsUrl);
-    
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -150,7 +149,7 @@ export function StationCard({ station }: { station: Station }) {
         }
       });
     };
-    
+
     ws.onclose = () => {
       console.log("WebSocket disconnected");
       setWsConnection({
