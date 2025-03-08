@@ -14,8 +14,8 @@ else:
 SERVER_URL = "wss://xeryonremotedemostation.replit.app"  # Production URL
 
 async def connect_to_server():
-    # The server expects connections to /rpi with no trailing slash
-    uri = f"{SERVER_URL}/rpi"
+    # The server expects connections to /rpi/{rpiId}
+    uri = f"{SERVER_URL}/rpi/{STATION_ID}"
     
     while True:  # Reconnect loop
         try:
@@ -23,7 +23,7 @@ async def connect_to_server():
             async with websockets.connect(uri) as websocket:
                 print(f"[{datetime.now()}] Connected to server as {STATION_ID}")
                 # Send registration message
-                await websocket.send(json.dumps({"rpi_id": STATION_ID, "type": "register"}))
+                await websocket.send(json.dumps({"status": "ready", "message": "RPi device online and ready to accept commands"}))
                 
                 async for message in websocket:
                     try:
