@@ -14,59 +14,39 @@ const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
 // Configure multer for image uploads
 const upload = multer({
   dest: uploadsPath,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (_req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
+    allowedTypes.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
   }
 });
-
-// Map to store RPi WebSocket connections
-const rpiConnections = new Map<string, WebSocket>();
 
 export async function registerRoutes(app: Express) {
   setupAuth(app);
   const stations = await storage.getStations();
   console.log("=== DEMO STATION IDs ===");
-  stations.forEach(station => {
-    console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`);
-  });
+  stations.forEach(station => console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`));
   console.log("=======================");
 
-  const httpServer = createServer(app);
-
-  // Create a single WebSocket server with minimal settings
-  const wss = new WebSocketServer({ 
-    server: httpServer,
-    perMessageDeflate: false // Disable compression
-  });
-
+  // Create separate HTTP server for WebSocket
+  const wsServer = createServer();
+  const wss = new WebSocketServer({ server: wsServer });
   console.log("WebSocket server created");
 
-  wss.on("connection", (ws, req) => {
-    console.log("New WebSocket connection from:", req.socket.remoteAddress);
+  wss.on("connection", (ws) => {
+    console.log("New WebSocket connection");
 
     ws.on("message", (data) => {
-      try {
-        // Forward message to all other clients except sender
-        wss.clients.forEach(client => {
-          if (client !== ws && client.readyState === WebSocket.OPEN) {
-            client.send(data.toString());
+      // Forward raw data to all other clients
+      wss.clients.forEach(client => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(data);
+          } catch (err) {
+            console.error("Error forwarding frame:", err);
           }
-        });
-      } catch (err) {
-        console.error("WebSocket message error:", err);
-      }
-    });
-
-    ws.on("close", () => {
-      console.log("Client disconnected");
+        }
+      });
     });
 
     ws.on("error", (error) => {
@@ -74,9 +54,16 @@ export async function registerRoutes(app: Express) {
     });
   });
 
+  // Listen on port 8080 for WebSocket connections
+  wsServer.listen(8080, '0.0.0.0', () => {
+    console.log('WebSocket server listening on port 8080');
+  });
+
+  // Create main HTTP server
+  const httpServer = createServer(app);
+
   // Ensure uploads directory exists
-  await fs.mkdir(uploadsPath, { recursive: true })
-    .catch(err => console.error('Error creating uploads directory:', err));
+  await fs.mkdir(uploadsPath, { recursive: true });
 
   // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsPath));
@@ -195,7 +182,7 @@ export async function registerRoutes(app: Express) {
 
     setTimeout(async () => {
       await storage.updateStationSession(station.id, null);
-      wss.clients.forEach((client) => { // Updated to use the single wss
+      wss.clients.forEach((client) => { 
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
         }

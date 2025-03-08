@@ -12,18 +12,14 @@ export function useWebSocket() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
   const connect = useCallback(() => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
+    if (socketRef.current?.readyState === WebSocket.OPEN) return;
 
-    // Get the port from window location
-    const port = window.location.port;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.hostname;
 
-    // Use port 5000 if no port is specified
-    const wsUrl = `${protocol}//${host}${port ? `:${port}` : ':5000'}`;
-    console.log("Attempting WebSocket connection to:", wsUrl);
+    // Always use port 8080 for WebSocket
+    const wsUrl = `${protocol}//${host}:8080`;
+    console.log(`WebSocket connecting to ${wsUrl}`);
 
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
@@ -34,20 +30,13 @@ export function useWebSocket() {
     };
 
     socket.onclose = (event) => {
-      console.log("WebSocket disconnected:", {
-        code: event.code,
-        reason: event.reason,
-        wasClean: event.wasClean,
-        url: wsUrl
-      });
+      console.log("WebSocket disconnected:", event.code, event.reason);
       setConnectionStatus(false);
-
-      // Try to reconnect after 2 seconds
       reconnectTimeoutRef.current = setTimeout(connect, 2000);
     };
 
     socket.onerror = (error) => {
-      console.error("WebSocket connection error:", error);
+      console.error("WebSocket error:", error);
       socket.close();
     };
 
@@ -55,7 +44,7 @@ export function useWebSocket() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'camera_frame') {
-          console.log(`Received frame from RPi ${data.rpiId}, size: ${data.frame?.length || 0} bytes`);
+          console.log(`Received frame, size: ${data.frame?.length || 0} bytes`);
         }
       } catch (err) {
         console.error("Failed to parse message:", err);
