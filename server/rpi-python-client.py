@@ -1,4 +1,3 @@
-
 import asyncio
 import websockets
 import json
@@ -35,17 +34,22 @@ async def connect_to_server():
                         "type": "register",
                         "rpi_id": STATION_ID
                     }))
-                    
+
                     async for message in websocket:
                         try:
                             data = json.loads(message)
                             command = data.get("command", "unknown")
                             direction = data.get("direction", "none")
-                            print(f"[{datetime.now()}] Received command: {command}, direction: {direction}")
-                            
+
+                            # Display received command prominently
+                            print("\n" + "="*50)
+                            print(f"COMMAND RECEIVED FROM UI: {command}")
+                            print(f"DIRECTION: {direction}")
+                            print("="*50 + "\n")
+
                             # Process the command here (implement your hardware control)
                             # For example, if command is "move", control the actuator
-                            
+
                             # Send back response
                             response = {
                                 "status": "success",
@@ -59,7 +63,7 @@ async def connect_to_server():
                 print(f"[{datetime.now()}] Connection to {uri} failed: {str(e)}")
                 print(f"[{datetime.now()}] Error type: {type(e).__name__}")
                 continue  # Try next URL
-        
+
         # If we get here, all connection attempts failed
         print(f"[{datetime.now()}] All connection attempts failed. Reconnecting in 5 seconds...")
         await asyncio.sleep(5)

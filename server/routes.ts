@@ -201,11 +201,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Forward command to specific RPi
+        // Forward command to specific RPi with timestamp
         const commandMessage = {
           type: message.type,
           command: message.command,
-          direction: message.direction || "none"
+          direction: message.direction || "none",
+          timestamp: new Date().toISOString()
         };
 
         console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
@@ -219,6 +220,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         ws.send(JSON.stringify(confirmationMessage));
+        
+        // Log the command for debugging
+        console.log(`UI command sent to RPi ${message.rpiId}: ${message.command} (${message.direction || "none"})`);
       } catch (err) {
         console.error("Failed to parse message:", err);
         ws.send(JSON.stringify({ 
