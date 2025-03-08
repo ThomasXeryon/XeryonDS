@@ -39,6 +39,14 @@ function isAdmin(req: Express.Request) {
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
+  // Get all demo station IDs and log them to the console
+  const stations = await storage.getStations();
+  console.log("=== DEMO STATION IDs ===");
+  stations.forEach(station => {
+    console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`);
+  });
+  console.log("=======================");
+
   const httpServer = createServer(app);
 
   // WebSocket server for web UI clients
