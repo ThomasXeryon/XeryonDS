@@ -64,8 +64,20 @@ export function StationCard({ station }: { station: Station }) {
 
   const endSession = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/stations/${station.id}/end-session`);
-      return res.json();
+      const response = await fetch(`/api/stations/${station.id}/session`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to end session");
+      }
+      // Check if the response is JSON before parsing
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return response.json();
+      } else {
+        // Return empty object if not JSON
+        return {};
+      }
     },
     onSuccess: () => {
       toast({
