@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface WebSocketMessage {
   type: string;
-  rpiId?: string | number;
+  rpi_id?: string | number;
   frame?: string;
 }
 
@@ -16,13 +16,14 @@ export function useWebSocket() {
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws`; // Use dedicated /ws path for UI clients
+    const wsUrl = `${protocol}//${host}/ws`;
 
+    console.log('Connecting to WebSocket:', wsUrl);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log('WebSocket connected to UI endpoint');
+      console.log('WebSocket connected');
       setConnectionStatus(true);
     };
 
@@ -34,7 +35,6 @@ export function useWebSocket() {
 
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
-      socket.close();
     };
   }, []);
 
