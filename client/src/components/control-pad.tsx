@@ -34,15 +34,16 @@ export function ControlPad({
     onCommand(rpiId, "stop");
   };
 
-  const { sendMessage, connectionStatus } = useWebSocket();
+  // Get WebSocket functionality
+  const { sendMessage } = useWebSocket();
 
   const handleArrowClick = (direction: string) => {
+    if (!rpiId) return;
     sendMessage({ type: 'command', command: 'move', direction, rpiId });
   };
 
   const handleStopClick = () => {
+    if (!rpiId) return;
     sendMessage({ type: 'command', command: 'stop', rpiId });
   };
-
-    sendSocketMessage(message);
   };

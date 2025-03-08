@@ -1,10 +1,10 @@
-import { useEffect, useRef } from "react";
-import { useWebSocket } from "./useWebSocket"; // Assuming this component exists
+import { useEffect, useRef, useState } from "react";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 export function CameraFeed({ stationId, station }: { stationId: number; station?: { rpiId: number } }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [imageSrc, setImageSrc] = useState(""); // Added state for image source
-  const [error, setError] = useState("");  //Added state for error handling
+  const [error, setError] = useState<string | null>(null);  //Added state for error handling
 
   useEffect(() => {
     if (!stationId) return;
