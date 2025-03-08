@@ -27,6 +27,13 @@ export function StationCard({ station }: { station: Station }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
+  
+  // Reset dialog state when component updates
+  useEffect(() => {
+    if (!isMySession) {
+      setShowThankYouDialog(false);
+    }
+  }, [isMySession]);
   const [wsConnection, setWsConnection] = useState<{connected: boolean, send: (msg: any) => void}>({ 
     connected: false,
     send: () => {} 
@@ -297,7 +304,10 @@ export function StationCard({ station }: { station: Station }) {
                       variant="destructive"
                       onClick={() => {
                         endSession.mutate();
-                        setShowThankYouDialog(true);
+                        // Only show dialog once when session ends
+                        if (!showThankYouDialog) {
+                          setShowThankYouDialog(true);
+                        }
                       }}
                       disabled={endSession.isPending}
                     >
@@ -315,7 +325,15 @@ export function StationCard({ station }: { station: Station }) {
         </CardContent>
       </Card>
 
-      <Dialog open={showThankYouDialog} onOpenChange={setShowThankYouDialog}>
+      <Dialog 
+  open={showThankYouDialog} 
+  onOpenChange={(open) => {
+    setShowThankYouDialog(open);
+    if (!open) {
+      setFeedback(""); // Reset feedback when dialog closes
+    }
+  }}
+>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Thank You!</DialogTitle>
@@ -335,7 +353,10 @@ export function StationCard({ station }: { station: Station }) {
               />
               <Button 
                 className="w-full"
-                onClick={handleFeedbackSubmit}
+                onClick={() => {
+                  handleFeedbackSubmit();
+                  setShowThankYouDialog(false); // Close dialog after submitting
+                }}
                 disabled={submitFeedback.isPending || !feedback.trim()}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
