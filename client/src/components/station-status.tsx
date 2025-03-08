@@ -1,3 +1,4 @@
+
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +21,6 @@ const statusVariants = cva(
 interface StatusIndicatorProps extends VariantProps<typeof statusVariants> {
   className?: string;
 }
-
-export { StatusIndicator as StationStatus };
 
 export function StatusIndicator({ status, className }: StatusIndicatorProps) {
   return (
@@ -51,3 +50,5 @@ export function StatusIndicator({ status, className }: StatusIndicatorProps) {
     </div>
   );
 }
+
+export { StatusIndicator as StationStatus };
