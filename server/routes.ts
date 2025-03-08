@@ -52,18 +52,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     server: httpServer,
     path: "/rpi",
     verifyClient: (info, callback) => {
-      // Get the rpiId from the URL path
       const urlPath = info.req.url || "";
+      console.log(`Verifying RPi connection: ${urlPath}`);
       const pathParts = urlPath.split('/');
-      const rpiId = pathParts.pop() || pathParts.pop(); // Handle trailing slash
-      
+      const rpiId = pathParts[2]; // e.g., RPI1 from /rpi/RPI1
+
       if (!rpiId) {
         console.log("RPi connection rejected: No RPi ID provided");
         callback(false, 400, "RPi ID required");
         return;
       }
-      
-      // Store rpiId in request object to access it later
+
+      console.log(`RPi ID extracted: ${rpiId}`);
       (info.req as any).rpiId = rpiId;
       callback(true);
     }
@@ -71,9 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Handle RPi connections
   wssRPi.on("connection", (ws, req) => {
-    // Extract RPi ID from request object (set during verification)
     const rpiId = (req as any).rpiId;
-
     console.log(`RPi connected: ${rpiId}`);
     rpiConnections.set(rpiId, ws);
 
@@ -91,12 +89,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const response = JSON.parse(data.toString());
         console.log(`Message from RPi ${rpiId}:`, response);
-        
+
         // Handle registration message from Python client
         if (response.type === "register") {
           console.log(`RPi ${rpiId} registered successfully with status: ${response.status}`);
-          
-          // Notify UI clients about the RPi status
+
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({
@@ -129,7 +126,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("close", () => {
       console.log(`RPi disconnected: ${rpiId}`);
       rpiConnections.delete(rpiId);
-      // Notify UI clients about disconnected RPi
       wssUI.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
@@ -147,7 +143,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Handle web UI client connections
   wssUI.on("connection", (ws, req) => {
-    // For now, accept all UI connections without authentication
     console.log("UI client connected");
 
     // Send initial list of connected RPis
@@ -176,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const commandMessage = {
           type: message.type,
           command: message.command,
-          direction: message.direction
+          direction: message.direction || "none"
         };
 
         console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
@@ -327,7 +322,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedStation = await storage.updateStationSession(station.id, req.user.id);
     res.json(updatedStation);
 
-    // End session after 5 minutes
     setTimeout(async () => {
       await storage.updateStationSession(station.id, null);
       wssUI.clients.forEach((client) => {
