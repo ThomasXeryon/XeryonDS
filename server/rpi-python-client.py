@@ -13,12 +13,12 @@ else:
     STATION_ID = "RPI1"  # Default ID if none provided
 
 # Try multiple URLs to improve connection reliability
-REPL_SLUG = os.environ.get('REPL_SLUG', '')
+REPL_SLUG = os.environ.get('REPL_SLUG', 'xeryonremotedemostation')
 SERVER_URLS = [
-    f"ws://localhost:5000/rpi/{STATION_ID}",               # Local development
-    f"ws://0.0.0.0:5000/rpi/{STATION_ID}",                 # Direct IP
-    f"ws://{REPL_SLUG}.replit.dev:5000/rpi/{STATION_ID}",  # Replit dev URL
-    f"wss://{REPL_SLUG}.replit.app/rpi/{STATION_ID}"       # Production URL
+    f"ws://localhost:5000/rpi/{STATION_ID}",                           # Local development (when running on same machine)
+    f"ws://0.0.0.0:5000/rpi/{STATION_ID}",                             # Direct IP (when running on same network)
+    f"wss://{REPL_SLUG}.replit.app/rpi/{STATION_ID}",                  # Production URL
+    f"wss://xeryonremotedemostation.replit.app/rpi/{STATION_ID}"       # Hardcoded production URL as fallback
 ]
 
 async def connect_to_server():
@@ -27,7 +27,7 @@ async def connect_to_server():
             try:
                 print(f"[{datetime.now()}] Trying to connect to {uri}...")
                 async with websockets.connect(uri) as websocket:
-                print(f"[{datetime.now()}] Connected to server as {STATION_ID} via {uri}")
+                    print(f"[{datetime.now()}] Connected to server as {STATION_ID} via {uri}")
                     # Send registration message
                     await websocket.send(json.dumps({
                         "status": "ready", 
@@ -56,9 +56,9 @@ async def connect_to_server():
                         except json.JSONDecodeError:
                             print(f"[{datetime.now()}] Invalid message: {message}")
                 except Exception as e:
-                    print(f"[{datetime.now()}] Connection to {uri} failed: {str(e)}")
-                    print(f"[{datetime.now()}] Error type: {type(e).__name__}")
-                    continue  # Try next URL
+                print(f"[{datetime.now()}] Connection to {uri} failed: {str(e)}")
+                print(f"[{datetime.now()}] Error type: {type(e).__name__}")
+                continue  # Try next URL
         
         # If we get here, all connection attempts failed
         print(f"[{datetime.now()}] All connection attempts failed. Reconnecting in 5 seconds...")
