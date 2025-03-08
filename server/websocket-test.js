@@ -1,15 +1,22 @@
 
-// Simple standalone WebSocket test server
+// Simple standalone WebSocket test that works with Replit's HTTP handling
+const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('WebSocket test server running');
+// Create HTTP server
+const app = express();
+app.get('/', (req, res) => {
+  res.send('WebSocket test server is running. Connect to /websocket-test');
 });
 
-// Create a very simple WebSocket server
-const wss = new WebSocketServer({ server });
+const server = http.createServer(app);
+
+// Create WebSocket server using the HTTP server
+const wss = new WebSocketServer({ 
+  server,
+  path: '/websocket-test' // Specific path for WebSocket connections
+});
 
 wss.on('connection', (ws) => {
   console.log('Client connected!');
@@ -41,10 +48,10 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Start server on a different port to avoid conflicts
-const PORT = 3333;
+// Use port 5000 (the same port your main app is using)
+const PORT = 5000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`WebSocket test server running on port ${PORT}`);
-  console.log(`WebSocket URL: ws://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co:${PORT}`);
-  console.log(`HTTP URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co:${PORT}`);
+  console.log(`WebSocket URL: wss://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/websocket-test`);
+  console.log(`HTTP URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
 });
