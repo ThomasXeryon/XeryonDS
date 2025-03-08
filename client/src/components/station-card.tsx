@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CameraFeed } from "./camera-feed";
+import { CameraFeed } from "@/components/camera-feed";
 import { AdvancedControls } from "./advanced-controls";
 import { SessionTimer } from "./session-timer";
 import { Station } from "@shared/schema";
@@ -367,5 +367,4 @@ export function StationCard({ station }: { station: Station }) {
     </>
   );
 }
-
 export { StationCard };
