@@ -114,43 +114,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (response.type === "camera_frame") {
           console.log(`[RPi ${rpiId}] Received camera frame, raw data length: ${response.frame?.length || 0} bytes`);
 
-          // Validate frame data
           if (!response.frame) {
             console.warn(`[RPi ${rpiId}] Received camera_frame without frame data`);
             return;
           }
 
-          // Check if it's already a data URL or just base64
-          const isDataUrl = response.frame.startsWith('data:');
-          console.log(`[RPi ${rpiId}] Frame format: ${isDataUrl ? 'data URL' : 'raw base64'}`);
-
-          let frameToSend = response.frame;
-          if (!isDataUrl) {
-            try {
-              // Verify it's valid base64 before forwarding
-              atob(response.frame);
-              frameToSend = `data:image/jpeg;base64,${response.frame}`;
-            } catch (e) {
-              console.error(`[RPi ${rpiId}] Invalid base64 data received:`, e);
-              return;
-            }
-          }
-
-          let forwardCount = 0;
+          // Always ensure we send raw base64, let the client handle data URL formatting
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
-              const frameMessage = {
+              client.send(JSON.stringify({
                 type: "camera_frame",
                 rpiId,
-                frame: frameToSend
-              };
-              console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${frameToSend.length} bytes`);
-              client.send(JSON.stringify(frameMessage));
-              forwardCount++;
+                frame: response.frame
+              }));
             }
           });
 
-          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardCount} clients`);
+          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${wssUI.clients.size} clients`);
           return;
         }
 

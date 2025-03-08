@@ -12,60 +12,28 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const { socket, connectionStatus } = useWebSocket();
 
   useEffect(() => {
-    if (!socket || !rpiId) {
-      console.log("[CameraFeed] No socket or rpiId available", { 
-        hasSocket: !!socket, 
-        rpiId,
-        socketState: socket?.readyState 
-      });
-      return;
-    }
-
-    console.log("[CameraFeed] Setting up frame listener for RPi:", rpiId);
-    setLoading(true);
+    if (!socket || !rpiId) return;
 
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
 
-        // Only log frame info if it's a camera frame for our RPi
         if (data.type === 'camera_frame' && String(data.rpiId) === String(rpiId)) {
-          console.log("[CameraFeed] Processing frame:", { 
-            messageRpiId: data.rpiId,
-            currentRpiId: rpiId,
-            hasFrame: !!data.frame,
-            frameSize: data.frame?.length || 0,
-            isDataUrl: data.frame?.startsWith('data:')
-          });
+          console.log(`Received frame from RPi ${rpiId}, size: ${data.frame?.length || 0} bytes`);
 
-          if (!data.frame) {
-            console.warn("[CameraFeed] Frame data missing");
-            return;
+          if (data.frame) {
+            const frameUrl = `data:image/jpeg;base64,${data.frame}`;
+            setFrame(frameUrl);
+            setLoading(false);
           }
-
-          // The server should already send us a proper data URL
-          // But let's verify it's in the correct format
-          if (!data.frame.startsWith('data:image/')) {
-            console.error("[CameraFeed] Invalid frame format - expected data URL");
-            return;
-          }
-
-          console.log("[CameraFeed] Setting new frame");
-          setFrame(data.frame);
-          setLoading(false);
         }
       } catch (err) {
-        console.error("[CameraFeed] Message processing error:", err);
+        console.error('Frame processing error:', err);
       }
     };
 
     socket.addEventListener('message', handleMessage);
-    console.log("[CameraFeed] WebSocket listener added");
-
-    return () => {
-      console.log("[CameraFeed] Cleaning up WebSocket listener");
-      socket.removeEventListener('message', handleMessage);
-    };
+    return () => socket.removeEventListener('message', handleMessage);
   }, [socket, rpiId]);
 
   return (
@@ -79,11 +47,14 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </>
       ) : frame ? (
         <img
+          key={frame} // Force re-render when frame updates 
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
+          onLoad={() => console.log('Frame loaded successfully')}
           onError={(e) => {
-            console.error("[CameraFeed] Error loading frame:", e);
+            console.error('Image loading error:', e);
+            console.log('Failed frame URL length:', frame.length);
             setFrame(null);
           }}
         />
