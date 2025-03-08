@@ -1,0 +1,96 @@
+025-03-08 22:24:19.39
+4990a4ed
+User
+[RPi RPI1] Frame format: raw base64
+2025-03-08 22:24:19.39
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 28919 bytes
+2025-03-08 22:24:19.39
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 28919 bytes
+2025-03-08 22:24:19.39
+4990a4ed
+User
+[RPi RPI1] Forwarded camera frame to 2 clients
+2025-03-08 22:24:19.50
+4990a4ed
+User
+[RPi RPI1] Message received: camera_frame
+2025-03-08 22:24:19.50
+4990a4ed
+User
+[RPi RPI1] Received camera frame, raw data length: 28884 bytes
+2025-03-08 22:24:19.50
+4990a4ed
+User
+[RPi RPI1] Frame format: raw base64
+2025-03-08 22:24:19.50
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 28907 bytes
+2025-03-08 22:24:19.50
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 28907 bytes
+2025-03-08 22:24:19.50
+4990a4ed
+User
+[RPi RPI1] Forwarded camera frame to 2 clients
+2025-03-08 22:24:19.62
+4990a4ed
+User
+[RPi RPI1] Message received: camera_frame
+2025-03-08 22:24:19.62
+4990a4ed
+User
+[RPi RPI1] Received camera frame, raw data length: 28984 bytes
+2025-03-08 22:24:19.62
+4990a4ed
+User
+[RPi RPI1] Frame format: raw base64
+2025-03-08 22:24:19.62
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 29007 bytes
+2025-03-08 22:24:19.62
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 29007 bytes
+2025-03-08 22:24:19.62
+4990a4ed
+User
+[RPi RPI1] Forwarded camera frame to 2 clients
+2025-03-08 22:24:19.73
+4990a4ed
+User
+[RPi RPI1] Message received: camera_frame
+2025-03-08 22:24:19.73
+4990a4ed
+User
+[RPi RPI1] Received camera frame, raw data length: 28952 bytes
+2025-03-08 22:24:19.73
+4990a4ed
+User
+[RPi RPI1] Frame format: raw base64
+2025-03-08 22:24:19.73
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 28975 bytes
+2025-03-08 22:24:19.73
+4990a4ed
+User
+[RPi RPI1] Forwarding frame to client, size: 28975 bytes
+2025-03-08 22:24:19.73
+4990a4ed
+User
+[RPi RPI1] Forwarded camera frame to 2 clients
+2025-03-08 22:24:19.85
+4990a4ed
+User
+[RPi RPI1] Message received: camera_frame
+2025-03-08 22:24:19.85
+4990a4ed
+User
+[RPi RPI1] Received camera frame, raw data length: 28960 bytes
