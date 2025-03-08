@@ -4,13 +4,11 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { hashPassword } from "@shared/auth-utils";
-import { Pool } from "@neondatabase/serverless"; // Add Neon database
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -29,9 +27,11 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
+
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
+
       log(logLine);
     }
   });
@@ -42,32 +42,8 @@ app.use((req, res, next) => {
 // Setup auth before routes
 setupAuth(app);
 
-// Database connection (from your logs)
-const pool = new Pool({
-  connectionString:
-    "postgresql://ep-sweet-queen-a53kyxy1.us-east-2.aws.neon.tech:5432/neondb?sslmode=require",
-});
-
-async function connectDB() {
-  try {
-    const client = await pool.connect();
-    console.log("Successfully connected to database");
-    const res = await client.query("SELECT id, name, rpi_id FROM stations");
-    console.log("=== DEMO STATION IDs ===");
-    res.rows.forEach((row) =>
-      console.log(
-        `Station ID: ${row.id}, Name: ${row.name}, RPi ID: ${row.rpi_id}`,
-      ),
-    );
-    console.log("=======================");
-    client.release();
-  } catch (err) {
-    console.error("Database connection error:", err);
-  }
-}
-
 (async () => {
-  // Initialize admin user
+  // Initialize admin user if it doesn't exist
   try {
     const admin = await storage.getUserByUsername("admin");
     if (!admin) {
@@ -77,6 +53,8 @@ async function connectDB() {
         username: "admin",
         password: hashedPassword,
       });
+
+      // Update user to be admin after creation
       await storage.updateUserAdmin(user.id, true);
       console.log("Admin user created successfully");
     }
@@ -84,14 +62,12 @@ async function connectDB() {
     console.error("Error initializing admin user:", error);
   }
 
-  await connectDB(); // Connect to database
-
   const server = await registerRoutes(app);
-  console.log("WebSocket servers initialized"); // Add this
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+
     res.status(status).json({ message });
     throw err;
   });
@@ -102,15 +78,12 @@ async function connectDB() {
     serveStatic(app);
   }
 
-  const port = process.env.PORT || 5000;
-  server.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  const port = 5000;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

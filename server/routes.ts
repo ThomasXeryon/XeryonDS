@@ -9,22 +9,23 @@ import fs from "fs/promises";
 import express from "express";
 import multer from "multer";
 
-const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+const uploadsPath = path.join(process.cwd(), "public", "uploads");
 
 const upload = multer({
   dest: uploadsPath,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error("Invalid file type"));
     }
-  }
+  },
 });
 
 const rpiConnections = new Map<string, WebSocket>();
+const uiConnections = new Set<WebSocket>();
 
 function isAdmin(req: Express.Request) {
   return req.isAuthenticated() && req.user?.isAdmin;
@@ -33,147 +34,96 @@ function isAdmin(req: Express.Request) {
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = new Server(app);
 
-  const wssUI = new WebSocketServer({ server: httpServer, path: "/ws" });
+  const wss = new WebSocketServer({ noServer: true });
 
-  const wssRPi = new WebSocketServer({
-    server: httpServer,
-    path: "/rpi",
-    verifyClient: (info, callback) => {
-      const urlPath = info.req.url || "";
-      console.log(`Verifying RPi connection: ${urlPath}`);
-      const pathParts = urlPath.split("/");
-      const rpiId = pathParts[2]; // e.g., RPI1 from /rpi/RPI1
+  httpServer.on("upgrade", (req, socket, head) => {
+    const urlPath = req.url || "";
+    console.log(`[WebSocket] Upgrade request: ${urlPath}`);
 
-      if (!rpiId) {
-        console.log("RPi connection rejected: No RPi ID provided");
-        callback(false, 400, "RPi ID required");
-        return;
-      }
-
-      console.log(`RPi ID extracted: ${rpiId}`);
-      (info.req as any).rpiId = rpiId;
-      callback(true);
+    if (urlPath === "/") {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit("connection", ws, req);
+      });
+    } else {
+      console.log(`[WebSocket] Rejected unknown path: ${urlPath}`);
+      socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+      socket.destroy();
     }
   });
 
-  wssRPi.on("connection", (ws, req) => {
-    const rpiId = (req as any).rpiId;
-    console.log(`RPi connected: ${rpiId}`);
-    rpiConnections.set(rpiId, ws);
-
-    wssUI.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: "rpi_connected",
-          rpiId
-        }));
-      }
-    });
+  wss.on("connection", (ws, req) => {
+    console.log("[WebSocket] New connection established");
 
     ws.on("message", (data) => {
       try {
         const response = JSON.parse(data.toString());
-        console.log(`Message from RPi ${rpiId}:`, response);
+        console.log("[WebSocket] Received message:", response);
 
-        if (response.type === "register") {
-          console.log(`RPi ${rpiId} registered successfully with status: ${response.status}`);
-          wssUI.clients.forEach((client) => {
+        if (response.type === "register" && response.rpi_id) {
+          const rpiId = response.rpi_id;
+          console.log(`[WebSocket] RPi ${rpiId} registered with status: ${response.status}`);
+          rpiConnections.set(rpiId, ws);
+          uiConnections.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({
-                type: "rpi_status",
+                type: "rpi_connected",
                 rpiId,
                 status: response.status,
-                message: response.message
+                message: response.message,
               }));
             }
           });
-          return;
-        }
-
-        wssUI.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: "rpi_response",
-              rpiId,
-              message: response.message,
-              status: response.status
-            }));
+        } else if (response.type === "command_sent") {
+          const rpiWs = rpiConnections.get(response.rpiId);
+          if (rpiWs && rpiWs.readyState === WebSocket.OPEN) {
+            rpiWs.send(JSON.stringify(response));
+          } else {
+            console.log(`[WebSocket] RPi ${response.rpiId} not connected`);
           }
-        });
+        } else {
+          uiConnections.add(ws);
+          const message = response as WebSocketMessage;
+          const rpiWs = rpiConnections.get(message.rpiId);
+          if (rpiWs && rpiWs.readyState === WebSocket.OPEN) {
+            const commandMessage = {
+              type: "command_sent",
+              command: message.command,
+              direction: message.direction || "none",
+            };
+            console.log(`[WebSocket] Sending command to RPi ${message.rpiId}:`, commandMessage);
+            rpiWs.send(JSON.stringify(commandMessage));
+          }
+        }
       } catch (err) {
-        console.error(`Error handling RPi message: ${err}`);
+        console.error(`[WebSocket] Error handling message: ${err}`);
       }
     });
 
     ws.on("close", () => {
-      console.log(`RPi disconnected: ${rpiId}`);
-      rpiConnections.delete(rpiId);
-      wssUI.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: "rpi_disconnected",
-            rpiId
-          }));
+      console.log("[WebSocket] Connection closed");
+      uiConnections.delete(ws);
+      // Use Map.forEach instead of for...of
+      rpiConnections.forEach((rpiWs, rpiId) => { // Line 105 fix
+        if (rpiWs === ws) {
+          rpiConnections.delete(rpiId);
+          uiConnections.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({ type: "rpi_disconnected", rpiId }));
+            }
+          });
         }
       });
     });
 
     ws.on("error", (error) => {
-      console.error(`RPi WebSocket error: ${error}`);
+      console.error(`[WebSocket] Error: ${error}`);
     });
-  });
-
-  wssUI.on("connection", (ws) => {
-    console.log("UI client connected");
-    ws.send(JSON.stringify({
-      type: "rpi_list",
-      rpiIds: Array.from(rpiConnections.keys())
-    }));
-
-    ws.on("message", async (data) => {
-      try {
-        const message = JSON.parse(data.toString()) as WebSocketMessage;
-        console.log("Received UI message:", message);
-
-        const rpiWs = rpiConnections.get(message.rpiId);
-        if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
-          console.log(`RPi ${message.rpiId} not connected`);
-          ws.send(JSON.stringify({ 
-            type: "error", 
-            message: `RPi ${message.rpiId} not connected` 
-          }));
-          return;
-        }
-
-        const commandMessage = {
-          type: message.type,
-          command: message.command,
-          direction: message.direction || "none"
-        };
-        console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
-        rpiWs.send(JSON.stringify(commandMessage));
-
-        ws.send(JSON.stringify({
-          message: `Command sent to ${message.rpiId}`,
-          ...commandMessage
-        }));
-      } catch (err) {
-        console.error("Failed to parse message:", err);
-        ws.send(JSON.stringify({ 
-          type: "error", 
-          message: "Invalid message format" 
-        }));
-      }
-    });
-
-    ws.on("error", (error) => console.error("WebSocket error:", error));
-    ws.on("close", () => console.log("UI client disconnected"));
   });
 
   await fs.mkdir(uploadsPath, { recursive: true })
-    .catch(err => console.error('Error creating uploads directory:', err));
+    .catch((err) => console.error("Error creating uploads directory:", err));
 
-  app.use('/uploads', express.static(uploadsPath));
+  app.use("/uploads", express.static(uploadsPath));
 
   app.use((req, res, next) => {
     console.log(`Auth status for ${req.path}: isAuthenticated=${req.isAuthenticated()}, isAdmin=${isAdmin(req)}`);
@@ -240,34 +190,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/stations/:id/image",
-    upload.single('image'),
-    async (req, res) => {
-      if (!isAdmin(req)) {
-        console.log("Unauthorized access to /api/admin/stations/:id/image POST");
-        return res.sendStatus(403);
-      }
-      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-
-      const stationId = parseInt(req.params.id);
-
-      try {
-        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
-        await fs.rename(req.file.path, path.join(uploadsPath, filename));
-
-        const imageUrl = `/uploads/${filename}`;
-        await storage.updateStation(stationId, {
-          name: req.body.name || undefined,
-          previewImage: imageUrl
-        });
-
-        res.json({ url: imageUrl });
-      } catch (error: any) {
-        console.error("Error handling image upload:", error);
-        res.status(500).json({ message: "Failed to process image upload" });
-      }
+  app.post("/api/admin/stations/:id/image", upload.single("image"), async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations/:id/image POST");
+      return res.sendStatus(403);
     }
-  );
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    const stationId = parseInt(req.params.id);
+
+    try {
+      const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+      await fs.rename(req.file.path, path.join(uploadsPath, filename));
+
+      const imageUrl = `/uploads/${filename}`;
+      await storage.updateStation(stationId, {
+        name: req.body.name || undefined,
+        previewImage: imageUrl,
+      });
+
+      res.json({ url: imageUrl });
+    } catch (error: any) {
+      console.error("Error handling image upload:", error);
+      res.status(500).json({ message: "Failed to process image upload" });
+    }
+  });
 
   app.post("/api/stations/:id/session", async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -291,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       setTimeout(async () => {
         try {
           await storage.updateStationSession(station.id, null);
-          wssUI.clients.forEach((client) => {
+          wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
             }
