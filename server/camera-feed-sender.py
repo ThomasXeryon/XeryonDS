@@ -45,12 +45,14 @@ async def send_camera_feed():
                 print(f"Connected to WebSocket server at {SERVER_URL}")
                 
                 # Send registration message
-                await websocket.send(json.dumps({
+                registration_data = {
                     "type": "register",
                     "status": "ready",
                     "message": f"RPi {STATION_ID} online with camera",
                     "rpi_id": STATION_ID
-                }))
+                }
+                await websocket.send(json.dumps(registration_data))
+                print(f"Sent registration message: {registration_data}")
                 
                 # Main loop to send camera frames
                 while True:
@@ -73,11 +75,13 @@ async def send_camera_feed():
                     jpg_as_text = base64.b64encode(buffer).decode('utf-8')
                     
                     # Send frame to server
-                    await websocket.send(json.dumps({
+                    frame_data = {
                         "type": "camera_frame",
                         "rpi_id": STATION_ID,
                         "frame": jpg_as_text
-                    }))
+                    }
+                    await websocket.send(json.dumps(frame_data))
+                    print(f"Sent frame: {len(jpg_as_text)} bytes")
                     
                     # Process incoming messages
                     try:
@@ -85,7 +89,7 @@ async def send_camera_feed():
                         message = await asyncio.wait_for(websocket.recv(), 0.01)
                         data = json.loads(message)
                         command = data.get("command", "unknown")
-                        print(f"Received command: {command}")
+                        print(f"Received message from server: {data}")
                         
                         # Handle commands here if needed
                     except asyncio.TimeoutError:
