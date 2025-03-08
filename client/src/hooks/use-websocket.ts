@@ -12,29 +12,44 @@ export function useWebSocket() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
   const connect = useCallback(() => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) return;
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
 
+    // Clear any existing socket
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+
+    // Create new connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
 
     console.log('Connecting to WebSocket:', wsUrl);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected successfully');
       setConnectionStatus(true);
     };
 
     socket.onclose = () => {
       console.log('WebSocket disconnected, attempting reconnect...');
       setConnectionStatus(false);
+      socketRef.current = null;
+
+      // Attempt reconnection
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       reconnectTimeoutRef.current = setTimeout(connect, 2000);
     };
 
     socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      console.error('WebSocket error:', error);
+      // Let onclose handle reconnection
     };
   }, []);
 
@@ -46,6 +61,7 @@ export function useWebSocket() {
       }
       if (socketRef.current) {
         socketRef.current.close();
+        socketRef.current = null;
       }
     };
   }, [connect]);
