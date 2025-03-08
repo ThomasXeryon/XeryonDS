@@ -14,91 +14,52 @@ export function useWebSocket() {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Create WebSocket connection with detailed logging
+    // Create WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
-
-    console.log('\n=== WebSocket Connection Debug ===');
-    console.log('Window Location:', {
-      protocol: window.location.protocol,
-      host: window.location.host,
-      pathname: window.location.pathname
-    });
-    console.log('Computed WebSocket URL:', wsUrl);
-    console.log('==============================\n');
+    console.log('[WebSocket] Connecting to:', wsUrl);
 
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
-    const setupEventHandlers = (ws: WebSocket) => {
-      ws.onopen = () => {
-        console.log('[WebSocket] Connected successfully');
-        setConnectionStatus(true);
-      };
-
-      ws.onclose = (event) => {
-        console.log('[WebSocket] Disconnected:', {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean
-        });
-        setConnectionStatus(false);
-      };
-
-      ws.onerror = (error) => {
-        console.error('[WebSocket] Connection error:', error);
-        setConnectionStatus(false);
-      };
-
-      // Add message logging
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('[WebSocket] Received message:', data);
-        } catch (err) {
-          console.error('[WebSocket] Failed to parse message:', err);
-        }
-      };
+    socket.onopen = () => {
+      console.log('[WebSocket] Connected');
+      setConnectionStatus(true);
     };
 
-    setupEventHandlers(socket);
+    socket.onclose = (event) => {
+      console.log('[WebSocket] Disconnected:', event.code, event.reason);
+      setConnectionStatus(false);
+    };
 
-    // Implement reconnection logic
-    let reconnectAttempt = 0;
-    const maxReconnectAttempts = 5;
-    let reconnectTimeout: NodeJS.Timeout;
+    socket.onerror = (error) => {
+      console.error('[WebSocket] Error:', error);
+      setConnectionStatus(false);
+    };
 
-    const reconnect = () => {
-      if (reconnectAttempt >= maxReconnectAttempts) {
-        console.log('[WebSocket] Max reconnection attempts reached');
-        return;
-      }
-
-      if (socketRef.current?.readyState === WebSocket.CLOSED) {
-        reconnectAttempt++;
-        console.log(`[WebSocket] Attempting to reconnect (${reconnectAttempt}/${maxReconnectAttempts})...`);
-        socketRef.current = new WebSocket(wsUrl);
-        setupEventHandlers(socketRef.current);
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[WebSocket] Received:', data);
+      } catch (err) {
+        console.error('[WebSocket] Failed to parse message:', err);
       }
     };
 
-    // Clean up on unmount
     return () => {
-      clearTimeout(reconnectTimeout);
       if (socketRef.current) {
-        console.log("[WebSocket] Closing connection");
+        console.log('[WebSocket] Cleaning up connection');
         socketRef.current.close();
       }
     };
   }, []);
 
-  // Function to send messages through the WebSocket
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
-      console.log('[WebSocket] Sending message:', message);
+      console.log('[WebSocket] Sending:', message);
       socketRef.current.send(JSON.stringify(message));
     } else {
-      console.warn('[WebSocket] Cannot send message - connection not open:', message);
+      console.warn('[WebSocket] Cannot send - not connected:', message);
     }
   }, []);
 
