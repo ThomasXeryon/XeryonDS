@@ -105,10 +105,9 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser({
         username: req.body.username,
         password: hashedPassword,
-        isAdmin: false,
       });
 
-      req.login(user, (err) => { // Line 102
+      req.login(user, (err: any) => { // Line 102, added type for err parameter
         if (err) return next(err);
         res.status(201).json(user);
       });

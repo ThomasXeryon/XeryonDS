@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const station = await storage.createStation(name, rpiId);
       res.status(201).json(station);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating station:", error);
       res.status(500).json({ message: "Failed to create station" });
     }
@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const station = await storage.updateStation(stationId, { name });
       res.json(station);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating station:", error);
       res.status(500).json({ message: "Failed to update station" });
     }
@@ -232,8 +232,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/admin/stations DELETE");
       return res.sendStatus(403);
     }
-    await storage.deleteStation(parseInt(req.params.id));
-    res.sendStatus(200);
+    try {
+      await storage.deleteStation(parseInt(req.params.id));
+      res.sendStatus(200);
+    } catch (error: any) {
+      console.error("Error deleting station:", error);
+      res.status(500).json({ message: "Failed to delete station" });
+    }
   });
 
   app.post("/api/admin/stations/:id/image",
@@ -258,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         res.json({ url: imageUrl });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error handling image upload:", error);
         res.status(500).json({ message: "Failed to process image upload" });
       }
@@ -270,27 +275,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/stations/:id/session POST");
       return res.sendStatus(401);
     }
-    const station = await storage.getStation(parseInt(req.params.id));
+    try {
+      const station = await storage.getStation(parseInt(req.params.id));
 
-    if (!station) {
-      return res.status(404).send("Station not found");
-    }
+      if (!station) {
+        return res.status(404).send("Station not found");
+      }
 
-    if (station.status === "in_use") {
-      return res.status(400).send("Station is in use");
-    }
+      if (station.status === "in_use") {
+        return res.status(400).send("Station is in use");
+      }
 
-    const updatedStation = await storage.updateStationSession(station.id, req.user.id);
-    res.json(updatedStation);
+      const updatedStation = await storage.updateStationSession(station.id, req.user.id);
+      res.json(updatedStation);
 
-    setTimeout(async () => {
-      await storage.updateStationSession(station.id, null);
-      wssUI.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
+      setTimeout(async () => {
+        try {
+          await storage.updateStationSession(station.id, null);
+          wssUI.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
+            }
+          });
+        } catch (error: any) {
+          console.error("Error ending session:", error);
         }
-      });
-    }, 5 * 60 * 1000);
+      }, 5 * 60 * 1000);
+    } catch (error: any) {
+      console.error("Error starting session:", error);
+      res.status(500).json({ message: "Failed to start session" });
+    }
   });
 
   app.delete("/api/stations/:id/session", async (req, res) => {
@@ -298,18 +312,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/stations/:id/session DELETE");
       return res.sendStatus(401);
     }
-    const station = await storage.getStation(parseInt(req.params.id));
+    try {
+      const station = await storage.getStation(parseInt(req.params.id));
 
-    if (!station) {
-      return res.status(404).send("Station not found");
+      if (!station) {
+        return res.status(404).send("Station not found");
+      }
+
+      if (station.currentUserId !== req.user.id) {
+        return res.status(403).send("Not your session");
+      }
+
+      const updatedStation = await storage.updateStationSession(station.id, null);
+      res.json(updatedStation);
+    } catch (error: any) {
+      console.error("Error ending session:", error);
+      res.status(500).json({ message: "Failed to end session" });
     }
-
-    if (station.currentUserId !== req.user.id) {
-      return res.status(403).send("Not your session");
-    }
-
-    const updatedStation = await storage.updateStationSession(station.id, null);
-    res.json(updatedStation);
   });
 
   app.get("/api/stations/:id/camera", (req, res) => {

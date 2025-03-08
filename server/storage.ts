@@ -1,10 +1,10 @@
 import type { SessionStore } from 'express-session';
 import { users, stations, sessionLogs, feedback, type User, type InsertUser, type Station, type SessionLog, type Feedback, type InsertFeedback } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, sql } from "drizzle-orm";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import * as connectPgModule from "connect-pg-simple";
+const connectPg = connectPgModule.default || connectPgModule;
 
 const PostgresSessionStore = connectPg(session);
 
