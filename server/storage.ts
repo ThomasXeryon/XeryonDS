@@ -1,4 +1,4 @@
-import type { SessionStore } from 'express-session';
+import type { Store as SessionStore } from 'express-session';
 import { users, stations, sessionLogs, feedback, type User, type InsertUser, type Station, type SessionLog, type Feedback, type InsertFeedback } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, sql } from "drizzle-orm";
@@ -128,8 +128,7 @@ export class DatabaseStorage implements IStorage {
       const [log] = await db
         .select()
         .from(sessionLogs)
-        .where(eq(sessionLogs.stationId, id))
-        .where(sql`${sessionLogs.endTime} IS NULL`);
+        .where(sql`${sessionLogs.stationId} = ${id} AND ${sessionLogs.endTime} IS NULL`);
 
       if (log) {
         await this.updateSessionLog(log.id, new Date());
@@ -166,7 +165,7 @@ export class DatabaseStorage implements IStorage {
       return station;
     } catch (error) {
       console.error("Error updating station:", error);
-      throw new Error(`Failed to update station: ${error.message}`);
+      throw new Error(`Failed to update station: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

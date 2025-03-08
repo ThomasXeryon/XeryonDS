@@ -154,7 +154,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rpiWs.send(JSON.stringify(commandMessage));
 
         ws.send(JSON.stringify({
-          type: "command_sent",
           message: `Command sent to ${message.rpiId}`,
           ...commandMessage
         }));
@@ -259,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const imageUrl = `/uploads/${filename}`;
         await storage.updateStation(stationId, {
           name: req.body.name || undefined,
-          previewImage: imageUrl
+          imageUrl: imageUrl // Using a property that exists in StationUpdate
         });
 
         res.json({ url: imageUrl });
@@ -286,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send("Station is in use");
       }
 
-      const updatedStation = await storage.updateStationSession(station.id, req.user.id);
+      const updatedStation = await storage.updateStationSession(station.id, req.user?.id || 0);
       res.json(updatedStation);
 
       setTimeout(async () => {
@@ -319,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).send("Station not found");
       }
 
-      if (station.currentUserId !== req.user.id) {
+      if (station.currentUserId !== req.user?.id) {
         return res.status(403).send("Not your session");
       }
 
