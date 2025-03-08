@@ -25,7 +25,7 @@ export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
   // Create WebSocket server with explicit configuration
-  const wss = new WebSocketServer({ 
+  const wss = new WebSocketServer({
     noServer: true,
     maxPayload: 100 * 1024 * 1024, // 100MB max payload
     perMessageDeflate: false // Disable compression for better performance
@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express) {
           console.log(`RPi ${rpiId} connection upgraded successfully`);
           handleRPiConnection(ws, rpiId);
         });
-      } 
+      }
       // Handle UI client connections on /ws
       else if (pathname === '/ws') {
         console.log('UI client attempting to connect');
@@ -90,25 +90,49 @@ export async function registerRoutes(app: Express) {
         console.log(`[RPi ${rpiId}] Message received: ${message.type}`);
 
         if (message.type === 'camera_frame') {
-          console.log(`[RPi ${rpiId}] Received camera frame, raw data length: ${data.toString().length} bytes`);
+          // Validate the frame data
+          if (!message.frame) {
+            console.error(`[RPi ${rpiId}] Missing frame data`);
+            return;
+          }
 
-          // Forward frame to all UI clients
-          let forwardedCount = 0;
-          wss.clients.forEach(client => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-              try {
-                client.send(JSON.stringify({
-                  type: 'camera_frame',
-                  rpiId: rpiId,
-                  frame: message.frame
-                }));
-                forwardedCount++;
-              } catch (err) {
-                console.error(`Error forwarding frame to client:`, err);
+          // Validate base64 format
+          if (!/^[A-Za-z0-9+/=]+$/.test(message.frame)) {
+            console.error(`[RPi ${rpiId}] Invalid base64 data received`);
+            return;
+          }
+
+          // Try to decode base64 to validate format
+          try {
+            const decoded = Buffer.from(message.frame, 'base64');
+            console.log(`[RPi ${rpiId}] Received camera frame:`, {
+              rawDataLength: data.toString().length,
+              base64Length: message.frame.length,
+              decodedLength: decoded.length,
+              firstBytes: Array.from(decoded.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' '),
+              isJPEG: decoded.slice(0, 3).equals(Buffer.from([0xFF, 0xD8, 0xFF]))
+            });
+
+            // Forward frame to all UI clients
+            let forwardedCount = 0;
+            wss.clients.forEach(client => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                try {
+                  client.send(JSON.stringify({
+                    type: 'camera_frame',
+                    rpiId: rpiId,
+                    frame: message.frame
+                  }));
+                  forwardedCount++;
+                } catch (err) {
+                  console.error(`[RPi ${rpiId}] Error forwarding frame:`, err);
+                }
               }
-            }
-          });
-          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardedCount} clients`);
+            });
+            console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardedCount} clients`);
+          } catch (e) {
+            console.error(`[RPi ${rpiId}] Base64 decode failed:`, e);
+          }
         }
       } catch (err) {
         console.error(`[RPi ${rpiId}] Message error:`, err);
@@ -283,7 +307,7 @@ export async function registerRoutes(app: Express) {
 
     setTimeout(async () => {
       await storage.updateStationSession(station.id, null);
-      wss.clients.forEach((client) => { 
+      wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
         }
