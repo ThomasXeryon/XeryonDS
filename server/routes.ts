@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -59,24 +58,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   httpServer.on('upgrade', (request, socket, head) => {
     const pathname = request.url || "";
     console.log(`[WebSocket] Upgrade request for path: ${pathname}`);
-    
+
     // Simple path-based routing for WebSockets
     if (pathname.startsWith('/rpi/')) {
       // Extract the RPi ID from the path
       const rpiId = pathname.split('/')[2];
       console.log(`[RPi WebSocket] Extracted RPi ID: "${rpiId}"`);
-      
+
       if (!rpiId) {
         console.error("[RPi WebSocket] CONNECTION REJECTED: No RPi ID provided");
         socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
         socket.destroy();
         return;
       }
-      
+
       // Store RPi ID in request for later use
       (request as any).rpiId = rpiId;
       console.log(`[RPi WebSocket] RPi ID validation passed: "${rpiId}"`);
-      
+
       // Handle the upgrade for RPi clients
       wssRPi.handleUpgrade(request, socket, head, (ws) => {
         wssRPi.emit('connection', ws, request);
@@ -100,13 +99,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   wssRPi.on("connection", (ws, req) => {
     const rpiId = (req as any).rpiId;
     console.log(`[RPi WebSocket] CONNECTION ESTABLISHED - RPi ID: "${rpiId}"`);
-    
+
     if (!rpiId) {
       console.log("[RPi WebSocket] WARNING: RPi connected but ID is missing!");
       ws.close(1008, "RPi ID required");
       return;
     }
-    
+
     rpiConnections.set(rpiId, ws);
 
     // Notify UI clients about new RPi connection
@@ -140,10 +139,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           return;
         }
-        
+
         // Handle camera frames from RPi
         if (response.type === "camera_frame") {
+          console.log(`Received camera frame from ${response.rpiId}, size: ${data.toString().length} bytes`);
+
           // Forward camera frame to UI clients
+          let forwardCount = 0;
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({
@@ -151,8 +153,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 rpiId,
                 frame: response.frame
               }));
+              forwardCount++;
             }
           });
+
+          if (forwardCount === 0) {
+            console.log('No browser clients connected to forward camera frame to');
+          } else {
+            console.log(`Forwarded camera frame to ${forwardCount} browser clients`);
+          }
           return;
         }
 
@@ -235,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         ws.send(JSON.stringify(confirmationMessage));
-        
+
         // Log the command for debugging
         console.log(`UI command sent to RPi ${message.rpiId}: ${message.command} (${message.direction || "none"})`);
       } catch (err) {
