@@ -1,24 +1,19 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import { Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import type { WebSocketMessage, RPiResponse } from "@shared/schema";
-import { parse as parseCookie } from "cookie";
+import type { WebSocketMessage } from "@shared/schema";
 import path from "path";
 import fs from "fs/promises";
 import express from "express";
 import multer from "multer";
 
-// Define uploadsPath at the top level
 const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
 
-// Configure multer for image uploads
 const upload = multer({
   dest: uploadsPath,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (allowedTypes.includes(file.mimetype)) {
@@ -29,7 +24,6 @@ const upload = multer({
   }
 });
 
-// Map to store RPi WebSocket connections
 const rpiConnections = new Map<string, WebSocket>();
 
 function isAdmin(req: Express.Request) {
@@ -37,86 +31,36 @@ function isAdmin(req: Express.Request) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  setupAuth(app);
+  const httpServer = new Server(app);
 
-  // Get all demo station IDs and log them to the console
-  const stations = await storage.getStations();
-  console.log("=== DEMO STATION IDs ===");
-  stations.forEach(station => {
-    console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`);
-  });
-  console.log("=======================");
+  const wssUI = new WebSocketServer({ server: httpServer, path: "/ws" });
 
-  const httpServer = createServer(app);
-
-  // WebSocket server for web UI clients
-  const wssUI = new WebSocketServer({ 
-    server: httpServer, 
-    path: "/ws"
-  });
-
-  // WebSocket server for RPi clients
-  const wssRPi = new WebSocketServer({ 
+  const wssRPi = new WebSocketServer({
     server: httpServer,
-    noServer: true // We'll handle the upgrade ourselves for more control
-  });
-  
-  // Handle WebSocket upgrade requests
-  httpServer.on('upgrade', (request, socket, head) => {
-    const { pathname } = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
-    console.log(`[WebSocket] Upgrade request for path: ${pathname}`);
-    
-    // Check if this is an RPi connection
-    if (pathname.startsWith('/rpi/')) {
-      // Extract the RPi ID from the path
-      const pathParts = pathname.split('/');
-      const rpiId = pathParts[2];
-      console.log(`[RPi WebSocket] Extracted RPi ID: "${rpiId}"`);
-      
+    path: "/rpi",
+    verifyClient: (info, callback) => {
+      const urlPath = info.req.url || "";
+      console.log(`Verifying RPi connection: ${urlPath}`);
+      const pathParts = urlPath.split("/");
+      const rpiId = pathParts[2]; // e.g., RPI1 from /rpi/RPI1
+
       if (!rpiId) {
-        console.log("[RPi WebSocket] CONNECTION REJECTED: No RPi ID provided");
-        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
-        socket.destroy();
+        console.log("RPi connection rejected: No RPi ID provided");
+        callback(false, 400, "RPi ID required");
         return;
       }
-      
-      // Store RPi ID in request for later use
-      (request as any).rpiId = rpiId;
-      console.log(`[RPi WebSocket] RPi ID validation passed: "${rpiId}"`);
-      
-      // Handle the upgrade
-      wssRPi.handleUpgrade(request, socket, head, (ws) => {
-        wssRPi.emit('connection', ws, request);
-      });
-    } 
-    else if (pathname === '/ws') {
-      // Handle UI client connections
-      wssUI.handleUpgrade(request, socket, head, (ws) => {
-        wssUI.emit('connection', ws, request);
-      });
-    }
-    else {
-      // Not a WebSocket route we handle
-      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
-      socket.destroy();
+
+      console.log(`RPi ID extracted: ${rpiId}`);
+      (info.req as any).rpiId = rpiId;
+      callback(true);
     }
   });
 
-  // Handle RPi connections
   wssRPi.on("connection", (ws, req) => {
     const rpiId = (req as any).rpiId;
-    console.log(`[RPi WebSocket] CONNECTION ESTABLISHED - RPi ID: "${rpiId}"`);
-    console.log(`[RPi WebSocket] Request URL at connection time: ${req.url}`);
-    
-    if (!rpiId) {
-      console.log("[RPi WebSocket] WARNING: RPi connected but ID is missing!");
-      ws.close(1008, "RPi ID required");
-      return;
-    }
-    
+    console.log(`RPi connected: ${rpiId}`);
     rpiConnections.set(rpiId, ws);
 
-    // Notify UI clients about new RPi connection
     wssUI.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
@@ -131,10 +75,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const response = JSON.parse(data.toString());
         console.log(`Message from RPi ${rpiId}:`, response);
 
-        // Handle registration message from Python client
         if (response.type === "register") {
           console.log(`RPi ${rpiId} registered successfully with status: ${response.status}`);
-
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({
@@ -148,7 +90,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Broadcast RPi response to all connected UI clients
         wssUI.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({
@@ -182,11 +123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Handle web UI client connections
-  wssUI.on("connection", (ws, req) => {
+  wssUI.on("connection", (ws) => {
     console.log("UI client connected");
-
-    // Send initial list of connected RPis
     ws.send(JSON.stringify({
       type: "rpi_list",
       rpiIds: Array.from(rpiConnections.keys())
@@ -198,9 +136,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Received UI message:", message);
 
         const rpiWs = rpiConnections.get(message.rpiId);
-
         if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
-          console.log(`RPi ${message.rpiId} not connected or not ready`);
+          console.log(`RPi ${message.rpiId} not connected`);
           ws.send(JSON.stringify({ 
             type: "error", 
             message: `RPi ${message.rpiId} not connected` 
@@ -208,24 +145,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Forward command to specific RPi
         const commandMessage = {
           type: message.type,
           command: message.command,
           direction: message.direction || "none"
         };
-
         console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
         rpiWs.send(JSON.stringify(commandMessage));
 
-        // Echo back confirmation
-        const confirmationMessage = {
+        ws.send(JSON.stringify({
           type: "command_sent",
           message: `Command sent to ${message.rpiId}`,
           ...commandMessage
-        };
-
-        ws.send(JSON.stringify(confirmationMessage));
+        }));
       } catch (err) {
         console.error("Failed to parse message:", err);
         ws.send(JSON.stringify({ 
@@ -235,29 +167,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-
-    ws.on("close", () => {
-      console.log("UI client disconnected");
-    });
+    ws.on("error", (error) => console.error("WebSocket error:", error));
+    ws.on("close", () => console.log("UI client disconnected"));
   });
 
-  // Ensure uploads directory exists
   await fs.mkdir(uploadsPath, { recursive: true })
     .catch(err => console.error('Error creating uploads directory:', err));
 
-  // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsPath));
 
-  // Add authentication logging middleware
   app.use((req, res, next) => {
     console.log(`Auth status for ${req.path}: isAuthenticated=${req.isAuthenticated()}, isAdmin=${isAdmin(req)}`);
     next();
   });
 
-  // Station routes
   app.get("/api/stations", async (req, res) => {
     if (!req.isAuthenticated()) {
       console.log("Unauthorized access to /api/stations");
@@ -267,7 +190,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stations);
   });
 
-  // Admin routes
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations POST");
@@ -293,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/admin/stations PATCH");
       return res.sendStatus(403);
     }
-    const { name, rpiId } = req.body;
+    const { name } = req.body;
     const stationId = parseInt(req.params.id);
 
     try {
@@ -314,7 +236,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
-  // Image upload endpoint
   app.post("/api/admin/stations/:id/image",
     upload.single('image'),
     async (req, res) => {
@@ -344,7 +265,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Session management routes
   app.post("/api/stations/:id/session", async (req, res) => {
     if (!req.isAuthenticated()) {
       console.log("Unauthorized access to /api/stations/:id/session POST");
@@ -390,6 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updatedStation = await storage.updateStationSession(station.id, null);
     res.json(updatedStation);
+  });
+
+  app.get("/api/stations/:id/camera", (req, res) => {
+    res.status(200).send("Camera feed placeholder");
   });
 
   return httpServer;

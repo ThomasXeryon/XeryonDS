@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Station } from "@shared/schema";
+import { Station as SharedStation } from "@shared/schema"; // Renamed import
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -17,16 +17,21 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useEffect } from "react";
 import { StatusIndicator } from "@/components/station-status";
 import { cn } from "@/lib/utils";
+
+// Extend the imported Station type
+interface Station extends SharedStation {
+  ipAddress?: string;
+  port?: number;
+}
 
 export default function StationsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
-  const [rpiId, setRpiId] = useState(""); // Added rpiId state
+  const [rpiId, setRpiId] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -37,18 +42,17 @@ export default function StationsPage() {
   });
 
   const createStation = useMutation({
-    mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => { // Updated mutationFn
+    mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => {
       const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
       const station = await res.json();
 
-      // If we have a selected image, upload it right after creating the station
       if (selectedImage) {
         const formData = new FormData();
-        formData.append('image', selectedImage);
+        formData.append("image", selectedImage);
         await fetch(`/api/admin/stations/${station.id}/image`, {
-          method: 'POST',
+          method: "POST",
           body: formData,
-          credentials: 'include'
+          credentials: "include",
         });
       }
 
@@ -61,7 +65,7 @@ export default function StationsPage() {
         description: "New demo station has been added successfully",
       });
       setNewStationName("");
-      setRpiId(""); // Clear rpiId state
+      setRpiId("");
       setSelectedImage(null);
       setIsAddDialogOpen(false);
     },
@@ -78,7 +82,7 @@ export default function StationsPage() {
     mutationFn: async (station: Station) => {
       const res = await apiRequest("PATCH", `/api/admin/stations/${station.id}`, {
         name: station.name,
-        rpiId: station.rpiId, // Updated to include rpiId
+        rpiId: station.rpiId,
       });
       return await res.json();
     },
@@ -123,13 +127,13 @@ export default function StationsPage() {
   const uploadImage = useMutation({
     mutationFn: async ({ stationId, file }: { stationId: number; file: File }) => {
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append("image", file);
       const res = await fetch(`/api/admin/stations/${stationId}/image`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
-        credentials: 'include'
+        credentials: "include",
       });
-      if (!res.ok) throw new Error('Failed to upload image');
+      if (!res.ok) throw new Error("Failed to upload image");
       return res.json();
     },
     onSuccess: () => {
@@ -249,7 +253,9 @@ export default function StationsPage() {
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
                   onClick={() => createStation.mutate({ name: newStationName, rpiId })}
-                  disabled={createStation.isPending || !newStationName.trim() || !rpiId.trim()}
+                  disabled={
+                    createStation.isPending || !newStationName.trim() || !rpiId.trim()
+                  }
                 >
                   {createStation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -376,7 +382,9 @@ export default function StationsPage() {
                   id="edit-name"
                   placeholder="Station Name"
                   value={selectedStation.name}
-                  onChange={(e) => setSelectedStation({ ...selectedStation, name: e.target.value })}
+                  onChange={(e) =>
+                    setSelectedStation({ ...selectedStation, name: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -385,7 +393,9 @@ export default function StationsPage() {
                   id="edit-rpiId"
                   placeholder="RPi ID (e.g., RPI1)"
                   value={selectedStation.rpiId}
-                  onChange={(e) => setSelectedStation({ ...selectedStation, rpiId: e.target.value })}
+                  onChange={(e) =>
+                    setSelectedStation({ ...selectedStation, rpiId: e.target.value })
+                  }
                 />
               </div>
               <Button
