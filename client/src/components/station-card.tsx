@@ -27,7 +27,7 @@ export function StationCard({ station }: { station: Station }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
-  
+
   // Reset dialog state when component updates
   useEffect(() => {
     if (!isMySession) {
@@ -73,6 +73,7 @@ export function StationCard({ station }: { station: Station }) {
         description: "Thank you for using the demo station",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      setShowThankYouDialog(true); // Show dialog here after successful end
     },
     onError: (error: Error) => {
       toast({
@@ -226,8 +227,10 @@ export function StationCard({ station }: { station: Station }) {
                     <SessionTimer 
                       startTime={station.sessionStart} 
                       onTimeout={() => {
-                        endSession.mutate();
-                        setShowThankYouDialog(true);
+                        if (!endSession.isPending) {
+                          endSession.mutate();
+                          // Dialog will be shown in onSuccess handler
+                        }
                       }}
                     />
                   </div>
@@ -246,7 +249,10 @@ export function StationCard({ station }: { station: Station }) {
                     variant="destructive"
                     onClick={() => {
                       endSession.mutate();
-                      setShowThankYouDialog(true);
+                      // Only show dialog once when session ends
+                      if (!showThankYouDialog) {
+                        setShowThankYouDialog(true);
+                      }
                     }}
                     disabled={endSession.isPending}
                   >
@@ -285,8 +291,10 @@ export function StationCard({ station }: { station: Station }) {
                     <SessionTimer 
                       startTime={station.sessionStart} 
                       onTimeout={() => {
-                        endSession.mutate();
-                        setShowThankYouDialog(true);
+                        if (!endSession.isPending) {
+                          endSession.mutate();
+                          // Dialog will be shown in onSuccess handler
+                        }
                       }}
                     />
                   )}
