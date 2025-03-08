@@ -53,17 +53,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     path: "/rpi",
     verifyClient: (info, callback) => {
       const urlPath = info.req.url || "";
-      console.log(`Verifying RPi connection: ${urlPath}`);
+      console.log(`[RPi WebSocket] Verifying connection with URL: ${urlPath}`);
+      console.log(`[RPi WebSocket] Original request URL: ${info.req.url}`);
+      console.log(`[RPi WebSocket] Headers:`, info.req.headers);
+      
       const pathParts = urlPath.split('/');
+      console.log(`[RPi WebSocket] Path parts:`, pathParts);
+      
+      // Extract rpiId from path parts
       const rpiId = pathParts[2]; // e.g., RPI1 from /rpi/RPI1
+      
+      console.log(`[RPi WebSocket] Extracted RPi ID: "${rpiId}"`);
 
       if (!rpiId) {
-        console.log("RPi connection rejected: No RPi ID provided");
+        console.log("[RPi WebSocket] CONNECTION REJECTED: No RPi ID provided");
         callback(false, 400, "RPi ID required");
         return;
       }
 
-      console.log(`RPi ID extracted: ${rpiId}`);
+      console.log(`[RPi WebSocket] RPi ID validation passed: "${rpiId}"`);
       (info.req as any).rpiId = rpiId;
       callback(true);
     }
@@ -72,7 +80,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle RPi connections
   wssRPi.on("connection", (ws, req) => {
     const rpiId = (req as any).rpiId;
-    console.log(`RPi connected: ${rpiId}`);
+    console.log(`[RPi WebSocket] CONNECTION ESTABLISHED - RPi ID: "${rpiId}"`);
+    console.log(`[RPi WebSocket] Request URL at connection time: ${req.url}`);
+    
+    if (!rpiId) {
+      console.log("[RPi WebSocket] WARNING: RPi connected but ID is missing!");
+      ws.close(1008, "RPi ID required");
+      return;
+    }
+    
     rpiConnections.set(rpiId, ws);
 
     // Notify UI clients about new RPi connection
