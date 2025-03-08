@@ -32,41 +32,39 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                 await ws.send(json.dumps(register_msg))
                 print(f"[{datetime.now()}] Sent registration message")
 
-                # Main loop to handle incoming commands
+                # Simulate sending camera frames
+                frame_count = 0
                 while True:
                     try:
-                        message = await ws.recv()
-                        data = json.loads(message)
-                        print(f"[{datetime.now()}] Received: {data}")
+                        # Create a simulated frame (just a counter for testing)
+                        frame_data = {
+                            "type": "camera_frame",
+                            "rpiId": rpi_id,
+                            "frame": "SGVsbG8gV29ybGQ="  # Base64 "Hello World" as test data
+                        }
+                        await ws.send(json.dumps(frame_data))
+                        frame_count += 1
+                        print(f"[{datetime.now()}] Sent frame #{frame_count}")
 
-                        # Handle different command types
-                        if data.get("type") == "move":
-                            response = {
-                                "type": "rpi_response",
-                                "status": "ok",
-                                "message": f"Moving {data.get('direction', 'unknown')}"
-                            }
-                        elif data.get("type") == "stop":
-                            response = {
-                                "type": "rpi_response",
-                                "status": "ok",
-                                "message": "Movement stopped"
-                            }
-                        else:
-                            response = {
-                                "type": "rpi_response",
-                                "status": "error",
-                                "message": f"Unknown command type: {data.get('type')}"
-                            }
+                        # Process any incoming messages
+                        try:
+                            message = await asyncio.wait_for(ws.recv(), 0.1)
+                            data = json.loads(message)
+                            print(f"[{datetime.now()}] Received: {data}")
+                        except asyncio.TimeoutError:
+                            # No messages received, continue sending frames
+                            pass
+                        except Exception as e:
+                            print(f"[{datetime.now()}] Error receiving message: {str(e)}")
 
-                        await ws.send(json.dumps(response))
-                        print(f"[{datetime.now()}] Sent response: {response}")
+                        # Wait before sending next frame
+                        await asyncio.sleep(1)  # Send a frame every second
 
                     except websockets.exceptions.ConnectionClosed:
                         print(f"[{datetime.now()}] Connection closed")
                         break
                     except Exception as e:
-                        print(f"[{datetime.now()}] Error handling message: {str(e)}")
+                        print(f"[{datetime.now()}] Error in main loop: {str(e)}")
                         break
 
         except Exception as e:

@@ -108,10 +108,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("message", (data) => {
       try {
         const response = JSON.parse(data.toString());
+        console.log(`[RPi ${rpiId}] Message received:`, response.type);
 
         // Handle camera frames from RPi
         if (response.type === "camera_frame") {
-          // Forward camera frame to UI clients
+          console.log(`[RPi ${rpiId}] Received camera frame, size: ${response.frame?.length || 0} bytes`);
+
+          let forwardCount = 0;
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({
@@ -119,8 +122,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 rpiId,
                 frame: response.frame
               }));
+              forwardCount++;
             }
           });
+
+          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardCount} clients`);
           return;
         }
 
@@ -136,12 +142,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       } catch (err) {
-        console.error(`Error handling RPi message: ${err}`);
+        console.error(`[RPi ${rpiId}] Error handling message:`, err);
       }
     });
 
     ws.on("close", () => {
-      console.log(`RPi disconnected: ${rpiId}`);
+      console.log(`[RPi ${rpiId}] Disconnected`);
       rpiConnections.delete(rpiId);
       wssUI.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
