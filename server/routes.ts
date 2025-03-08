@@ -49,19 +49,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebSocket server for RPi clients
   const wssRPi = new WebSocketServer({ 
-    server: httpServer, 
-    path: "/rpi"
+    server: httpServer,
+    path: "/rpi",
+    verifyClient: (info, callback) => {
+      // Get the rpiId from the URL path
+      const urlPath = info.req.url || "";
+      const pathParts = urlPath.split('/');
+      const rpiId = pathParts.pop() || pathParts.pop(); // Handle trailing slash
+      
+      if (!rpiId) {
+        console.log("RPi connection rejected: No RPi ID provided");
+        callback(false, 400, "RPi ID required");
+        return;
+      }
+      
+      // Store rpiId in request object to access it later
+      (info.req as any).rpiId = rpiId;
+      callback(true);
+    }
   });
 
   // Handle RPi connections
   wssRPi.on("connection", (ws, req) => {
-    // Extract RPi ID from URL path
-    const rpiId = req.url?.split("/").pop();
-    if (!rpiId) {
-      console.log("RPi connection rejected: No RPi ID provided");
-      ws.close(1008, "RPi ID required");
-      return;
-    }
+    // Extract RPi ID from request object (set during verification)
+    const rpiId = (req as any).rpiId;
 
     console.log(`RPi connected: ${rpiId}`);
     rpiConnections.set(rpiId, ws);
@@ -83,7 +94,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Handle registration message from Python client
         if (response.type === "register") {
-          console.log(`RPi ${rpiId} registered successfully`);
+          console.log(`RPi ${rpiId} registered successfully with status: ${response.status}`);
+          
+          // Notify UI clients about the RPi status
+          wssUI.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: "rpi_status",
+                rpiId,
+                status: response.status,
+                message: response.message
+              }));
+            }
+          });
           return;
         }
 
