@@ -13,6 +13,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
 
   useEffect(() => {
     if (!socket || !rpiId) {
+      console.log("No socket or rpiId available", { socket: !!socket, rpiId });
       return;
     }
 
@@ -23,12 +24,32 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
+        console.log("Camera feed received message:", { 
+          type: data.type, 
+          rpiId: data.rpiId, 
+          hasFrame: !!data.frame,
+          currentRpiId: rpiId
+        });
 
         // Check if this is a camera frame and convert IDs to strings for comparison
         if (data.type === 'camera_frame' && String(data.rpiId) === String(rpiId)) {
+          if (!data.frame) {
+            console.warn("Received camera_frame message without frame data");
+            return;
+          }
+
           console.log(`Received frame for RPi ${data.rpiId}, matches current RPi ${rpiId}`);
-          setFrame(`data:image/jpeg;base64,${data.frame}`);
-          setLoading(false);
+          const frameData = `data:image/jpeg;base64,${data.frame}`;
+          console.log("Frame data length:", frameData.length);
+
+          // Verify the base64 data is valid before setting
+          try {
+            atob(data.frame); // Test if it's valid base64
+            setFrame(frameData);
+            setLoading(false);
+          } catch (base64Error) {
+            console.error("Invalid base64 data in frame:", base64Error);
+          }
         }
       } catch (err) {
         console.error('Error processing WebSocket message:', err);
@@ -37,9 +58,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
 
     // Add event listener
     socket.addEventListener('message', handleMessage);
+    console.log("Camera feed WebSocket listener added");
 
     // Clean up
     return () => {
+      console.log("Removing camera feed WebSocket listener");
       socket.removeEventListener('message', handleMessage);
     };
   }, [socket, rpiId]);
@@ -62,6 +85,10 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
+          onError={(e) => {
+            console.error("Error loading camera frame:", e);
+            setFrame(null);
+          }}
         />
       ) : (
         <div className="flex items-center justify-center h-full text-white/70">
