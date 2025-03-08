@@ -48,8 +48,8 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Use port 5000 (the same port your main app is using)
-const PORT = 5000;
+// Use a different port than your main app
+const PORT = 3333;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`WebSocket test server running on port ${PORT}`);
   console.log(`WebSocket URL: wss://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/websocket-test`);
