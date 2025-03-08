@@ -1,5 +1,5 @@
 
-import type { SessionData, Store } from 'express-session';
+import session, { SessionData, Store } from 'express-session';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import postgres from 'postgres';
@@ -7,9 +7,9 @@ import {
   users,
   stations,
   sessionLogs,
-  NewUser,
   User,
-  Station
+  Station,
+  InsertUser as NewUser
 } from '@shared/schema';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
@@ -53,29 +53,10 @@ class Storage implements IStorage {
     this.db = drizzle(this.client);
     
     // Create a basic in-memory session store for development
-    this.sessionStore = {
-      all: (callback: (err: any, sessions?: { [sid: string]: SessionData } | null) => void) => {
-        callback(null, {});
-      },
-      destroy: (sid: string, callback?: (err?: any) => void) => {
-        callback?.();
-      },
-      clear: (callback?: (err?: any) => void) => {
-        callback?.();
-      },
-      length: (callback: (err: any, length?: number) => void) => {
-        callback(null, 0);
-      },
-      get: (sid: string, callback: (err: any, session?: SessionData | null) => void) => {
-        callback(null, null);
-      },
-      set: (sid: string, session: SessionData, callback?: (err?: any) => void) => {
-        callback?.();
-      },
-      touch: (sid: string, session: SessionData, callback?: (err?: any) => void) => {
-        callback?.();
-      }
-    };
+    const MemoryStore = require('memorystore')(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
   }
 
   async getUser(id: number): Promise<User | undefined> {
