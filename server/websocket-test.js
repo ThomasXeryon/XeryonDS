@@ -1,8 +1,8 @@
 
 // Simple standalone WebSocket test that works with Replit's HTTP handling
-const express = require('express');
-const { WebSocketServer } = require('ws');
-const http = require('http');
+import express from 'express';
+import { WebSocketServer } from 'ws';
+import http from 'http';
 
 // Create HTTP server
 const app = express();
