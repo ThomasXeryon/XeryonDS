@@ -37,11 +37,11 @@ export function ControlPad({
   const { sendMessage, connectionStatus } = useWebSocket();
 
   const handleArrowClick = (direction: string) => {
-    sendMessage({ value: 'move', direction, stationId, rpiId });
+    sendMessage({ type: 'command', command: 'move', direction, rpiId });
   };
 
   const handleStopClick = () => {
-    sendMessage({ value: 'stop', stationId, rpiId });
+    sendMessage({ type: 'command', command: 'stop', rpiId });
   };
 
     sendSocketMessage(message);

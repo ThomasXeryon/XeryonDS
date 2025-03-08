@@ -140,6 +140,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           return;
         }
+        
+        // Handle camera frames from RPi
+        if (response.type === "camera_frame") {
+          // Forward camera frame to UI clients
+          wssUI.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: "camera_frame",
+                rpiId,
+                frame: response.frame
+              }));
+            }
+          });
+          return;
+        }
 
         // Broadcast RPi response to all connected UI clients
         wssUI.clients.forEach((client) => {
