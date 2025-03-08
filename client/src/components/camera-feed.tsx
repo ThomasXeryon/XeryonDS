@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWebSocket } from '@/hooks/use-websocket';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,9 +23,10 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        
-        // Check if this is a camera frame from the selected station
-        if (data.type === 'camera_frame' && data.rpiId === rpiId) {
+
+        // Check if this is a camera frame and convert IDs to strings for comparison
+        if (data.type === 'camera_frame' && String(data.rpiId) === String(rpiId)) {
+          console.log(`Received frame for RPi ${data.rpiId}, matches current RPi ${rpiId}`);
           setFrame(`data:image/jpeg;base64,${data.frame}`);
           setLoading(false);
         }
