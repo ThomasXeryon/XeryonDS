@@ -2,7 +2,7 @@
 import { startRPiClient } from './rpi-client';
 
 // Get the RPi ID from command line arguments or use a default
-const rpiId = process.argv[2] || 'station-1';
+const rpiId = process.argv[2] || 'RPI1';
 
 console.log(`Starting RPi simulator with ID: ${rpiId}`);
 startRPiClient(rpiId, 'ws://localhost:5000');
