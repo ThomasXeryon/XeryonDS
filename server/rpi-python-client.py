@@ -55,7 +55,7 @@ async def connect_to_server():
                             await websocket.send(json.dumps(response))
                         except json.JSONDecodeError:
                             print(f"[{datetime.now()}] Invalid message: {message}")
-                except Exception as e:
+            except Exception as e:
                 print(f"[{datetime.now()}] Connection to {uri} failed: {str(e)}")
                 print(f"[{datetime.now()}] Error type: {type(e).__name__}")
                 continue  # Try next URL
