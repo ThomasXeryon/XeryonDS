@@ -3,9 +3,14 @@ import asyncio
 import websockets
 import json
 from datetime import datetime
+import sys
 
-# Configuration - update this with your station ID
-STATION_ID = "station-8"  # Change this to match your station's rpiId
+# Get the station ID from command line arguments or use a default
+if len(sys.argv) > 1:
+    STATION_ID = sys.argv[1]
+else:
+    STATION_ID = "RPI1"  # Default ID if none provided
+
 SERVER_URL = "wss://xeryonremotedemostation.replit.app"  # Production URL
 
 async def connect_to_server():
@@ -44,4 +49,6 @@ async def connect_to_server():
 
 if __name__ == "__main__":
     print(f"[{datetime.now()}] Starting RPI WebSocket client for {STATION_ID}")
+    print(f"[{datetime.now()}] To use a different ID, run: python rpi-python-client.py YOUR_STATION_ID")
+    print(f"[{datetime.now()}] Connecting to server at: {SERVER_URL}/rpi/{STATION_ID}")
     asyncio.run(connect_to_server())
