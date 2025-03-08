@@ -258,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const imageUrl = `/uploads/${filename}`;
         await storage.updateStation(stationId, {
           name: req.body.name || undefined,
-          imageUrl: imageUrl // Using a property that exists in StationUpdate
+          previewImage: imageUrl
         });
 
         res.json({ url: imageUrl });
