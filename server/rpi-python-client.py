@@ -49,7 +49,9 @@ async def connect_to_server():
             await asyncio.sleep(5)
 
 if __name__ == "__main__":
+    uri = f"{SERVER_URL}/rpi"
     print(f"[{datetime.now()}] Starting RPI WebSocket client for {STATION_ID}")
     print(f"[{datetime.now()}] To use a different ID, run: python rpi-python-client.py YOUR_STATION_ID")
-    print(f"[{datetime.now()}] Connecting to server at: {SERVER_URL}/rpi/{STATION_ID}")
+    print(f"[{datetime.now()}] Connecting to server at: {uri}")
+    print(f"[{datetime.now()}] Will register with ID: {STATION_ID}")
     asyncio.run(connect_to_server())
