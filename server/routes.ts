@@ -58,30 +58,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket server for RPi clients
   const wssRPi = new WebSocketServer({ 
     server: httpServer,
-    path: "/rpi",
-    verifyClient: (info, callback) => {
-      const urlPath = info.req.url || "";
-      console.log(`[RPi WebSocket] Verifying connection with URL: ${urlPath}`);
-      console.log(`[RPi WebSocket] Original request URL: ${info.req.url}`);
-      console.log(`[RPi WebSocket] Headers:`, info.req.headers);
-      
-      const pathParts = urlPath.split('/');
-      console.log(`[RPi WebSocket] Path parts:`, pathParts);
-      
-      // Extract rpiId from path parts
-      const rpiId = pathParts[2]; // e.g., RPI1 from /rpi/RPI1
-      
+    noServer: true // We'll handle the upgrade ourselves for more control
+  });
+  
+  // Handle WebSocket upgrade requests
+  httpServer.on('upgrade', (request, socket, head) => {
+    const { pathname } = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+    console.log(`[WebSocket] Upgrade request for path: ${pathname}`);
+    
+    // Check if this is an RPi connection
+    if (pathname.startsWith('/rpi/')) {
+      // Extract the RPi ID from the path
+      const pathParts = pathname.split('/');
+      const rpiId = pathParts[2];
       console.log(`[RPi WebSocket] Extracted RPi ID: "${rpiId}"`);
-
+      
       if (!rpiId) {
         console.log("[RPi WebSocket] CONNECTION REJECTED: No RPi ID provided");
-        callback(false, 400, "RPi ID required");
+        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+        socket.destroy();
         return;
       }
-
+      
+      // Store RPi ID in request for later use
+      (request as any).rpiId = rpiId;
       console.log(`[RPi WebSocket] RPi ID validation passed: "${rpiId}"`);
-      (info.req as any).rpiId = rpiId;
-      callback(true);
+      
+      // Handle the upgrade
+      wssRPi.handleUpgrade(request, socket, head, (ws) => {
+        wssRPi.emit('connection', ws, request);
+      });
+    } 
+    else if (pathname === '/ws') {
+      // Handle UI client connections
+      wssUI.handleUpgrade(request, socket, head, (ws) => {
+        wssUI.emit('connection', ws, request);
+      });
+    }
+    else {
+      // Not a WebSocket route we handle
+      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+      socket.destroy();
     }
   });
 
