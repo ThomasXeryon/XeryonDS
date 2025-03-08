@@ -24,7 +24,10 @@ else:
 
 async def connect_to_server():
     # The server expects connections to /rpi/{rpiId}
+    # Ensure we're using the correct format for WebSocket connections
+    # The path part needs to be in the actual path component, not query parameters
     uri = f"{SERVER_URL}/rpi/{STATION_ID}"
+    print(f"[{datetime.now()}] Using WebSocket URI: {uri}")
     
     while True:  # Reconnect loop
         try:
