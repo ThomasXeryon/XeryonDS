@@ -58,11 +58,17 @@ async def send_camera_feed():
                 
                 # Main loop to send camera frames
                 while True:
-                    # Capture frame
-                    ret, frame = cap.read()
-                    if not ret:
-                        print("Failed to capture frame")
-                        break
+                    # Capture frame with better error handling
+                    try:
+                        ret, frame = cap.read()
+                        if not ret:
+                            print("Failed to capture frame, will retry...")
+                            await asyncio.sleep(1)
+                            continue
+                    except Exception as e:
+                        print(f"Camera error: {str(e)}, will retry...")
+                        await asyncio.sleep(2)
+                        continue
                     
                     # Compress and convert frame to JPEG
                     _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
@@ -100,8 +106,20 @@ async def send_camera_feed():
             continue  # Try next URL
         
         # If we get here, the connection was closed
-        print("Connection closed. Trying to reconnect...")
-        await asyncio.sleep(3)
+        print("Connection closed. Trying to reconnect in 5 seconds...")
+        await asyncio.sleep(5)
+        
+        # Try reopening the camera if it was closed
+        if not cap.isOpened():
+            print("Reopening camera...")
+            for port in range(10):
+                cap = cv2.VideoCapture(port)
+                if cap.isOpened():
+                    ret, test_frame = cap.read()
+                    if ret:
+                        print(f"Successfully reconnected to camera on port {port}")
+                        break
+                cap.release()
 
 if __name__ == "__main__":
     print(f"Starting camera feed from RPi {STATION_ID}")
