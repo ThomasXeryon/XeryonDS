@@ -19,7 +19,7 @@ export function AdvancedControls({ stationId, rpiId, enabled, isConnected, onCom
 
   const handleSpeedChange = (value: number[]) => {
     setSpeed(value);
-    onCommand(rpiId, "speed", value[0]); // Added rpiId
+    onCommand(rpiId, "speed", value[0]);
   };
 
   return (
