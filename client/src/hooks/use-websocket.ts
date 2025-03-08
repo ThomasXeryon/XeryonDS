@@ -15,12 +15,15 @@ export function useWebSocket() {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    // Create WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
-
+    
+    console.log("Connecting to WebSocket at:", wsUrl);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
+    // Set up event handlers
     socket.onopen = () => {
       console.log('WebSocket connected');
       setConnectionStatus(true);
@@ -36,14 +39,17 @@ export function useWebSocket() {
       setConnectionStatus(false);
     };
 
+    // Clean up on unmount
     return () => {
+      console.log("Closing WebSocket connection");
       socket.close();
     };
   }, []);
 
+  // Function to send messages through the WebSocket
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      console.log("Sending message:", message);
+      console.log("Sending WebSocket message:", message);
       socketRef.current.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket not connected, message not sent:', message);
