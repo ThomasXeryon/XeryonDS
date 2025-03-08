@@ -204,7 +204,7 @@ export function StationCard({ station }: { station: Station }) {
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
-                  <CameraFeed stationId={station.id} />
+                  <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
               <div className="space-y-8">
@@ -257,7 +257,7 @@ export function StationCard({ station }: { station: Station }) {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-video relative">
-                  <CameraFeed stationId={station.id} />
+                  <CameraFeed rpiId={station.rpiId} />
                 </div>
                 <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
                   {station.previewImage ? (
