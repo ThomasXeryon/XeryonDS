@@ -21,6 +21,8 @@ interface StatusIndicatorProps extends VariantProps<typeof statusVariants> {
   className?: string;
 }
 
+export { StatusIndicator as StationStatus };
+
 export function StatusIndicator({ status, className }: StatusIndicatorProps) {
   return (
     <div className="relative flex items-center gap-2">
