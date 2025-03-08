@@ -21,11 +21,20 @@ SERVER_URLS = [
 ]
 
 async def send_camera_feed():
-    # Initialize the camera
-    cap = cv2.VideoCapture(0)  # Use 0 for default camera
+    # Try different camera ports to find the correct one
+    camera_found = False
+    for port in range(10):  # Try ports 0-9
+        cap = cv2.VideoCapture(port)
+        if cap.isOpened():
+            ret, test_frame = cap.read()
+            if ret:
+                print(f"Successfully connected to camera on port {port}")
+                camera_found = True
+                break
+            cap.release()
     
-    if not cap.isOpened():
-        print("Error: Could not open camera.")
+    if not camera_found:
+        print("Error: Could not open camera on any port.")
         return
     
     # Set resolution to reduce bandwidth
