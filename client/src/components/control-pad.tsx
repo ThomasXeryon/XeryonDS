@@ -34,5 +34,15 @@ export function ControlPad({
     onCommand(rpiId, "stop");
   };
 
+  const { sendMessage, connectionStatus } = useWebSocket();
+
+  const handleArrowClick = (direction: string) => {
+    sendMessage({ value: 'move', direction, stationId, rpiId });
+  };
+
+  const handleStopClick = () => {
+    sendMessage({ value: 'stop', stationId, rpiId });
+  };
+
     sendSocketMessage(message);
   };

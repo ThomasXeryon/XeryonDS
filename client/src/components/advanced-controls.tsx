@@ -16,7 +16,7 @@ export function AdvancedControls({ stationId, station, enabled, isConnected, onC
   const [stepSize, setStepSize] = useState("1.0");
   const [speed, setSpeed] = useState([500]); // Default to middle of range
   const [isDemoRunning, setIsDemoRunning] = useState(false);
-  
+
   // Get rpiId from station object
   const rpiId = station?.rpiId;
 

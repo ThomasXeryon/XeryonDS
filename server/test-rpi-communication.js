@@ -15,7 +15,6 @@ ws.on('open', () => {
   // Send a test command to the RPi
   const testCommand = {
     type: 'command',
-    stationId: stationId,
     rpiId: rpiId,
     command: 'test',
     direction: 'test'
