@@ -6,15 +6,19 @@ from datetime import datetime
 
 # Simple test client that connects to our test server
 async def test_websocket():
+    print(f"[{datetime.now()}] Starting WebSocket connection test")
+    
+    # Test connections to try (local, deployed, direct port)
     urls = [
-        "wss://xeryonremotedemostation.replit.app/websocket-test",  # Try standard path first
-        "ws://xeryonremotedemostation.replit.app:3333/websocket-test"  # Try custom port
+        "ws://localhost:3333/websocket-test",       # Local dev with direct port
+        "ws://0.0.0.0:3333/websocket-test",         # Direct IP access
+        f"ws://{asyncio.get_event_loop().run_in_executor(None, lambda: __import__('os').environ.get('REPL_SLUG', 'localhost'))}.replit.dev:3333/websocket-test"  # Replit URL with port
     ]
 
     for url in urls:
         try:
             print(f"[{datetime.now()}] Trying to connect to: {url}")
-            async with websockets.connect(url, timeout=10) as ws:
+            async with websockets.connect(url) as ws:
                 print(f"[{datetime.now()}] Connected to {url} successfully!")
                 
                 # Send a test message
@@ -34,5 +38,4 @@ async def test_websocket():
     print(f"[{datetime.now()}] All connection attempts failed")
 
 if __name__ == "__main__":
-    print(f"[{datetime.now()}] Starting WebSocket connection test")
     asyncio.run(test_websocket())

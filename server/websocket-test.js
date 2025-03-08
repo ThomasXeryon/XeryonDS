@@ -10,6 +10,7 @@ app.get('/', (req, res) => {
   res.send('WebSocket test server is running. Connect to /websocket-test');
 });
 
+// Create WebSocket server
 const server = http.createServer(app);
 
 // Create WebSocket server using the HTTP server
@@ -48,10 +49,10 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Use a different port than your main app
-const PORT = 3333;
+// Use a different port than your main app and ensure it doesn't conflict
+const PORT = process.env.REPL_SLUG ? 3334 : 3333; // Use 3334 in production, 3333 locally
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`WebSocket test server running on port ${PORT}`);
-  console.log(`WebSocket URL: wss://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/websocket-test`);
-  console.log(`HTTP URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+  console.log(`WebSocket URL: ws://${process.env.REPL_SLUG || 'localhost'}:${PORT}/websocket-test`);
+  console.log(`HTTP URL: http://${process.env.REPL_SLUG || 'localhost'}:${PORT}`);
 });
