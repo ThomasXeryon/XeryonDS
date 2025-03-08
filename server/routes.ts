@@ -78,8 +78,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on("message", (data) => {
       try {
-        const response = JSON.parse(data.toString()) as RPiResponse;
+        const response = JSON.parse(data.toString());
         console.log(`Message from RPi ${rpiId}:`, response);
+        
+        // Handle registration message from Python client
+        if (response.type === "register") {
+          console.log(`RPi ${rpiId} registered successfully`);
+          return;
+        }
 
         // Broadcast RPi response to all connected UI clients
         wssUI.clients.forEach((client) => {
