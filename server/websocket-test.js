@@ -1,59 +1,50 @@
 
-// Simple WebSocket server test for Replit
-const WebSocket = require('ws');
+// Simple standalone WebSocket test server
+const { WebSocketServer } = require('ws');
 const http = require('http');
 
-// Create simple HTTP server
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('WebSocket server is running');
+  res.end('WebSocket test server running');
 });
 
-// Create WebSocket server
-const wss = new WebSocket.Server({ server });
+// Create a very simple WebSocket server
+const wss = new WebSocketServer({ server });
 
-// Track connected clients
-let clientCount = 0;
-
-// Handle connections
-wss.on('connection', (ws, req) => {
-  clientCount++;
-  const clientId = clientCount;
-  console.log(`Client ${clientId} connected from ${req.socket.remoteAddress}`);
+wss.on('connection', (ws) => {
+  console.log('Client connected!');
   
-  // Send welcome message
-  ws.send(JSON.stringify({
-    type: 'welcome',
-    message: `Welcome client ${clientId}!`,
+  // Send a welcome message
+  ws.send(JSON.stringify({ 
+    message: 'Hello from WebSocket server!',
     timestamp: new Date().toISOString()
   }));
   
   // Handle messages
   ws.on('message', (message) => {
-    console.log(`Received from client ${clientId}: ${message}`);
+    console.log('Received:', message.toString());
     
     // Echo back
-    ws.send(JSON.stringify({
+    ws.send(JSON.stringify({ 
       type: 'echo',
       message: message.toString(),
       timestamp: new Date().toISOString()
     }));
   });
   
-  // Handle disconnection
   ws.on('close', () => {
-    console.log(`Client ${clientId} disconnected`);
+    console.log('Client disconnected');
   });
   
-  // Handle errors
   ws.on('error', (error) => {
-    console.error(`Client ${clientId} error:`, error);
+    console.error('WebSocket error:', error);
   });
 });
 
-// Start server
-const PORT = 3300;
+// Start server on a different port to avoid conflicts
+const PORT = 3333;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`WebSocket test server running on port ${PORT}`);
   console.log(`WebSocket URL: ws://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co:${PORT}`);
+  console.log(`HTTP URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co:${PORT}`);
 });
