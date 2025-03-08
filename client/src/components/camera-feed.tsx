@@ -3,8 +3,9 @@ import { useWebSocket } from "@/hooks/use-websocket";
 
 export function CameraFeed({ stationId, station }: { stationId: number; station?: { rpiId: number } }) {
   const imgRef = useRef<HTMLImageElement>(null);
-  const [imageSrc, setImageSrc] = useState(""); // Added state for image source
-  const [error, setError] = useState<string | null>(null);  //Added state for error handling
+  const [imageSrc, setImageSrc] = useState<string>(""); 
+  const [error, setError] = useState<string | null>(null);
+  const { socket, connectionStatus } = useWebSocket();
 
   useEffect(() => {
     if (!stationId) return;

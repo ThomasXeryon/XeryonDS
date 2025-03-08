@@ -40,10 +40,12 @@ export function ControlPad({
   const handleArrowClick = (direction: string) => {
     if (!rpiId) return;
     sendMessage({ type: 'command', command: 'move', direction, rpiId });
+    onCommand(rpiId, direction);
   };
 
   const handleStopClick = () => {
     if (!rpiId) return;
     sendMessage({ type: 'command', command: 'stop', rpiId });
+    onCommand(rpiId, 'stop');
   };
   };
