@@ -1,6 +1,6 @@
 interface ControlPadProps {
   stationId: number;
-  rpiId: string;
+  station: any; // Use proper type from your schema
   enabled: boolean;
   isConnected: boolean;
   onCommand: (rpiId: string, command: string, direction?: string) => void;
@@ -8,32 +8,31 @@ interface ControlPadProps {
 
 export function ControlPad({ 
   stationId, 
-  rpiId,
+  station,
   enabled, 
   isConnected, 
   onCommand 
 }: ControlPadProps) {
+  // Get rpiId from station object
+  const rpiId = station?.rpiId;
 
   const handleButtonClick = (direction: string) => {
+    if (!rpiId) {
+      console.error("No RPi ID available for command");
+      return;
+    }
+    console.log(`Sending move command to RPi ${rpiId}, direction: ${direction}`);
     onCommand(rpiId, "move", direction);
   };
 
   const handleButtonRelease = () => {
+    if (!rpiId) {
+      console.error("No RPi ID available for command");
+      return;
+    }
+    console.log(`Sending stop command to RPi ${rpiId}`);
     onCommand(rpiId, "stop");
   };
-
-  // ... rest of the ControlPad component remains unchanged ...
-}
-
-const handleCommand = (rpiId: string, command: string, direction?: string) => {
-    //if (!stationId || !station) return; // Removed this condition as rpiId is now directly passed.
-
-    const message: WebSocketMessage = {
-      type: "command",
-      rpiId: rpiId, // Ensure RPi ID is included
-      command,
-      direction,
-    };
 
     sendSocketMessage(message);
   };

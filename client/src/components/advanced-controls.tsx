@@ -6,19 +6,27 @@ import { MinusCircle, PlusCircle, Square, Play, StopCircle } from "lucide-react"
 
 interface AdvancedControlsProps {
   stationId: number;
-  rpiId: number; // Added rpiId
+  station: any; // Use proper type from your schema
   enabled: boolean;
   isConnected: boolean;
-  onCommand: (rpiId: number, command: string, value?: number) => void; // Modified onCommand
+  onCommand: (rpiId: string, command: string, value?: number) => void;
 }
 
-export function AdvancedControls({ stationId, rpiId, enabled, isConnected, onCommand }: AdvancedControlsProps) {
+export function AdvancedControls({ stationId, station, enabled, isConnected, onCommand }: AdvancedControlsProps) {
   const [stepSize, setStepSize] = useState("1.0");
   const [speed, setSpeed] = useState([500]); // Default to middle of range
   const [isDemoRunning, setIsDemoRunning] = useState(false);
+  
+  // Get rpiId from station object
+  const rpiId = station?.rpiId;
 
   const handleSpeedChange = (value: number[]) => {
     setSpeed(value);
+    if (!rpiId) {
+      console.error("No RPi ID available for speed command");
+      return;
+    }
+    console.log(`Sending speed command to RPi ${rpiId}, value: ${value[0]}`);
     onCommand(rpiId, "speed", value[0]);
   };
 
