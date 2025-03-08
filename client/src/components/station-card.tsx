@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CameraFeed } from "./camera-feed";
+import { CameraFeed } from "@/components/camera-feed";
 import { AdvancedControls } from "./advanced-controls";
 import { SessionTimer } from "./session-timer";
 import { Station } from "@shared/schema";
@@ -20,16 +20,22 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { StationStatus } from "@/components/station-status";
 
-export function StationCard({ station }: { station: Station }) {
+interface StationCardProps {
+  station: Station;
+  expanded?: boolean;
+}
+
+export function StationCard({ station, expanded = false }: StationCardProps) {
   const { user } = useAuth();
   const isMySession = station.currentUserId === user?.id;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [wsConnection, setWsConnection] = useState<{connected: boolean, send: (msg: any) => void}>({ 
+  const [wsConnection, setWsConnection] = useState<{ connected: boolean; send: (msg: any) => void }>({
     connected: false,
-    send: () => {} 
+    send: () => {},
   });
   const wsRef = useRef<WebSocket>();
   const { toast } = useToast();
@@ -45,7 +51,7 @@ export function StationCard({ station }: { station: Station }) {
     wsRef.current.onopen = () => {
       setWsConnection({
         connected: true,
-        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg))
+        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
       });
       toast({
         title: "Connected to control system",
@@ -142,7 +148,7 @@ export function StationCard({ station }: { station: Station }) {
       wsConnection.send({
         type: command,
         value,
-        stationId: station.id
+        stationId: station.id,
       });
     }
   };
@@ -152,11 +158,11 @@ export function StationCard({ station }: { station: Station }) {
   };
 
   const handleContactUs = () => {
-    window.open('https://xeryon.com/contact/', '_blank');
+    window.open("https://xeryon.com/contact/", "_blank");
   };
 
   const handlePurchase = () => {
-    window.open('https://xeryon.com/products/development-kits/', '_blank');
+    window.open("https://xeryon.com/products/development-kits/", "_blank");
   };
 
   const handleFeedbackSubmit = () => {
@@ -165,59 +171,42 @@ export function StationCard({ station }: { station: Station }) {
     }
   };
 
-  const cardClasses = isFullscreen 
-    ? "fixed inset-0 z-50 m-0 rounded-none overflow-auto bg-background"
-    : "";
-
-  return (
-    <>
-      <Card className={cardClasses}>
+  if (expanded) {
+    return (
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            <span>{station.name}</span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-accent hover:text-accent-foreground"
-                onClick={toggleFullscreen}
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </Button>
-              <span className={`text-sm px-2 py-1 rounded-full ${
-                station.status === "available" 
-                  ? "bg-green-100 text-green-700" 
-                  : "bg-yellow-100 text-yellow-700"
-              }`}>
-                {station.status === "available" ? "Available" : "In Use"}
-              </span>
-            </div>
+          <CardTitle className="flex items-center justify-between">
+            <span>Station {station.name}</span>
+            <StationStatus status={station.status} />
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isFullscreen ? (
-            // Fullscreen layout - keep camera feed full width
+          <div className="space-y-4">
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
-                  <CameraFeed stationId={station.id} />
+                  <CameraFeed rpiId={station.rpiId} stationId={station.id} />
                 </div>
               </div>
               <div className="space-y-8">
-                <AdvancedControls
-                  stationId={station.id}
-                  enabled={isMySession}
-                  isConnected={wsConnection.connected}
-                  onCommand={handleCommand}
-                />
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Controls</h3>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" className="justify-start" onClick={() => handleCommand('move', -1)}>
+                      Move Left
+                    </Button>
+                    <Button variant="outline" className="justify-start" onClick={() => handleCommand('move', 1)}>
+                      Move Right
+                    </Button>
+                    <Button variant="outline" className="justify-start" onClick={() => handleCommand('home')}>
+                      Home Position
+                    </Button>
+                  </div>
+                </div>
                 {station.sessionStart && isMySession && (
                   <div>
-                    <SessionTimer 
-                      startTime={station.sessionStart} 
+                    <SessionTimer
+                      startTime={station.sessionStart}
                       onTimeout={() => {
                         endSession.mutate();
                         setShowThankYouDialog(true);
@@ -226,7 +215,7 @@ export function StationCard({ station }: { station: Station }) {
                   </div>
                 )}
                 {station.status === "available" ? (
-                  <Button 
+                  <Button
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => startSession.mutate()}
                     disabled={startSession.isPending}
@@ -234,7 +223,7 @@ export function StationCard({ station }: { station: Station }) {
                     Start Session
                   </Button>
                 ) : isMySession ? (
-                  <Button 
+                  <Button
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
@@ -252,69 +241,52 @@ export function StationCard({ station }: { station: Station }) {
                 )}
               </div>
             </div>
-          ) : (
-            // Overview layout - 50/50 split
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="aspect-video relative">
-                  <CameraFeed stationId={station.id} />
-                </div>
-                <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
-                  {station.previewImage ? (
-                    <img 
-                      src={station.previewImage} 
-                      alt={`${station.name} preview`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      No preview image available
-                    </div>
-                  )}
-                </div>
-              </div>
-              {station.sessionStart && isMySession && (
-                <div className="mb-4">
-                  <SessionTimer 
-                    startTime={station.sessionStart} 
-                    onTimeout={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
-                    }}
-                  />
-                </div>
-              )}
-              <div className="space-y-4">
-                {station.status === "available" ? (
-                  <Button 
-                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                    onClick={() => startSession.mutate()}
-                    disabled={startSession.isPending}
-                  >
-                    Start Session
-                  </Button>
-                ) : isMySession ? (
-                  <Button 
-                    className="w-full hover:bg-destructive/90 transition-colors"
-                    variant="destructive"
-                    onClick={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
-                    }}
-                    disabled={endSession.isPending}
-                  >
-                    End Session
-                  </Button>
-                ) : (
-                  <Button className="w-full" disabled>
-                    Station Occupied
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
+          </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between">
+          <span>Station {station.name}</span>
+          <StationStatus status={station.status} />
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="aspect-video relative">
+              <CameraFeed rpiId={station.rpiId} stationId={station.id} />
+            </div>
+            <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
+              {station.previewImage ? (
+                <img
+                  src={station.previewImage}
+                  alt={`Preview of ${station.name}`}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No preview available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button className="w-full" onClick={() => {
+          setIsFullscreen(true)
+        }}>
+          Connect to Station
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
 
       <Dialog open={showThankYouDialog} onOpenChange={setShowThankYouDialog}>
         <DialogContent className="sm:max-w-md">
@@ -352,7 +324,7 @@ export function StationCard({ station }: { station: Station }) {
                 onChange={(e) => setFeedback(e.target.value)}
                 className="min-h-[100px]"
               />
-              <Button 
+              <Button
                 className="w-full"
                 onClick={handleFeedbackSubmit}
                 disabled={submitFeedback.isPending || !feedback.trim()}
@@ -364,6 +336,3 @@ export function StationCard({ station }: { station: Station }) {
           </div>
         </DialogContent>
       </Dialog>
-    </>
-  );
-}
