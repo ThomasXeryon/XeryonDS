@@ -26,12 +26,10 @@ export default function StationsPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
-  const [ipAddress, setIpAddress] = useState("");
-  const [port, setPort] = useState("");
-  const [secretKey, setSecretKey] = useState("");
+  const [rpiId, setRpiId] = useState(""); // Added rpiId state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { data: stations, isLoading } = useQuery<Station[]>({
@@ -39,8 +37,8 @@ export default function StationsPage() {
   });
 
   const createStation = useMutation({
-    mutationFn: async ({ name, ipAddress, port, secretKey }: { name: string; ipAddress: string; port: string; secretKey: string }) => {
-      const res = await apiRequest("POST", "/api/admin/stations", { name, ipAddress, port, secretKey });
+    mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => { // Updated mutationFn
+      const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
       const station = await res.json();
 
       // If we have a selected image, upload it right after creating the station
@@ -63,9 +61,7 @@ export default function StationsPage() {
         description: "New demo station has been added successfully",
       });
       setNewStationName("");
-      setIpAddress("");
-      setPort("");
-      setSecretKey("");
+      setRpiId(""); // Clear rpiId state
       setSelectedImage(null);
       setIsAddDialogOpen(false);
     },
@@ -82,9 +78,7 @@ export default function StationsPage() {
     mutationFn: async (station: Station) => {
       const res = await apiRequest("PATCH", `/api/admin/stations/${station.id}`, {
         name: station.name,
-        ipAddress: station.ipAddress,
-        port: station.port,
-        secretKey: station.secretKey,
+        rpiId: station.rpiId, // Updated to include rpiId
       });
       return await res.json();
     },
@@ -221,6 +215,16 @@ export default function StationsPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="rpiId">RPi ID</Label>
+                  <Input
+                    id="rpiId"
+                    placeholder="RPi ID (e.g., RPI1)"
+                    value={rpiId}
+                    onChange={(e) => setRpiId(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="preview">Preview Image</Label>
                   <div className="flex items-center gap-4">
                     <Input
@@ -242,41 +246,10 @@ export default function StationsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="ip">IP Address</Label>
-                  <Input
-                    id="ip"
-                    placeholder="IP Address (e.g. 192.168.1.100)"
-                    value={ipAddress}
-                    onChange={(e) => setIpAddress(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="port">Port</Label>
-                  <Input
-                    id="port"
-                    placeholder="Port (e.g. 8080)"
-                    value={port}
-                    onChange={(e) => setPort(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="secret">Secret Key</Label>
-                  <Input
-                    id="secret"
-                    placeholder="Secret Key"
-                    type="password"
-                    value={secretKey}
-                    onChange={(e) => setSecretKey(e.target.value)}
-                  />
-                </div>
-
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => createStation.mutate({ name: newStationName, ipAddress, port, secretKey })}
-                  disabled={createStation.isPending || !newStationName.trim() || !ipAddress.trim() || !port.trim() || !secretKey.trim()}
+                  onClick={() => createStation.mutate({ name: newStationName, rpiId })}
+                  disabled={createStation.isPending || !newStationName.trim() || !rpiId.trim()}
                 >
                   {createStation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -407,31 +380,12 @@ export default function StationsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-ip">IP Address</Label>
+                <Label htmlFor="edit-rpiId">RPi ID</Label>
                 <Input
-                  id="edit-ip"
-                  placeholder="IP Address (e.g. 192.168.1.100)"
-                  value={selectedStation.ipAddress || ""}
-                  onChange={(e) => setSelectedStation({ ...selectedStation, ipAddress: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-port">Port</Label>
-                <Input
-                  id="edit-port"
-                  placeholder="Port (e.g. 8080)"
-                  value={selectedStation.port || ""}
-                  onChange={(e) => setSelectedStation({ ...selectedStation, port: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-secret">Secret Key</Label>
-                <Input
-                  id="edit-secret"
-                  placeholder="Secret Key"
-                  type="password"
-                  value={selectedStation.secretKey || ""}
-                  onChange={(e) => setSelectedStation({ ...selectedStation, secretKey: e.target.value })}
+                  id="edit-rpiId"
+                  placeholder="RPi ID (e.g., RPI1)"
+                  value={selectedStation.rpiId}
+                  onChange={(e) => setSelectedStation({ ...selectedStation, rpiId: e.target.value })}
                 />
               </div>
               <Button

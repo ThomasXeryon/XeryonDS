@@ -13,16 +13,12 @@ export const users = pgTable("users", {
 export const stations = pgTable("stations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  rpiId: text("rpi_id").notNull().unique(),
   status: text("status").notNull().default("available"),
   currentUserId: integer("current_user_id").references(() => users.id),
   sessionStart: timestamp("session_start"),
   isActive: boolean("is_active").notNull().default(true),
-  // Connection parameters
-  ipAddress: text("ip_address"),
-  port: text("port"),
-  secretKey: text("secret_key"),
-  // Preview image
-  previewImage: text("preview_image"), // URL or base64 of the preview image
+  previewImage: text("preview_image"),
 });
 
 export const sessionLogs = pgTable("session_logs", {
@@ -37,10 +33,10 @@ export const sessionLogs = pgTable("session_logs", {
 export const feedback = pgTable("feedback", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  type: text("type").notNull(), // 'feedback' or 'bug'
+  type: text("type").notNull(),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").notNull().default(drizzleSql`CURRENT_TIMESTAMP`),
-  status: text("status").notNull().default("pending"), // pending, reviewed, resolved
+  status: text("status").notNull().default("pending"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -50,9 +46,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
-  ipAddress: true,
-  port: true,
-  secretKey: true,
+  rpiId: true,
 });
 
 export const insertFeedbackSchema = createInsertSchema(feedback)
@@ -77,12 +71,13 @@ export type WebSocketMessage = {
   value?: number;
   stationId: number;
   rpiId: string;
-  command?: string;
+  command: string;
 };
 
 export type RPiResponse = {
-  type: "rpi_response" | "error";
-  rpiId: string;
-  message: string;
+  type: "rpi_response" | "error" | "rpi_list" | "command_sent";
+  rpiId?: string;
+  message?: string;
   status?: string;
+  rpiIds?: string[];
 };

@@ -10,9 +10,6 @@ const PostgresSessionStore = connectPg(session);
 
 interface StationUpdate {
   name?: string;
-  ipAddress?: string;
-  port?: string;
-  secretKey?: string;
   isActive?: boolean;
 }
 
@@ -25,7 +22,7 @@ interface IStorage {
 
   getStations(): Promise<Station[]>;
   getStation(id: number): Promise<Station | undefined>;
-  createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station>;
+  createStation(name: string, rpiId: string): Promise<Station>;
   updateStationSession(id: number, userId: number | null): Promise<Station>;
   deleteStation(id: number): Promise<void>;
   updateStation(id: number, update: Partial<StationUpdate>): Promise<Station>;
@@ -101,14 +98,12 @@ export class DatabaseStorage implements IStorage {
     return station;
   }
 
-  async createStation(name: string, ipAddress: string, port: string, secretKey: string): Promise<Station> {
+  async createStation(name: string, rpiId: string): Promise<Station> {
     const [station] = await db
       .insert(stations)
       .values({
         name,
-        ipAddress,
-        port,
-        secretKey,
+        rpiId,
         status: "available",
         isActive: true,
       })

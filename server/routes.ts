@@ -10,6 +10,25 @@ import fs from "fs/promises";
 import express from "express";
 import multer from "multer";
 
+// Define uploadsPath at the top level
+const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+
+// Configure multer for image uploads
+const upload = multer({
+  dest: uploadsPath,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
+
 // Map to store RPi WebSocket connections
 const rpiConnections = new Map<string, WebSocket>();
 
@@ -39,6 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Extract RPi ID from URL path
     const rpiId = req.url?.split("/").pop();
     if (!rpiId) {
+      console.log("RPi connection rejected: No RPi ID provided");
       ws.close(1008, "RPi ID required");
       return;
     }
@@ -46,9 +66,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`RPi connected: ${rpiId}`);
     rpiConnections.set(rpiId, ws);
 
+    // Notify UI clients about new RPi connection
+    wssUI.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "rpi_connected",
+          rpiId
+        }));
+      }
+    });
+
     ws.on("message", (data) => {
       try {
         const response = JSON.parse(data.toString()) as RPiResponse;
+        console.log(`Message from RPi ${rpiId}:`, response);
+
         // Broadcast RPi response to all connected UI clients
         wssUI.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
@@ -68,6 +100,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("close", () => {
       console.log(`RPi disconnected: ${rpiId}`);
       rpiConnections.delete(rpiId);
+      // Notify UI clients about disconnected RPi
+      wssUI.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "rpi_disconnected",
+            rpiId
+          }));
+        }
+      });
     });
 
     ws.on("error", (error) => {
@@ -77,28 +118,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Handle web UI client connections
   wssUI.on("connection", (ws, req) => {
-    let authenticated = false;
+    // For now, accept all UI connections without authentication
+    console.log("UI client connected");
 
-    // Authenticate WebSocket connection using session cookie
-    if (req.headers.cookie) {
-      const cookies = parseCookie(req.headers.cookie);
-      const sessionId = cookies["connect.sid"]; // Use the correct session cookie name
-      if (sessionId) {
-        authenticated = true;
-      }
-    }
-
-    if (!authenticated) {
-      ws.close(1008, "Authentication required");
-      return;
-    }
+    // Send initial list of connected RPis
+    ws.send(JSON.stringify({
+      type: "rpi_list",
+      rpiIds: Array.from(rpiConnections.keys())
+    }));
 
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
+        console.log("Received UI message:", message);
+
         const rpiWs = rpiConnections.get(message.rpiId);
 
         if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
+          console.log(`RPi ${message.rpiId} not connected or not ready`);
           ws.send(JSON.stringify({ 
             type: "error", 
             message: `RPi ${message.rpiId} not connected` 
@@ -113,6 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           direction: message.direction
         };
 
+        console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
         rpiWs.send(JSON.stringify(commandMessage));
 
         // Echo back confirmation
@@ -136,51 +174,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("WebSocket error:", error);
     });
 
-    // Send initial connection success message with list of connected RPis
-    ws.send(JSON.stringify({ 
-      type: "connected",
-      connectedRPis: Array.from(rpiConnections.keys())
-    }));
+    ws.on("close", () => {
+      console.log("UI client disconnected");
+    });
   });
 
-  // Serve uploaded files statically
-  const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
   // Ensure uploads directory exists
   await fs.mkdir(uploadsPath, { recursive: true })
     .catch(err => console.error('Error creating uploads directory:', err));
+
+  // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsPath));
 
+  // Add authentication logging middleware
+  app.use((req, res, next) => {
+    console.log(`Auth status for ${req.path}: isAuthenticated=${req.isAuthenticated()}, isAdmin=${isAdmin(req)}`);
+    next();
+  });
+
+  // Station routes
   app.get("/api/stations", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/stations");
+      return res.sendStatus(401);
+    }
     const stations = await storage.getStations();
     res.json(stations);
   });
 
   // Admin routes
-  app.get("/api/admin/users", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    const users = await storage.getAllUsers();
-    res.json(users);
-  });
+  app.post("/api/admin/stations", async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations POST");
+      return res.sendStatus(403);
+    }
+    const { name, rpiId } = req.body;
 
-  app.get("/api/admin/session-logs", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    const logs = await storage.getSessionLogs();
-    res.json(logs);
+    if (!name || !rpiId) {
+      return res.status(400).json({ message: "Name and RPi ID are required" });
+    }
+
+    try {
+      const station = await storage.createStation(name, rpiId);
+      res.status(201).json(station);
+    } catch (error) {
+      console.error("Error creating station:", error);
+      res.status(500).json({ message: "Failed to create station" });
+    }
   });
 
   app.patch("/api/admin/stations/:id", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    const { name, ipAddress, port, secretKey } = req.body;
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations PATCH");
+      return res.sendStatus(403);
+    }
+    const { name, rpiId } = req.body;
     const stationId = parseInt(req.params.id);
 
     try {
-      const station = await storage.updateStation(stationId, {
-        name,
-        ipAddress,
-        port,
-        secretKey
-      });
+      const station = await storage.updateStation(stationId, { name });
       res.json(station);
     } catch (error) {
       console.error("Error updating station:", error);
@@ -188,99 +240,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Feedback routes
-  app.post("/api/feedback", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { type, message } = req.body;
-
-    console.log("Received feedback:", { type, message, userId: req.user.id });
-
-    if (!type || !message) {
-      return res.status(400).json({ message: "Type and message are required" });
-    }
-
-    try {
-      const feedback = await storage.createFeedback(req.user.id, { type, message });
-      console.log("Created feedback:", feedback);
-      res.json(feedback);
-    } catch (error) {
-      console.error("Error creating feedback:", error);
-      res.status(500).json({ message: "Failed to create feedback" });
-    }
-  });
-
-  app.get("/api/admin/feedback", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    try {
-      const feedback = await storage.getFeedback();
-      console.log("Retrieved feedback:", feedback);
-      res.json(feedback);
-    } catch (error) {
-      console.error("Error getting feedback:", error);
-      res.status(500).json({ message: "Failed to get feedback" });
-    }
-  });
-
-  // Settings routes
-  app.get("/api/admin/settings", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    try {
-      const settings = await storage.getSettings();
-      res.json(settings);
-    } catch (error) {
-      console.error("Error getting settings:", error);
-      res.status(500).json({ message: "Failed to get settings" });
-    }
-  });
-
-  app.post("/api/admin/settings", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    const { rpiHost, rpiPort, rpiUsername, rpiPassword } = req.body;
-
-    try {
-      const settings = await storage.updateSettings({
-        rpiHost,
-        rpiPort,
-        rpiUsername,
-        rpiPassword
-      });
-      res.json(settings);
-    } catch (error) {
-      console.error("Error updating settings:", error);
-      res.status(500).json({ message: "Failed to update settings" });
-    }
-  });
-
-  // Other admin routes
-  app.post("/api/admin/stations", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
-    const { name, ipAddress, port, secretKey } = req.body;
-    if (!name) return res.status(400).json({ message: "Name is required" });
-
-    try {
-      const station = await storage.createStation(name);
-      // Update the station with connection parameters right after creation
-      const updatedStation = await storage.updateStation(station.id, {
-        name,
-        ipAddress,
-        port,
-        secretKey
-      });
-      res.status(201).json(updatedStation);
-    } catch (error) {
-      console.error("Error creating station:", error);
-      res.status(500).json({ message: "Failed to create station" });
-    }
-  });
-
   app.delete("/api/admin/stations/:id", async (req, res) => {
-    if (!isAdmin(req)) return res.sendStatus(403);
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations DELETE");
+      return res.sendStatus(403);
+    }
     await storage.deleteStation(parseInt(req.params.id));
     res.sendStatus(200);
   });
 
+  // Image upload endpoint
+  app.post("/api/admin/stations/:id/image",
+    upload.single('image'),
+    async (req, res) => {
+      if (!isAdmin(req)) {
+        console.log("Unauthorized access to /api/admin/stations/:id/image POST");
+        return res.sendStatus(403);
+      }
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+      const stationId = parseInt(req.params.id);
+
+      try {
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        await fs.rename(req.file.path, path.join(uploadsPath, filename));
+
+        const imageUrl = `/uploads/${filename}`;
+        await storage.updateStation(stationId, {
+          name: req.body.name || undefined,
+          previewImage: imageUrl
+        });
+
+        res.json({ url: imageUrl });
+      } catch (error) {
+        console.error("Error handling image upload:", error);
+        res.status(500).json({ message: "Failed to process image upload" });
+      }
+    }
+  );
+
+  // Session management routes
   app.post("/api/stations/:id/session", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/stations/:id/session POST");
+      return res.sendStatus(401);
+    }
     const station = await storage.getStation(parseInt(req.params.id));
 
     if (!station) {
@@ -297,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // End session after 5 minutes
     setTimeout(async () => {
       await storage.updateStationSession(station.id, null);
-      wssUI.clients.forEach((client) => { 
+      wssUI.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
         }
@@ -306,7 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/stations/:id/session", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/stations/:id/session DELETE");
+      return res.sendStatus(401);
+    }
     const station = await storage.getStation(parseInt(req.params.id));
 
     if (!station) {
@@ -320,55 +327,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedStation = await storage.updateStationSession(station.id, null);
     res.json(updatedStation);
   });
-
-  // Configure multer for image uploads
-  const upload = multer({
-    dest: uploadsPath,
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit
-    },
-    fileFilter: (_req, file, cb) => {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Invalid file type'));
-      }
-    }
-  });
-
-  // Add image upload endpoint
-  app.post("/api/admin/stations/:id/image",
-    upload.single('image'),
-    async (req, res) => {
-      if (!isAdmin(req)) return res.sendStatus(403);
-      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-
-      const stationId = parseInt(req.params.id);
-      const staticPath = path.join(process.cwd(), 'public', 'uploads');
-
-      try {
-        // Move file to public directory
-        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
-        await fs.rename(req.file.path, path.join(staticPath, filename));
-
-        // Update station with image URL
-        const imageUrl = `/uploads/${filename}`;
-        await storage.updateStation(stationId, {
-          name: req.body.name || '',
-          ipAddress: req.body.ipAddress || '',
-          port: req.body.port || '',
-          secretKey: req.body.secretKey || '',
-          previewImage: imageUrl
-        });
-
-        res.json({ url: imageUrl });
-      } catch (error) {
-        console.error("Error handling image upload:", error);
-        res.status(500).json({ message: "Failed to process image upload" });
-      }
-    }
-  );
 
   return httpServer;
 }
