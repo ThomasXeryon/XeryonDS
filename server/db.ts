@@ -30,34 +30,58 @@ const dbUrl = constructConnectionString();
 const logUrl = new URL(dbUrl);
 console.log(`Connecting to database at ${logUrl.host}${logUrl.pathname}...`);
 
-// Create a new pool with proper error handling
+// Create a new pool with proper error handling and automatic reconnection
 export const pool = new Pool({ 
   connectionString: dbUrl,
   ssl: {
     rejectUnauthorized: false // Required for Neon database
   },
   connectionTimeoutMillis: 5000, // 5 second timeout
-  max: 20 // Maximum number of clients in the pool
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  retryStrategy: (err, retriesLeft) => {
+    console.log(`Database connection error: ${err.message}. Retries left: ${retriesLeft}`);
+    return true; // Always retry
+  }
 });
 
-// Test the connection with detailed error handling
-pool.connect()
-  .then(() => {
+// Handle pool errors to prevent crashes
+pool.on('error', (err) => {
+  console.error('Unexpected database pool error:', err.message);
+  // Don't crash the server on connection errors
+});
+
+// Connection validation and reconnection logic
+async function validateConnection() {
+  let client;
+  try {
+    client = await pool.connect();
     console.log('Successfully connected to database');
-  })
-  .catch(err => {
+    return true;
+  } catch (err) {
     console.error('Error connecting to database:', {
       code: err.code,
       message: err.message,
       detail: err.detail,
-      hint: err.hint,
-      position: err.position,
-      host: logUrl.host,
-      database: logUrl.pathname.slice(1)
+      hint: err.hint
     });
-    // Throw an error with deployment-friendly message
-    throw new Error(`Failed to connect to database. Please ensure all database environment variables are properly configured in your deployment settings. Error: ${err.message}`);
-  });
+    
+    // Don't throw an error, but let the application continue
+    console.log('Will retry connecting to database automatically...');
+    return false;
+  } finally {
+    if (client) client.release();
+  }
+}
+
+// Initial connection attempt
+validateConnection();
+
+// Set up periodic reconnection check (every 60 seconds)
+setInterval(async () => {
+  console.log('Validating database connection...');
+  await validateConnection();
+}, 60000);
 
 // Create drizzle database instance
 export const db = drizzle(pool, { schema });

@@ -1,4 +1,3 @@
-
 import asyncio
 import websockets
 import json
@@ -39,19 +38,24 @@ async def connect_to_server():
     print(f"[{datetime.now()}]   - Scheme: {parsed.scheme}")
     print(f"[{datetime.now()}]   - Netloc: {parsed.netloc}")
     print(f"[{datetime.now()}]   - Path: {parsed.path}")
-    
+
     while True:  # Reconnect loop
         try:
             print(f"[{datetime.now()}] Connecting to {uri}...")
-            
-            # Set maximum message size and ping intervals for better reliability
+
+            # Add more detailed connection debugging
+            print(f"[{datetime.now()}] Connection attempt with extra debugging...")
+
+            # Use extra debug parameters
             async with websockets.connect(
                 uri,
+                extra_headers={
+                    'User-Agent': 'RaspberryPi-Client/1.0',
+                    'X-Station-ID': STATION_ID
+                },
                 ping_interval=30,
                 ping_timeout=10,
-                max_size=10_000_000,  # 10MB max message size
-                close_timeout=5,
-                extra_headers={"User-Agent": f"RPi-Client/{STATION_ID}"}
+                close_timeout=5
             ) as websocket:
                 print(f"[{datetime.now()}] Connected to server as {STATION_ID}")
 
@@ -64,7 +68,7 @@ async def connect_to_server():
                 }
                 print(f"[{datetime.now()}] Sending registration message: {registration_message}")
                 await websocket.send(json.dumps(registration_message))
-                
+
                 # Process incoming messages
                 async for message in websocket:
                     try:
@@ -72,10 +76,10 @@ async def connect_to_server():
                         command = data.get("command", "unknown")
                         direction = data.get("direction", "none")
                         print(f"[{datetime.now()}] Received command: {command}, direction: {direction}")
-                        
+
                         # Process the command here (implement your hardware control)
                         # For example, if command is "move", control the actuator
-                        
+
                         # Send back response
                         response = {
                             "status": "success",
