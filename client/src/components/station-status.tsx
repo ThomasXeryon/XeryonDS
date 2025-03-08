@@ -1,4 +1,3 @@
-
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
@@ -50,5 +49,3 @@ export function StatusIndicator({ status, className }: StatusIndicatorProps) {
     </div>
   );
 }
-
-export { StatusIndicator as StationStatus };

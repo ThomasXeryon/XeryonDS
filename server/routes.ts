@@ -397,16 +397,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/stations/:id/session", async (req, res) => {
     if (!req.isAuthenticated()) {
       console.log("Unauthorized access to /api/stations/:id/session DELETE");
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.sendStatus(401);
     }
     const station = await storage.getStation(parseInt(req.params.id));
 
     if (!station) {
-      return res.status(404).json({ error: "Station not found" });
+      return res.status(404).send("Station not found");
     }
 
     if (station.currentUserId !== req.user.id) {
-      return res.status(403).json({ error: "Not your session" });
+      return res.status(403).send("Not your session");
     }
 
     const updatedStation = await storage.updateStationSession(station.id, null);

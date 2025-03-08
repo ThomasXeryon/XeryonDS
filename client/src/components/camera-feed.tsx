@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWebSocket } from '@/hooks/use-websocket';
 import { Skeleton } from "@/components/ui/skeleton";
 
