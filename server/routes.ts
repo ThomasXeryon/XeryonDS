@@ -1,3 +1,4 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -47,43 +48,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     path: "/ws"
   });
 
-  // WebSocket server for RPi clients
-  const wssRPi = new WebSocketServer({ 
-    server: httpServer,
-    noServer: false, // Allow handling the upgrade ourselves
-  });
-  
-  // Handle HTTP upgrade requests for RPi clients
-  httpServer.on('upgrade', (request, socket, head) => {
-    const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
-    
-    // Check if this is an RPi connection request
-    if (pathname.startsWith('/rpi/')) {
-      const pathParts = pathname.split('/');
-      const rpiId = pathParts[2]; // Get the RPi ID from path
-      
-      if (!rpiId) {
-        console.log("RPi connection rejected: No RPi ID provided");
-        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
-        socket.destroy();
-        return;
-      }
-      
-      // Store the RPi ID for later use
-      (request as any).rpiId = rpiId;
-      
-      wssRPi.handleUpgrade(request, socket, head, (ws) => {
-        wssRPi.emit('connection', ws, request);
-      });
-    } else if (pathname === '/ws') {
-      // Handle UI WebSocket connections
-      wssUI.handleUpgrade(request, socket, head, (ws) => {
-        wssUI.emit('connection', ws, request);
-      });
-    }
-  });
-</old_str>
-<new_str>
   // WebSocket server for RPi clients
   const wssRPi = new WebSocketServer({ 
     server: httpServer,
