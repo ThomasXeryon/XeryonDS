@@ -12,73 +12,17 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const { socket } = useWebSocket();
 
   useEffect(() => {
-    if (!socket || !rpiId) return;
+    if (!socket) return;
 
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('Camera feed received message:', {
-          type: data.type,
-          rpiId: data.rpiId,
-          hasFrame: !!data.frame,
-          frameLength: data.frame?.length,
-          matchesRpiId: String(data.rpiId) === String(rpiId)
-        });
-
-        if (data.type === 'camera_frame' && String(data.rpiId) === String(rpiId)) {
-          if (!data.frame) {
-            console.warn('Received camera frame message without frame data');
-            return;
-          }
-
-          // Basic base64 validation
-          if (!/^[A-Za-z0-9+/=]+$/.test(data.frame)) {
-            console.error('Invalid base64 data received:', {
-              frameStart: data.frame.substring(0, 50) + '...',
-              length: data.frame.length
-            });
-            return;
-          }
-
-          // Try to decode base64 to validate format
-          try {
-            const decoded = atob(data.frame);
-            console.log('Base64 decoded successfully:', {
-              decodedLength: decoded.length,
-              isJPEG: decoded.startsWith('\xFF\xD8\xFF')
-            });
-          } catch (e) {
-            console.error('Base64 decode failed:', e);
-            return;
-          }
-
-          const frameUrl = `data:image/jpeg;base64,${data.frame}`;
-          console.log('Setting frame URL:', {
-            frameUrlLength: frameUrl.length,
-            frameStart: frameUrl.substring(0, 100) + '...',
-            isDataUrl: frameUrl.startsWith('data:image/jpeg;base64,')
-          });
-
-          // Pre-validate the image
-          const img = new Image();
-          img.onload = () => {
-            console.log('Frame validated and loaded:', {
-              width: img.width,
-              height: img.height,
-              rpiId
-            });
-            setFrame(frameUrl);
-            setLoading(false);
-          };
-          img.onerror = (error) => {
-            console.error('Frame validation failed:', error);
-            setFrame(null);
-            setLoading(true);
-          };
-          img.src = frameUrl;
+        if (data.type === 'camera_frame' && String(data.rpi_id) === String(rpiId)) {
+          setFrame(`data:image/jpeg;base64,${data.frame}`);
+          setLoading(false);
         }
       } catch (err) {
-        console.error('Frame processing error:', err);
+        console.error('Frame error:', err);
       }
     };
 
@@ -95,9 +39,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
-          onLoad={() => console.log('Frame rendered successfully:', { rpiId })}
-          onError={(e) => {
-            console.error('Image rendering error:', e);
+          onError={() => {
             setFrame(null);
             setLoading(true);
           }}

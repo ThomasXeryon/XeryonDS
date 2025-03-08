@@ -1,86 +1,68 @@
 import asyncio
 import websockets
 import json
-from datetime import datetime
+import base64
 import sys
+import time
+from pathlib import Path
 
-async def rpi_client(rpi_id='RPI1', server_url=None):
-    if not server_url:
-        # Try different URLs
-        urls = [
-            f"ws://localhost:5000/rpi/{rpi_id}",         # Local dev
-            f"ws://0.0.0.0:5000/rpi/{rpi_id}",          # Direct IP
-            f"wss://xeryonremotedemostation.replit.app/rpi/{rpi_id}"  # Production
-        ]
-    else:
-        urls = [server_url]
+# Get the RPi ID from command line arguments or use a default
+if len(sys.argv) > 1:
+    STATION_ID = sys.argv[1]
+else:
+    STATION_ID = "RPI1"  # Default ID if none provided
 
-    print(f"[{datetime.now()}] Starting RPi client simulation for {rpi_id}")
+# Load a test image and convert to base64
+TEST_IMAGE_PATH = Path(__file__).parent.parent / "public" / "uploads" / "test-frame.jpg"
 
-    for url in urls:
+async def rpi_client():
+    uri = f"ws://localhost:5000/rpi/{STATION_ID}"
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Starting test client for {STATION_ID}")
+
+    # Read test image once
+    try:
+        with open(TEST_IMAGE_PATH, "rb") as f:
+            test_frame = base64.b64encode(f.read()).decode('utf-8')
+            print(f"Loaded test frame, size: {len(test_frame)} bytes")
+    except FileNotFoundError:
+        print("Test image not found, using small base64 test pattern")
+        # Small red dot JPEG as base64
+        test_frame = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAKAAoDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD2SiiigD//2Q=="
+
+    while True:
         try:
-            print(f"[{datetime.now()}] Attempting to connect to: {url}")
-            async with websockets.connect(url) as ws:
-                print(f"[{datetime.now()}] Connected successfully to {url}")
+            async with websockets.connect(uri) as ws:
+                print(f"Connected to {uri}")
 
-                # Send initial registration message
-                register_msg = {
+                # Send initial registration
+                await ws.send(json.dumps({
                     "type": "register",
                     "status": "ready",
-                    "message": f"RPi {rpi_id} initialized and ready"
-                }
-                await ws.send(json.dumps(register_msg))
-                print(f"[{datetime.now()}] Sent registration message")
+                    "message": f"Test client {STATION_ID} ready",
+                    "rpi_id": STATION_ID
+                }))
 
-                # Simulate sending camera frames
-                frame_count = 0
+                # Send test frames periodically
                 while True:
                     try:
-                        # Create a simulated frame (just a counter for testing)
                         frame_data = {
                             "type": "camera_frame",
-                            "rpiId": rpi_id,
-                            "frame": "SGVsbG8gV29ybGQ="  # Base64 "Hello World" as test data
+                            "rpi_id": STATION_ID,
+                            "frame": test_frame
                         }
                         await ws.send(json.dumps(frame_data))
-                        frame_count += 1
-                        print(f"[{datetime.now()}] Sent frame #{frame_count}")
-
-                        # Process any incoming messages
-                        try:
-                            message = await asyncio.wait_for(ws.recv(), 0.1)
-                            data = json.loads(message)
-                            print(f"[{datetime.now()}] Received: {data}")
-                        except asyncio.TimeoutError:
-                            # No messages received, continue sending frames
-                            pass
-                        except Exception as e:
-                            print(f"[{datetime.now()}] Error receiving message: {str(e)}")
-
-                        # Wait before sending next frame
-                        await asyncio.sleep(1)  # Send a frame every second
-
-                    except websockets.exceptions.ConnectionClosed:
-                        print(f"[{datetime.now()}] Connection closed")
-                        break
+                        print(f"Sent test frame, size: {len(test_frame)} bytes")
+                        await asyncio.sleep(0.5)  # 2 FPS
                     except Exception as e:
-                        print(f"[{datetime.now()}] Error in main loop: {str(e)}")
+                        print(f"Error sending frame: {e}")
                         break
 
         except Exception as e:
-            print(f"[{datetime.now()}] Connection to {url} failed: {str(e)}")
-            print(f"[{datetime.now()}] Error type: {type(e).__name__}")
-            continue
-
-        print(f"[{datetime.now()}] Connection closed, attempting reconnect...")
-        await asyncio.sleep(5)  # Wait before reconnecting
+            print(f"Connection error: {e}")
+            await asyncio.sleep(5)
 
 if __name__ == "__main__":
-    # Get RPi ID from command line argument or use default
-    rpi_id = sys.argv[1] if len(sys.argv) > 1 else 'RPI1'
-    server_url = sys.argv[2] if len(sys.argv) > 2 else None
-
     try:
-        asyncio.run(rpi_client(rpi_id, server_url))
+        asyncio.run(rpi_client())
     except KeyboardInterrupt:
-        print(f"[{datetime.now()}] Shutting down RPi client...")
+        print("Test client stopped")

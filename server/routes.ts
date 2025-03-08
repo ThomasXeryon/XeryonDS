@@ -21,121 +21,50 @@ export async function registerRoutes(app: Express) {
   stations.forEach(station => console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`));
   console.log("=======================");
 
-  // Create HTTP server first
   const httpServer = createServer(app);
-
-  // Create WebSocket server with explicit configuration
   const wss = new WebSocketServer({
     noServer: true,
-    maxPayload: 100 * 1024 * 1024, // 100MB max payload
-    perMessageDeflate: false // Disable compression for better performance
+    maxPayload: 100 * 1024 * 1024
   });
 
-  console.log("WebSocket server created");
-
-  // Handle WebSocket upgrade requests
+  // Handle WebSocket upgrade requests before auth middleware
   httpServer.on('upgrade', (request, socket, head) => {
-    try {
-      const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
+    const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
+    console.log('WebSocket upgrade request:', { pathname });
 
-      console.log('WebSocket upgrade request:', {
-        url: request.url,
-        host: request.headers.host,
-        pathname
-      });
-
-      // Handle RPi client connections on /rpi/{rpiId}
-      if (pathname.startsWith('/rpi/')) {
-        const rpiId = pathname.split('/')[2];
-        if (!rpiId) {
-          console.log('Invalid RPi connection attempt - no RPi ID');
-          socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
-          socket.destroy();
-          return;
-        }
-
-        console.log(`RPi ${rpiId} attempting to connect`);
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          console.log(`RPi ${rpiId} connection upgraded successfully`);
-          handleRPiConnection(ws, rpiId);
-        });
-      }
-      // Handle UI client connections on /ws
-      else if (pathname === '/ws') {
-        console.log('UI client attempting to connect');
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          console.log('UI client connection upgraded successfully');
+    // Allow /ws and /rpi/* without auth
+    if (pathname === '/ws' || pathname.startsWith('/rpi/')) {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        if (pathname === '/ws') {
+          console.log('UI client connected');
           handleUIConnection(ws);
-        });
-      }
-      // Skip other upgrade requests (like Vite HMR)
-      else {
-        console.log(`Ignoring upgrade request for path: ${pathname}`);
-        socket.destroy();
-      }
-    } catch (error) {
-      console.error('Error in upgrade handler:', error);
-      socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        } else {
+          const rpiId = pathname.split('/')[2];
+          console.log(`RPi ${rpiId} connected`);
+          handleRPiConnection(ws, rpiId);
+        }
+      });
+    } else {
       socket.destroy();
     }
   });
 
   function handleRPiConnection(ws: WebSocket, rpiId: string) {
-    console.log(`RPi ${rpiId} connected`);
     rpiConnections.set(rpiId, ws);
 
     ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`[RPi ${rpiId}] Message received: ${message.type}`);
-
         if (message.type === 'camera_frame') {
-          // Validate the frame data
-          if (!message.frame) {
-            console.error(`[RPi ${rpiId}] Missing frame data`);
-            return;
-          }
-
-          // Validate base64 format
-          if (!/^[A-Za-z0-9+/=]+$/.test(message.frame)) {
-            console.error(`[RPi ${rpiId}] Invalid base64 data received`);
-            return;
-          }
-
-          // Try to decode base64 to validate format
-          try {
-            const decoded = Buffer.from(message.frame, 'base64');
-            console.log(`[RPi ${rpiId}] Received camera frame:`, {
-              rawDataLength: data.toString().length,
-              base64Length: message.frame.length,
-              decodedLength: decoded.length,
-              firstBytes: Array.from(decoded.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' '),
-              isJPEG: decoded.slice(0, 3).equals(Buffer.from([0xFF, 0xD8, 0xFF]))
-            });
-
-            // Forward frame to all UI clients
-            let forwardedCount = 0;
-            wss.clients.forEach(client => {
-              if (client !== ws && client.readyState === WebSocket.OPEN) {
-                try {
-                  client.send(JSON.stringify({
-                    type: 'camera_frame',
-                    rpiId: rpiId,
-                    frame: message.frame
-                  }));
-                  forwardedCount++;
-                } catch (err) {
-                  console.error(`[RPi ${rpiId}] Error forwarding frame:`, err);
-                }
-              }
-            });
-            console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardedCount} clients`);
-          } catch (e) {
-            console.error(`[RPi ${rpiId}] Base64 decode failed:`, e);
-          }
+          // Simple frame forwarding to all UI clients
+          wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+              client.send(data.toString());
+            }
+          });
         }
       } catch (err) {
-        console.error(`[RPi ${rpiId}] Message error:`, err);
+        console.error(`RPi message error:`, err);
       }
     });
 
@@ -143,25 +72,13 @@ export async function registerRoutes(app: Express) {
       console.log(`RPi ${rpiId} disconnected`);
       rpiConnections.delete(rpiId);
     });
-
-    ws.on("error", (error) => {
-      console.error(`RPi ${rpiId} WebSocket error:`, error);
-      ws.close();
-    });
   }
 
   function handleUIConnection(ws: WebSocket) {
-    console.log('UI client connected');
-
     ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
-        if (message.type === 'command' && message.rpiId) {
-          const rpiWs = rpiConnections.get(message.rpiId);
-          if (rpiWs?.readyState === WebSocket.OPEN) {
-            rpiWs.send(JSON.stringify(message));
-          }
-        }
+        console.log('UI client message:', message);
       } catch (err) {
         console.error('UI client message error:', err);
       }
@@ -170,12 +87,8 @@ export async function registerRoutes(app: Express) {
     ws.on("close", () => {
       console.log('UI client disconnected');
     });
-
-    ws.on("error", (error) => {
-      console.error('UI client WebSocket error:', error);
-      ws.close();
-    });
   }
+
 
   // Configure multer for image uploads
   const upload = multer({
