@@ -44,11 +44,6 @@ export function useWebSocket() {
         const data = JSON.parse(event.data);
         if (data.type === 'camera_frame') {
           console.log(`Received frame from RPi ${data.rpiId}, size: ${data.frame?.length || 0} bytes`);
-
-          if (data.frame) {
-            const frameUrl = `data:image/jpeg;base64,${data.frame}`;
-            console.log('Generated frame URL:', frameUrl.substring(0, 100) + '...');
-          }
         }
       } catch (err) {
         console.error("Failed to parse message:", err);

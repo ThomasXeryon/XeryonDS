@@ -17,7 +17,6 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-
         if (data.type === 'camera_frame' && String(data.rpiId) === String(rpiId)) {
           console.log(`Received frame from RPi ${rpiId}, size: ${data.frame?.length || 0} bytes`);
 
@@ -47,7 +46,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </>
       ) : frame ? (
         <img
-          key={frame} // Force re-render when frame updates 
+          key={frame}
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
