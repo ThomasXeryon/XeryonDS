@@ -23,7 +23,12 @@ async def connect_to_server():
             async with websockets.connect(uri) as websocket:
                 print(f"[{datetime.now()}] Connected to server as {STATION_ID}")
                 # Send registration message
-                await websocket.send(json.dumps({"status": "ready", "message": "RPi device online and ready to accept commands"}))
+                await websocket.send(json.dumps({
+                    "status": "ready", 
+                    "message": "RPi device online and ready to accept commands",
+                    "type": "register",
+                    "rpi_id": STATION_ID
+                }))
                 
                 async for message in websocket:
                     try:
@@ -49,9 +54,8 @@ async def connect_to_server():
             await asyncio.sleep(5)
 
 if __name__ == "__main__":
-    uri = f"{SERVER_URL}/rpi"
+    uri = f"{SERVER_URL}/rpi/{STATION_ID}"
     print(f"[{datetime.now()}] Starting RPI WebSocket client for {STATION_ID}")
     print(f"[{datetime.now()}] To use a different ID, run: python rpi-python-client.py YOUR_STATION_ID")
     print(f"[{datetime.now()}] Connecting to server at: {uri}")
-    print(f"[{datetime.now()}] Will register with ID: {STATION_ID}")
     asyncio.run(connect_to_server())
