@@ -43,7 +43,7 @@ class Storage implements IStorage {
     const connectionString = process.env.DATABASE_URL || 
       'postgresql://ep-sweet-queen-a53kyxy1.us-east-2.aws.neon.tech:5432/neondb?sslmode=require';
       
-    console.log(`Connecting to database at ${connectionString}`);
+    console.log(`Connecting to database at ${new URL(connectionString).host}`);
     
     this.client = postgres(connectionString, {
       max: 10,
