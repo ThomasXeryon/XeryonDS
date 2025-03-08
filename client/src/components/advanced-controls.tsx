@@ -6,19 +6,20 @@ import { MinusCircle, PlusCircle, Square, Play, StopCircle } from "lucide-react"
 
 interface AdvancedControlsProps {
   stationId: number;
+  rpiId: number; // Added rpiId
   enabled: boolean;
   isConnected: boolean;
-  onCommand: (command: string, value?: number) => void;
+  onCommand: (rpiId: number, command: string, value?: number) => void; // Modified onCommand
 }
 
-export function AdvancedControls({ stationId, enabled, isConnected, onCommand }: AdvancedControlsProps) {
+export function AdvancedControls({ stationId, rpiId, enabled, isConnected, onCommand }: AdvancedControlsProps) {
   const [stepSize, setStepSize] = useState("1.0");
   const [speed, setSpeed] = useState([500]); // Default to middle of range
   const [isDemoRunning, setIsDemoRunning] = useState(false);
 
   const handleSpeedChange = (value: number[]) => {
     setSpeed(value);
-    onCommand("speed", value[0]);
+    onCommand(rpiId, "speed", value[0]); // Added rpiId
   };
 
   return (
@@ -29,7 +30,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("step", -parseFloat(stepSize))}
+          onClick={() => onCommand(rpiId, "step", -parseFloat(stepSize))} // Added rpiId
         >
           <MinusCircle className="h-4 w-4 mr-1" />
           Step
@@ -45,7 +46,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("step", parseFloat(stepSize))}
+          onClick={() => onCommand(rpiId, "step", parseFloat(stepSize))} // Added rpiId
         >
           <PlusCircle className="h-4 w-4 mr-1" />
           Step
@@ -58,7 +59,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("scan", -1)}
+          onClick={() => onCommand(rpiId, "scan", -1)} // Added rpiId
         >
           <MinusCircle className="h-4 w-4 mr-1" />
           Scan
@@ -67,7 +68,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           variant="destructive"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("stop")}
+          onClick={() => onCommand(rpiId, "stop")} // Added rpiId
         >
           <Square className="h-4 w-4" />
           Stop
@@ -76,7 +77,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("scan", 1)}
+          onClick={() => onCommand(rpiId, "scan", 1)} // Added rpiId
         >
           <PlusCircle className="h-4 w-4 mr-1" />
           Scan
@@ -106,7 +107,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           disabled={!enabled || !isConnected || isDemoRunning}
           onClick={() => {
             setIsDemoRunning(true);
-            onCommand("demo_start");
+            onCommand(rpiId, "demo_start"); // Added rpiId
           }}
         >
           <Play className="h-4 w-4 mr-1" />
@@ -118,7 +119,7 @@ export function AdvancedControls({ stationId, enabled, isConnected, onCommand }:
           disabled={!enabled || !isConnected || !isDemoRunning}
           onClick={() => {
             setIsDemoRunning(false);
-            onCommand("demo_stop");
+            onCommand(rpiId, "demo_stop"); // Added rpiId
           }}
         >
           <StopCircle className="h-4 w-4 mr-1" />
