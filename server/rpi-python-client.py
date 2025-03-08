@@ -14,7 +14,8 @@ else:
 SERVER_URL = "wss://xeryonremotedemostation.replit.app"  # Production URL
 
 async def connect_to_server():
-    uri = f"{SERVER_URL}/rpi/{STATION_ID}"
+    # The server expects connections to /rpi with no trailing slash
+    uri = f"{SERVER_URL}/rpi"
     
     while True:  # Reconnect loop
         try:
