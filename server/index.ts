@@ -9,6 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Add logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -27,15 +28,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
       log(logLine);
     }
   });
-
   next();
 });
 
@@ -43,8 +38,8 @@ app.use((req, res, next) => {
 setupAuth(app);
 
 (async () => {
-  // Initialize admin user if it doesn't exist
   try {
+    // Initialize admin user if it doesn't exist
     const admin = await storage.getUserByUsername("admin");
     if (!admin) {
       console.log("Creating admin user...");
@@ -53,37 +48,36 @@ setupAuth(app);
         username: "admin",
         password: hashedPassword,
       });
-
-      // Update user to be admin after creation
       await storage.updateUserAdmin(user.id, true);
       console.log("Admin user created successfully");
     }
+
+    // Get HTTP server with WebSocket support
+    const server = await registerRoutes(app);
+
+    // Error handling middleware
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      console.error("Server error:", err);
+      res.status(status).json({ message });
+    });
+
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    // Listen on port 5000 with proper host binding
+    const port = 5000; // Force port 5000 for consistency
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`Server started on port ${port}`);
+      console.log(`WebSocket server ready for connections at ws://0.0.0.0:${port}`);
+      log(`Server listening on port ${port}`);
+    });
   } catch (error) {
-    console.error("Error initializing admin user:", error);
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
-
-  const server = await registerRoutes(app);
-
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  const port = process.env.PORT || 5000;
-  server.listen({
-    port: Number(port),
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();

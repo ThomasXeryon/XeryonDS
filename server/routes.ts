@@ -8,18 +8,11 @@ import fs from "fs/promises";
 import express from "express";
 import multer from "multer";
 
+// Map to store RPi WebSocket connections
+const rpiConnections = new Map<string, WebSocket>();
+
 // Define uploadsPath at the top level
 const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
-
-// Configure multer for image uploads
-const upload = multer({
-  dest: uploadsPath,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (_req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    allowedTypes.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
-  }
-});
 
 export async function registerRoutes(app: Express) {
   setupAuth(app);
@@ -28,39 +21,143 @@ export async function registerRoutes(app: Express) {
   stations.forEach(station => console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`));
   console.log("=======================");
 
-  // Create separate HTTP server for WebSocket
-  const wsServer = createServer();
-  const wss = new WebSocketServer({ server: wsServer });
+  // Create HTTP server first
+  const httpServer = createServer(app);
+
+  // Create WebSocket server with explicit configuration
+  const wss = new WebSocketServer({ 
+    noServer: true,
+    maxPayload: 100 * 1024 * 1024, // 100MB max payload
+    perMessageDeflate: false // Disable compression for better performance
+  });
+
   console.log("WebSocket server created");
 
-  wss.on("connection", (ws) => {
-    console.log("New WebSocket connection");
+  // Handle WebSocket upgrade requests
+  httpServer.on('upgrade', (request, socket, head) => {
+    try {
+      const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
+
+      console.log('WebSocket upgrade request:', {
+        url: request.url,
+        host: request.headers.host,
+        pathname
+      });
+
+      if (pathname.startsWith('/rpi/')) {
+        const rpiId = pathname.split('/')[2];
+        if (!rpiId) {
+          console.log('Invalid RPi connection attempt - no RPi ID');
+          socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+
+        console.log(`RPi ${rpiId} attempting to connect`);
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          console.log(`RPi ${rpiId} connection upgraded successfully`);
+          handleRPiConnection(ws, rpiId);
+        });
+      } else if (!pathname.includes('vite')) { // Skip Vite WebSocket connections
+        console.log('UI client attempting to connect');
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          console.log('UI client connection upgraded successfully');
+          handleUIConnection(ws);
+        });
+      }
+    } catch (error) {
+      console.error('Error in upgrade handler:', error);
+      socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+      socket.destroy();
+    }
+  });
+
+  function handleRPiConnection(ws: WebSocket, rpiId: string) {
+    console.log(`RPi ${rpiId} connected`);
+    rpiConnections.set(rpiId, ws);
 
     ws.on("message", (data) => {
-      // Forward raw data to all other clients
-      wss.clients.forEach(client => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          try {
-            client.send(data);
-          } catch (err) {
-            console.error("Error forwarding frame:", err);
-          }
+      try {
+        const message = JSON.parse(data.toString());
+        console.log(`[RPi ${rpiId}] Message received:`, message.type);
+
+        if (message.type === 'camera_frame') {
+          console.log(`[RPi ${rpiId}] Received camera frame, raw data length: ${data.toString().length} bytes`);
+          console.log(`[RPi ${rpiId}] Frame format: raw base64`);
+
+          // Forward frame to all UI clients
+          wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+              try {
+                const frameData = {
+                  type: 'camera_frame',
+                  rpiId: rpiId,
+                  frame: message.frame
+                };
+                console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${message.frame?.length || 0} bytes`);
+                client.send(JSON.stringify(frameData));
+              } catch (err) {
+                console.error('Error forwarding frame:', err);
+              }
+            }
+          });
+
+          // Log successful forwarding
+          const clientCount = Array.from(wss.clients).filter(c => c !== ws && c.readyState === WebSocket.OPEN).length;
+          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${clientCount} clients`);
         }
-      });
+      } catch (err) {
+        console.error(`[RPi ${rpiId}] Message error:`, err);
+      }
+    });
+
+    ws.on("close", () => {
+      console.log(`RPi ${rpiId} disconnected`);
+      rpiConnections.delete(rpiId);
     });
 
     ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
+      console.error(`RPi ${rpiId} WebSocket error:`, error);
+      ws.close();
     });
-  });
+  }
 
-  // Listen on port 8080 for WebSocket connections
-  wsServer.listen(8080, '0.0.0.0', () => {
-    console.log('WebSocket server listening on port 8080');
-  });
+  function handleUIConnection(ws: WebSocket) {
+    console.log('UI client connected');
 
-  // Create main HTTP server
-  const httpServer = createServer(app);
+    ws.on("message", (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        if (message.type === 'command' && message.rpiId) {
+          const rpiWs = rpiConnections.get(message.rpiId);
+          if (rpiWs?.readyState === WebSocket.OPEN) {
+            rpiWs.send(JSON.stringify(message));
+          }
+        }
+      } catch (err) {
+        console.error('UI client message error:', err);
+      }
+    });
+
+    ws.on("close", () => {
+      console.log('UI client disconnected');
+    });
+
+    ws.on("error", (error) => {
+      console.error('UI client WebSocket error:', error);
+      ws.close();
+    });
+  }
+
+  // Configure multer for image uploads
+  const upload = multer({
+    dest: uploadsPath,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (_req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      allowedTypes.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
+    }
+  });
 
   // Ensure uploads directory exists
   await fs.mkdir(uploadsPath, { recursive: true });

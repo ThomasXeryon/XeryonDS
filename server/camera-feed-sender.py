@@ -27,22 +27,31 @@ async def send_camera_feed():
                 camera_found = True
                 break
             cap.release()
-    
+
     if not camera_found:
         print("Error: Could not open camera on any port.")
         return
-    
+
     # Set resolution to reduce bandwidth
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    
+
     # Connect to server - only using production URL
     while True:  # Add reconnection loop
         try:
             print(f"Connecting to {SERVER_URL}...")
-            async with websockets.connect(SERVER_URL) as websocket:
+            async with websockets.connect(
+                SERVER_URL,
+                extra_headers={
+                    'User-Agent': 'RaspberryPi-Client/1.0',
+                    'X-Station-ID': STATION_ID
+                },
+                ping_interval=30,
+                ping_timeout=10,
+                max_size=100 * 1024 * 1024  # 100MB max message size
+            ) as websocket:
                 print(f"Connected to WebSocket server at {SERVER_URL}")
-                
+
                 # Send registration message
                 registration_data = {
                     "type": "register",
@@ -52,7 +61,7 @@ async def send_camera_feed():
                 }
                 await websocket.send(json.dumps(registration_data))
                 print(f"Sent registration message: {registration_data}")
-                
+
                 # Main loop to send camera frames
                 while True:
                     # Capture frame with better error handling
@@ -66,22 +75,22 @@ async def send_camera_feed():
                         print(f"Camera error: {str(e)}, will retry...")
                         await asyncio.sleep(2)
                         continue
-                    
+
                     # Compress and convert frame to JPEG
                     _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
-                    
+
                     # Convert to base64 string
                     jpg_as_text = base64.b64encode(buffer).decode('utf-8')
-                    
+
                     # Send frame to server
                     frame_data = {
                         "type": "camera_frame",
-                        "rpiId": STATION_ID,  # Changed from rpi_id to rpiId for consistency
+                        "rpi_id": STATION_ID,
                         "frame": jpg_as_text
                     }
                     await websocket.send(json.dumps(frame_data))
                     print(f"Sent frame: {len(jpg_as_text)} bytes")
-                    
+
                     # Process incoming messages
                     try:
                         # Set a short timeout to check for messages without blocking
@@ -89,26 +98,26 @@ async def send_camera_feed():
                         data = json.loads(message)
                         command = data.get("command", "unknown")
                         print(f"Received message from server: {data}")
-                        
+
                         # Handle commands here if needed
                     except asyncio.TimeoutError:
                         # No messages received, continue sending frames
                         pass
                     except Exception as e:
                         print(f"Error receiving message: {str(e)}")
-                    
+
                     # Limit frame rate to reduce bandwidth
                     await asyncio.sleep(0.1)  # 10 FPS
-                    
+
         except Exception as e:
             print(f"Connection to {SERVER_URL} failed: {str(e)}")
             print("Connection failed. Retrying in 5 seconds...")
             await asyncio.sleep(5)
-        
+
         # If we get here, connection attempt failed
         print("Connection attempt failed. Retrying in 5 seconds...")
         await asyncio.sleep(5)
-        
+
         # Try reopening the camera if it was closed
         if not cap.isOpened():
             print("Reopening camera...")

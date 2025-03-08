@@ -15,10 +15,9 @@ export function useWebSocket() {
     if (socketRef.current?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}`;
 
-    // Always use port 8080 for WebSocket
-    const wsUrl = `${protocol}//${host}:8080`;
     console.log(`WebSocket connecting to ${wsUrl}`);
 
     const socket = new WebSocket(wsUrl);
@@ -44,7 +43,12 @@ export function useWebSocket() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'camera_frame') {
-          console.log(`Received frame, size: ${data.frame?.length || 0} bytes`);
+          console.log(`Received frame from RPi ${data.rpiId}, size: ${data.frame?.length || 0} bytes`);
+
+          if (data.frame) {
+            const frameUrl = `data:image/jpeg;base64,${data.frame}`;
+            console.log('Generated frame URL:', frameUrl.substring(0, 100) + '...');
+          }
         }
       } catch (err) {
         console.error("Failed to parse message:", err);
@@ -64,17 +68,15 @@ export function useWebSocket() {
     };
   }, [connect]);
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(message));
-    } else {
-      console.warn("Cannot send - WebSocket not connected");
-    }
-  }, []);
-
   return {
     socket: socketRef.current,
     connectionStatus,
-    sendMessage
+    sendMessage: useCallback((message: WebSocketMessage) => {
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify(message));
+      } else {
+        console.warn("Cannot send - WebSocket not connected");
+      }
+    }, [])
   };
 }
