@@ -1,144 +1,401 @@
 import type { Express } from "express";
-import { createServer } from "http";
+import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import express from "express";
+import type { WebSocketMessage, RPiResponse } from "@shared/schema";
+import { parse as parseCookie } from "cookie";
 import path from "path";
 import fs from "fs/promises";
-import { URL } from 'url';
+import express from "express";
+import multer from "multer";
+import { URL } from "url";
+
+// Define uploadsPath at the top level
+const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+
+// Configure multer for image uploads
+const upload = multer({
+  dest: uploadsPath,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
 
 // Map to store RPi WebSocket connections
 const rpiConnections = new Map<string, WebSocket>();
 
-export async function registerRoutes(app: Express) {
+function isAdmin(req: Express.Request) {
+  return req.isAuthenticated() && req.user?.isAdmin;
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  setupAuth(app);
+
+  // Get all demo station IDs and log them to the console
+  const stations = await storage.getStations();
+  console.log("=== DEMO STATION IDs ===");
+  stations.forEach(station => {
+    console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`);
+  });
+  console.log("=======================");
+
   const httpServer = createServer(app);
 
-  // Create WebSocket server with manual upgrade handling
-  const wss = new WebSocketServer({ 
-    noServer: true,
-    perMessageDeflate: false
-  });
+  // Create WebSocket servers but don't attach them to paths yet
+  const wssUI = new WebSocketServer({ noServer: true });
+  const wssRPi = new WebSocketServer({ noServer: true });
 
-  // Handle upgrade requests
+  // Handle WebSocket upgrade requests
   httpServer.on('upgrade', (request, socket, head) => {
-    try {
-      const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
-      console.log('WebSocket upgrade request for:', pathname);
+    const parsedUrl = new URL(request.url!, `http://${request.headers.host}`);
+    const pathname = parsedUrl.pathname;
 
-      if (pathname === '/ws' || pathname.startsWith('/rpi/')) {
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          wss.emit('connection', ws, request);
-        });
-      } else {
-        // Let other upgrade requests (like Vite HMR) pass through
+    // Simple path-based routing for WebSockets
+    if (pathname.startsWith('/rpi/')) {
+      // Extract the RPi ID from the path
+      const rpiId = pathname.split('/')[2];
+
+      if (!rpiId) {
+        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
         socket.destroy();
+        return;
       }
-    } catch (err) {
-      console.error('WebSocket upgrade error:', err);
+
+      // Store RPi ID in request for later use
+      (request as any).rpiId = rpiId;
+
+      // Handle the upgrade for RPi clients
+      wssRPi.handleUpgrade(request, socket, head, (ws) => {
+        wssRPi.emit('connection', ws, request);
+      });
+    } else if (pathname.startsWith('/ws')) {
+      // Handle the upgrade for UI clients without authentication
+      wssUI.handleUpgrade(request, socket, head, (ws) => {
+        wssUI.emit('connection', ws, request);
+      });
+    } else {
+      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
     }
   });
 
-  // Handle WebSocket connections
-  wss.on('connection', (ws, request) => {
-    const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
+  // Handle RPi connections
+  wssRPi.on("connection", (ws, req) => {
+    const rpiId = (req as any).rpiId;
+    console.log(`[RPi ${rpiId}] Connected`);
 
-    // RPi client connection
-    if (pathname.startsWith('/rpi/')) {
-      const rpiId = pathname.split('/')[2];
-      if (!rpiId) {
-        console.error('No RPi ID provided');
-        ws.close();
-        return;
+    rpiConnections.set(rpiId, ws);
+
+    // Notify UI clients about new RPi connection
+    wssUI.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "rpi_connected",
+          rpiId
+        }));
       }
+    });
 
-      console.log(`RPi ${rpiId} connected`);
-      rpiConnections.set(rpiId, ws);
+    ws.on("message", (data) => {
+      try {
+        const response = JSON.parse(data.toString());
+        console.log(`[RPi ${rpiId}] Message received:`, response.type);
 
-      ws.on('message', (data) => {
-        try {
-          const message = JSON.parse(data.toString());
-          if (message.type === 'camera_frame') {
-            // Forward frame to UI clients
-            wss.clients.forEach(client => {
-              if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(data.toString());
-              }
-            });
+        // Handle camera frames from RPi
+        if (response.type === "camera_frame") {
+          console.log(`[RPi ${rpiId}] Received camera frame, raw data length: ${response.frame?.length || 0} bytes`);
+
+          // Validate frame data
+          if (!response.frame) {
+            console.warn(`[RPi ${rpiId}] Received camera_frame without frame data`);
+            return;
           }
-        } catch (err) {
-          console.error('Error processing message:', err);
+
+          // Check if it's already a data URL or just base64
+          const isDataUrl = response.frame.startsWith('data:');
+          console.log(`[RPi ${rpiId}] Frame format: ${isDataUrl ? 'data URL' : 'raw base64'}`);
+
+          let frameToSend = response.frame;
+          if (!isDataUrl) {
+            try {
+              // Verify it's valid base64 before forwarding
+              atob(response.frame);
+              frameToSend = `data:image/jpeg;base64,${response.frame}`;
+            } catch (e) {
+              console.error(`[RPi ${rpiId}] Invalid base64 data received:`, e);
+              return;
+            }
+          }
+
+          let forwardCount = 0;
+          wssUI.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              const frameMessage = {
+                type: "camera_frame",
+                rpiId,
+                frame: frameToSend
+              };
+              console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${frameToSend.length} bytes`);
+              client.send(JSON.stringify(frameMessage));
+              forwardCount++;
+            }
+          });
+
+          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardCount} clients`);
+          return;
+        }
+
+        // Handle other messages
+        wssUI.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: response.type || "rpi_response",
+              rpiId,
+              message: response.message,
+              status: response.status
+            }));
+          }
+        });
+      } catch (err) {
+        console.error(`[RPi ${rpiId}] Error handling message:`, err);
+      }
+    });
+
+    ws.on("close", () => {
+      console.log(`[RPi ${rpiId}] Disconnected`);
+      rpiConnections.delete(rpiId);
+      wssUI.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "rpi_disconnected",
+            rpiId
+          }));
         }
       });
-
-      ws.on('close', () => {
-        console.log(`RPi ${rpiId} disconnected`);
-        rpiConnections.delete(rpiId);
-      });
-
-      ws.on('error', (error) => {
-        console.error(`RPi ${rpiId} error:`, error);
-      });
-    }
-    // UI client connection
-    else if (pathname === '/ws') {
-      console.log('UI client connected');
-
-      ws.on('close', () => {
-        console.log('UI client disconnected');
-      });
-
-      ws.on('error', (error) => {
-        console.error('UI client error:', error);
-      });
-    }
+    });
   });
 
-  // Create uploads directory
-  const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
-  await fs.mkdir(uploadsPath, { recursive: true });
+  // Handle web UI client connections
+  wssUI.on("connection", (ws, req) => {
+    console.log("UI client connected");
 
-  // Serve static files
+    // Send initial list of connected RPis
+    ws.send(JSON.stringify({
+      type: "rpi_list",
+      rpiIds: Array.from(rpiConnections.keys())
+    }));
+
+    ws.on("message", async (data) => {
+      try {
+        const message = JSON.parse(data.toString()) as WebSocketMessage;
+        console.log("Received UI message:", message);
+
+        const rpiWs = rpiConnections.get(message.rpiId);
+
+        if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
+          console.log(`RPi ${message.rpiId} not connected or not ready`);
+          ws.send(JSON.stringify({
+            type: "error",
+            message: `RPi ${message.rpiId} not connected`
+          }));
+          return;
+        }
+
+        // Forward command to specific RPi with timestamp
+        const commandMessage = {
+          type: message.type,
+          command: message.command,
+          direction: message.direction || "none",
+          timestamp: new Date().toISOString()
+        };
+
+        console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
+        rpiWs.send(JSON.stringify(commandMessage));
+
+        // Echo back confirmation
+        const confirmationMessage = {
+          type: "command_sent",
+          message: `Command sent to ${message.rpiId}`,
+          ...commandMessage
+        };
+
+        ws.send(JSON.stringify(confirmationMessage));
+
+        // Log the command for debugging
+        console.log(`UI command sent to RPi ${message.rpiId}: ${message.command} (${message.direction || "none"})`);
+      } catch (err) {
+        console.error("Failed to parse message:", err);
+        ws.send(JSON.stringify({
+          type: "error",
+          message: "Invalid message format"
+        }));
+      }
+    });
+
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
+    });
+
+    ws.on("close", () => {
+      console.log("UI client disconnected");
+    });
+  });
+
+  // Ensure uploads directory exists
+  await fs.mkdir(uploadsPath, { recursive: true })
+    .catch(err => console.error('Error creating uploads directory:', err));
+
+  // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsPath));
 
-  // Basic station routes
-  app.get("/api/stations", async (_req, res) => {
+  // Add authentication logging middleware
+  app.use((req, res, next) => {
+    console.log(`Auth status for ${req.path}: isAuthenticated=${req.isAuthenticated()}, isAdmin=${isAdmin(req)}`);
+    next();
+  });
+
+  // Station routes
+  app.get("/api/stations", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/stations");
+      return res.sendStatus(401);
+    }
+    const stations = await storage.getStations();
+    res.json(stations);
+  });
+
+  // Admin routes
+  app.post("/api/admin/stations", async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations POST");
+      return res.sendStatus(403);
+    }
+    const { name, rpiId } = req.body;
+
+    if (!name || !rpiId) {
+      return res.status(400).json({ message: "Name and RPi ID are required" });
+    }
+
     try {
-      const stations = await storage.getStations();
-      res.json(stations);
+      const station = await storage.createStation(name, rpiId);
+      res.status(201).json(station);
     } catch (error) {
-      console.error("Error fetching stations:", error);
-      res.status(500).json({ message: "Failed to fetch stations" });
+      console.error("Error creating station:", error);
+      res.status(500).json({ message: "Failed to create station" });
     }
   });
 
-  // Simple session management
-  app.post("/api/stations/:id/session", async (req, res) => {
-    try {
-      const station = await storage.getStation(parseInt(req.params.id));
-      if (!station) {
-        return res.status(404).json({ message: "Station not found" });
-      }
-      const updatedStation = await storage.updateStationSession(station.id, 1);
-      res.json(updatedStation);
-    } catch (error) {
-      console.error("Error updating session:", error);
-      res.status(500).json({ message: "Failed to update session" });
+  app.patch("/api/admin/stations/:id", async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations PATCH");
+      return res.sendStatus(403);
     }
+    const { name, rpiId } = req.body;
+    const stationId = parseInt(req.params.id);
+
+    try {
+      const station = await storage.updateStation(stationId, { name });
+      res.json(station);
+    } catch (error) {
+      console.error("Error updating station:", error);
+      res.status(500).json({ message: "Failed to update station" });
+    }
+  });
+
+  app.delete("/api/admin/stations/:id", async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/stations DELETE");
+      return res.sendStatus(403);
+    }
+    await storage.deleteStation(parseInt(req.params.id));
+    res.sendStatus(200);
+  });
+
+  // Image upload endpoint
+  app.post("/api/admin/stations/:id/image",
+    upload.single('image'),
+    async (req, res) => {
+      if (!isAdmin(req)) {
+        console.log("Unauthorized access to /api/admin/stations/:id/image POST");
+        return res.sendStatus(403);
+      }
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+      const stationId = parseInt(req.params.id);
+
+      try {
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        await fs.rename(req.file.path, path.join(uploadsPath, filename));
+
+        const imageUrl = `/uploads/${filename}`;
+        await storage.updateStation(stationId, {
+          name: req.body.name || undefined,
+          previewImage: imageUrl
+        });
+
+        res.json({ url: imageUrl });
+      } catch (error) {
+        console.error("Error handling image upload:", error);
+        res.status(500).json({ message: "Failed to process image upload" });
+      }
+    }
+  );
+
+  // Session management routes
+  app.post("/api/stations/:id/session", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/stations/:id/session POST");
+      return res.sendStatus(401);
+    }
+    const station = await storage.getStation(parseInt(req.params.id));
+
+    if (!station) {
+      return res.status(404).send("Station not found");
+    }
+
+    if (station.status === "in_use") {
+      return res.status(400).send("Station is in use");
+    }
+
+    const updatedStation = await storage.updateStationSession(station.id, req.user.id);
+    res.json(updatedStation);
+
+    setTimeout(async () => {
+      await storage.updateStationSession(station.id, null);
+      wssUI.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
+        }
+      });
+    }, 5 * 60 * 1000);
   });
 
   app.delete("/api/stations/:id/session", async (req, res) => {
-    try {
-      const station = await storage.getStation(parseInt(req.params.id));
-      if (!station) {
-        return res.status(404).json({ message: "Station not found" });
-      }
-      const updatedStation = await storage.updateStationSession(station.id, null);
-      res.json(updatedStation);
-    } catch (error) {
-      console.error("Error ending session:", error);
-      res.status(500).json({ message: "Failed to end session" });
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/stations/:id/session DELETE");
+      return res.sendStatus(401);
     }
+    const station = await storage.getStation(parseInt(req.params.id));
+
+    if (!station) {
+      return res.status(404).send("Station not found");
+    }
+
+    if (station.currentUserId !== req.user.id) {
+      return res.status(403).send("Not your session");
+    }
+
+    const updatedStation = await storage.updateStationSession(station.id, null);
+    res.json(updatedStation);
   });
 
   return httpServer;

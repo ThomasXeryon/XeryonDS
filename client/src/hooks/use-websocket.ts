@@ -2,72 +2,82 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface WebSocketMessage {
   type: string;
-  rpi_id?: string | number;
-  frame?: string;
+  command?: string;
+  direction?: string;
+  rpiId?: string | number;
+  stationId?: number;
+  value?: any;
 }
 
 export function useWebSocket() {
   const [connectionStatus, setConnectionStatus] = useState<boolean>(false);
   const socketRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const connect = useCallback(() => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    // Clear any existing socket
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-
-    // Create new connection
+  useEffect(() => {
+    // Create WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+    console.log("[WebSocket] Attempting connection to:", wsUrl);
 
-    console.log('Connecting to WebSocket:', wsUrl);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log('WebSocket connected successfully');
+      console.log("[WebSocket] Connected successfully");
       setConnectionStatus(true);
     };
 
-    socket.onclose = () => {
-      console.log('WebSocket disconnected, attempting reconnect...');
+    socket.onclose = (event) => {
+      console.log("[WebSocket] Connection closed:", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       setConnectionStatus(false);
-      socketRef.current = null;
-
-      // Attempt reconnection
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      reconnectTimeoutRef.current = setTimeout(connect, 2000);
     };
 
     socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      // Let onclose handle reconnection
+      console.error("[WebSocket] Connection error:", error);
+      setConnectionStatus(false);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'camera_frame') {
+          console.log("[WebSocket] Received camera frame:", {
+            type: data.type,
+            rpiId: data.rpiId,
+            frameSize: data.frame?.length || 0
+          });
+        } else {
+          console.log("[WebSocket] Received message:", data);
+        }
+      } catch (err) {
+        console.error("[WebSocket] Failed to parse message:", err);
+      }
+    };
+
+    return () => {
+      if (socketRef.current) {
+        console.log("[WebSocket] Cleaning up connection");
+        socketRef.current.close();
+      }
     };
   }, []);
 
-  useEffect(() => {
-    connect();
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
-    };
-  }, [connect]);
+  const sendMessage = useCallback((message: WebSocketMessage) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      console.log("[WebSocket] Sending message:", message);
+      socketRef.current.send(JSON.stringify(message));
+    } else {
+      console.warn("[WebSocket] Cannot send - connection not open:", message);
+    }
+  }, []);
 
   return {
     socket: socketRef.current,
-    connectionStatus
+    connectionStatus,
+    sendMessage
   };
 }

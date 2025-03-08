@@ -1,10 +1,10 @@
 import asyncio
 import websockets
 import json
-import base64
-import cv2
-import time
+from datetime import datetime
 import sys
+import traceback
+from urllib.parse import urlparse
 
 # Get the station ID from command line arguments or use a default
 if len(sys.argv) > 1:
@@ -12,25 +12,41 @@ if len(sys.argv) > 1:
 else:
     STATION_ID = "RPI1"  # Default ID if none provided
 
-# Only use production URL
-SERVER_URL = "wss://xeryonremotedemostation.replit.app"
+# Get server URL - production or development
+if len(sys.argv) > 2 and sys.argv[2] == "dev":
+    # Use development server with local address
+    SERVER_URL = "ws://0.0.0.0:5000"
+    print(f"[{datetime.now()}] DEVELOPMENT MODE: Connecting to local server")
+else:
+    # Production URL
+    SERVER_URL = "wss://xeryonremotedemostation.replit.app"
+    print(f"[{datetime.now()}] PRODUCTION MODE: Connecting to deployed server")
 
 async def connect_to_server():
     # The server expects connections to /rpi/{rpiId}
     uri = f"{SERVER_URL}/rpi/{STATION_ID}"
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Connecting with URI: {uri}")
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Station ID: {STATION_ID}")
+    print(f"[{datetime.now()}] Connecting with URI: {uri}")
+    print(f"[{datetime.now()}] Station ID: {STATION_ID}")
 
     # Debug output
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] WEBSOCKET DEBUG INFO:")
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] - Server URL: {SERVER_URL}")
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] - Station ID: {STATION_ID}")
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] - Complete URI: {uri}")
+    print(f"[{datetime.now()}] WEBSOCKET DEBUG INFO:")
+    print(f"[{datetime.now()}] - Server URL: {SERVER_URL}")
+    print(f"[{datetime.now()}] - Station ID: {STATION_ID}")
+    print(f"[{datetime.now()}] - Complete URI: {uri}")
+    print(f"[{datetime.now()}] - URI components:")
+    parsed = urlparse(uri)
+    print(f"[{datetime.now()}]   - Scheme: {parsed.scheme}")
+    print(f"[{datetime.now()}]   - Netloc: {parsed.netloc}")
+    print(f"[{datetime.now()}]   - Path: {parsed.path}")
 
     while True:  # Reconnect loop
         try:
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Connecting to {uri}...")
+            print(f"[{datetime.now()}] Connecting to {uri}...")
 
+            # Add more detailed connection debugging
+            print(f"[{datetime.now()}] Connection attempt with extra debugging...")
+
+            # Use extra debug parameters
             async with websockets.connect(
                 uri,
                 extra_headers={
@@ -39,100 +55,55 @@ async def connect_to_server():
                 },
                 ping_interval=30,
                 ping_timeout=10,
-                max_size=100 * 1024 * 1024  # 100MB max message size
+                close_timeout=5
             ) as websocket:
-                print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Connected to server")
+                print(f"[{datetime.now()}] Connected to server as {STATION_ID}")
 
                 # Send registration message
-                registration_data = {
+                registration_message = {
+                    "status": "ready", 
+                    "message": "RPi device online and ready to accept commands",
                     "type": "register",
-                    "status": "ready",
-                    "message": f"RPi {STATION_ID} online with camera",
                     "rpi_id": STATION_ID
                 }
-                await websocket.send(json.dumps(registration_data))
-                print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Sent registration message")
+                print(f"[{datetime.now()}] Sending registration message: {registration_message}")
+                await websocket.send(json.dumps(registration_message))
 
-                # Try different camera ports to find the correct one
-                camera_found = False
-                for port in range(10):  # Try ports 0-9
-                    cap = cv2.VideoCapture(port)
-                    if cap.isOpened():
-                        ret, test_frame = cap.read()
-                        if ret:
-                            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Successfully connected to camera on port {port}")
-                            camera_found = True
-                            break
-                        cap.release()
-
-                if not camera_found:
-                    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Error: Could not open camera on any port.")
-                    continue
-
-                # Set resolution to reduce bandwidth
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-                # Main loop to send camera frames
-                while True:
+                # Process incoming messages
+                async for message in websocket:
                     try:
-                        ret, frame = cap.read()
-                        if not ret:
-                            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Failed to capture frame")
-                            await asyncio.sleep(1)
-                            continue
+                        data = json.loads(message)
+                        command = data.get("command", "unknown")
+                        direction = data.get("direction", "none")
+                        print(f"[{datetime.now()}] Received command: {command}, direction: {direction}")
 
-                        # Compress frame to JPEG with quality 70
-                        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                        # Process the command here (implement your hardware control)
+                        # For example, if command is "move", control the actuator
 
-                        # Verify JPEG header
-                        if buffer[0] != 0xFF or buffer[1] != 0xD8:
-                            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Warning: Invalid JPEG header")
-                            continue
-
-                        # Convert to base64
-                        jpg_as_text = base64.b64encode(buffer).decode('utf-8')
-
-                        # Debug frame data
-                        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Frame info:", {
-                            "original_size": len(buffer),
-                            "base64_size": len(jpg_as_text),
-                            "jpeg_header": f"{buffer[0]:02X} {buffer[1]:02X} {buffer[2]:02X}"
-                        })
-
-                        # Send frame
-                        frame_data = {
-                            "type": "camera_frame",
+                        # Send back response
+                        response = {
+                            "status": "success",
                             "rpi_id": STATION_ID,
-                            "frame": jpg_as_text
+                            "message": f"Command '{command}' executed with direction '{direction}'"
                         }
-                        await websocket.send(json.dumps(frame_data))
-
-                        # Process any incoming messages
-                        try:
-                            message = await asyncio.wait_for(websocket.recv(), 0.01)
-                            data = json.loads(message)
-                            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Received message:", data)
-                        except asyncio.TimeoutError:
-                            pass
-                        except Exception as e:
-                            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Error receiving message: {e}")
-
-                        # Rate limit to 10 FPS
-                        await asyncio.sleep(0.1)
-
-                    except Exception as e:
-                        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Frame processing error: {e}")
-                        await asyncio.sleep(1)
-
+                        await websocket.send(json.dumps(response))
+                    except json.JSONDecodeError as e:
+                        print(f"[{datetime.now()}] Invalid message: {message}")
+                        print(f"[{datetime.now()}] Error: {str(e)}")
+        except websockets.exceptions.ConnectionClosed as e:
+            print(f"[{datetime.now()}] Connection closed: {str(e)}. Reconnecting in 5 seconds...")
+            await asyncio.sleep(5)
+        except websockets.exceptions.WebSocketException as e:
+            print(f"[{datetime.now()}] WebSocket error: {str(e)}. Reconnecting in 5 seconds...")
+            traceback.print_exc()  # Print full error for debugging
+            await asyncio.sleep(5)
         except Exception as e:
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Connection error: {e}")
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Reconnecting in 5 seconds...")
+            print(f"[{datetime.now()}] Unexpected error: {str(e)}. Reconnecting in 5 seconds...")
+            traceback.print_exc()  # Print full error for debugging
             await asyncio.sleep(5)
 
 if __name__ == "__main__":
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Starting camera feed from RPi {STATION_ID}")
-    try:
-        asyncio.run(connect_to_server())
-    except KeyboardInterrupt:
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Camera feed stopped by user")
+    print(f"[{datetime.now()}] Starting RPI WebSocket client for {STATION_ID}")
+    print(f"[{datetime.now()}] To use a different ID, run: python rpi_client.py YOUR_STATION_ID")
+    print(f"[{datetime.now()}] To connect to development server, run: python rpi_client.py YOUR_STATION_ID dev")
+    asyncio.run(connect_to_server())
