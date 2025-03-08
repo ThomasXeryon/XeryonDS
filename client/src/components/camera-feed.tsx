@@ -24,9 +24,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
+        console.log("WebSocket message received:", data.type, "for RPI ID:", data.rpiId);
         
         // Check if this is a camera frame from the selected station
         if (data.type === 'camera_frame' && data.rpiId === rpiId) {
+          console.log("Camera frame received, size:", data.frame?.length || 0, "bytes");
           setFrame(`data:image/jpeg;base64,${data.frame}`);
           setLoading(false);
         }

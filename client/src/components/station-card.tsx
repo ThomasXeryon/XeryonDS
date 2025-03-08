@@ -1,3 +1,7 @@
+
+// Add this debugging log when rendering CameraFeed component
+console.log("Rendering CameraFeed with rpiId:", station?.rpiId);
+
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
