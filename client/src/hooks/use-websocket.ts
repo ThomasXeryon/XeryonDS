@@ -7,14 +7,15 @@ export interface WebSocketMessage {
   rpiId?: string | number;
   stationId?: number;
   value?: any;
+  frame?: string;
 }
 
 export function useWebSocket() {
   const [connectionStatus, setConnectionStatus] = useState<boolean>(false);
+  const [frame, setFrame] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Create WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     console.log("[WebSocket] Attempting connection to:", wsUrl);
@@ -34,6 +35,7 @@ export function useWebSocket() {
         wasClean: event.wasClean
       });
       setConnectionStatus(false);
+      setFrame(null); // Clear frame on disconnect
     };
 
     socket.onerror = (error) => {
@@ -50,6 +52,7 @@ export function useWebSocket() {
             rpiId: data.rpiId,
             frameSize: data.frame?.length || 0
           });
+          setFrame(data.frame);
         } else {
           console.log("[WebSocket] Received message:", data);
         }
@@ -67,17 +70,28 @@ export function useWebSocket() {
   }, []);
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
+    if (!message.rpiId) {
+      console.error("[WebSocket] Cannot send message - rpiId is missing:", message);
+      return;
+    }
+
     if (socketRef.current?.readyState === WebSocket.OPEN) {
-      console.log("[WebSocket] Sending message:", message);
+      console.log("[WebSocket] Sending message:", {
+        type: message.type,
+        command: message.command,
+        direction: message.direction,
+        rpiId: message.rpiId
+      });
       socketRef.current.send(JSON.stringify(message));
     } else {
-      console.warn("[WebSocket] Cannot send - connection not open:", message);
+      console.warn("[WebSocket] Cannot send - connection not open. State:", socketRef.current?.readyState);
     }
   }, []);
 
   return {
     socket: socketRef.current,
     connectionStatus,
-    sendMessage
+    sendMessage,
+    frame
   };
 }

@@ -189,9 +189,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("UI client connected");
 
     // Send initial list of connected RPis
+    const connectedRpis = Array.from(rpiConnections.keys());
+    console.log("Connected RPis:", connectedRpis);
+
     ws.send(JSON.stringify({
       type: "rpi_list",
-      rpiIds: Array.from(rpiConnections.keys())
+      rpiIds: connectedRpis
     }));
 
     ws.on("message", async (data) => {
@@ -199,13 +202,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
         console.log("Received UI message:", message);
 
-        const rpiWs = rpiConnections.get(message.rpiId);
+        if (!message.rpiId) {
+          console.error("Message missing rpiId:", message);
+          ws.send(JSON.stringify({
+            type: "error",
+            message: "RPi ID is required"
+          }));
+          return;
+        }
+
+        const rpiWs = rpiConnections.get(String(message.rpiId));
 
         if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
           console.log(`RPi ${message.rpiId} not connected or not ready`);
           ws.send(JSON.stringify({
             type: "error",
-            message: `RPi ${message.rpiId} not connected`
+            message: `RPi ${message.rpiId} not connected`,
+            details: {
+              connected: !!rpiWs,
+              readyState: rpiWs?.readyState
+            }
           }));
           return;
         }
@@ -229,9 +245,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         ws.send(JSON.stringify(confirmationMessage));
-
-        // Log the command for debugging
-        console.log(`UI command sent to RPi ${message.rpiId}: ${message.command} (${message.direction || "none"})`);
       } catch (err) {
         console.error("Failed to parse message:", err);
         ws.send(JSON.stringify({
