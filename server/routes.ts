@@ -33,9 +33,8 @@ const upload = multer({
 // Map to store RPi WebSocket connections
 const rpiConnections = new Map<string, WebSocket>();
 
-function isAdmin(req: Express.Request) {
-  return req.isAuthenticated() && req.user?.isAdmin;
-}
+// Map to store UI client connections
+const uiConnections = new Map<string, WebSocket>();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -59,30 +58,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const parsedUrl = new URL(request.url!, `http://${request.headers.host}`);
     const pathname = parsedUrl.pathname;
 
+    console.log(`[WebSocket] Upgrade request for path: ${pathname}`);
+
     // Simple path-based routing for WebSockets
     if (pathname.startsWith('/rpi/')) {
       // Extract the RPi ID from the path
       const rpiId = pathname.split('/')[2];
 
       if (!rpiId) {
+        console.error("[WebSocket] No RPi ID provided in connection URL");
         socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
         socket.destroy();
         return;
       }
+
+      console.log(`[WebSocket] RPi connection request for ID: ${rpiId}`);
 
       // Store RPi ID in request for later use
       (request as any).rpiId = rpiId;
 
       // Handle the upgrade for RPi clients
       wssRPi.handleUpgrade(request, socket, head, (ws) => {
+        console.log(`[WebSocket] RPi ${rpiId} upgrade successful`);
         wssRPi.emit('connection', ws, request);
       });
-    } else if (pathname.startsWith('/ws')) {
+    } else if (pathname === '/ws') {
       // Handle the upgrade for UI clients without authentication
+      console.log("[WebSocket] UI client connection request");
       wssUI.handleUpgrade(request, socket, head, (ws) => {
+        console.log("[WebSocket] UI client upgrade successful");
         wssUI.emit('connection', ws, request);
       });
     } else {
+      console.error(`[WebSocket] Invalid WebSocket path: ${pathname}`);
       socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
     }
@@ -93,6 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const rpiId = (req as any).rpiId;
     console.log(`[RPi ${rpiId}] Connected`);
 
+    // Store the connection
     rpiConnections.set(rpiId, ws);
 
     // Notify UI clients about new RPi connection
@@ -108,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("message", (data) => {
       try {
         const response = JSON.parse(data.toString());
-        console.log(`[RPi ${rpiId}] Message received:`, response.type);
+        console.log(`[RPi ${rpiId}] Message received: ${response.type}`);
 
         // Handle camera frames from RPi
         if (response.type === "camera_frame") {
@@ -139,32 +148,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let forwardCount = 0;
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
-              const frameMessage = {
+              console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${frameToSend.length} bytes`);
+              client.send(JSON.stringify({
                 type: "camera_frame",
                 rpiId,
                 frame: frameToSend
-              };
-              console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${frameToSend.length} bytes`);
-              client.send(JSON.stringify(frameMessage));
+              }));
               forwardCount++;
             }
           });
 
           console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardCount} clients`);
-          return;
+        } else {
+          // Handle other messages
+          wssUI.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: response.type || "rpi_response",
+                rpiId,
+                message: response.message,
+                status: response.status
+              }));
+            }
+          });
         }
-
-        // Handle other messages
-        wssUI.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: response.type || "rpi_response",
-              rpiId,
-              message: response.message,
-              status: response.status
-            }));
-          }
-        });
       } catch (err) {
         console.error(`[RPi ${rpiId}] Error handling message:`, err);
       }
@@ -173,6 +180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("close", () => {
       console.log(`[RPi ${rpiId}] Disconnected`);
       rpiConnections.delete(rpiId);
+
+      // Notify UI clients about RPi disconnection
       wssUI.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
@@ -186,11 +195,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Handle web UI client connections
   wssUI.on("connection", (ws, req) => {
-    console.log("UI client connected");
+    console.log("[WebSocket] UI client connected");
 
     // Send initial list of connected RPis
     const connectedRpis = Array.from(rpiConnections.keys());
-    console.log("Connected RPis:", connectedRpis);
+    console.log("[WebSocket] Connected RPis:", connectedRpis);
 
     ws.send(JSON.stringify({
       type: "rpi_list",
@@ -200,10 +209,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
-        console.log("Received UI message:", message);
+        console.log("[WebSocket] Received UI message:", message);
 
         if (!message.rpiId) {
-          console.error("Message missing rpiId:", message);
+          console.error("[WebSocket] Message missing rpiId:", message);
           ws.send(JSON.stringify({
             type: "error",
             message: "RPi ID is required"
@@ -214,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const rpiWs = rpiConnections.get(String(message.rpiId));
 
         if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
-          console.log(`RPi ${message.rpiId} not connected or not ready`);
+          console.log(`[WebSocket] RPi ${message.rpiId} not connected or not ready`);
           ws.send(JSON.stringify({
             type: "error",
             message: `RPi ${message.rpiId} not connected`,
@@ -226,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Forward command to specific RPi with timestamp
+        // Forward command to RPi with timestamp
         const commandMessage = {
           type: message.type,
           command: message.command,
@@ -234,19 +243,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         };
 
-        console.log(`Sending command to RPi ${message.rpiId}:`, commandMessage);
+        console.log(`[WebSocket] Sending command to RPi ${message.rpiId}:`, commandMessage);
         rpiWs.send(JSON.stringify(commandMessage));
 
         // Echo back confirmation
-        const confirmationMessage = {
+        ws.send(JSON.stringify({
           type: "command_sent",
-          message: `Command sent to ${message.rpiId}`,
+          message: `Command sent to RPi ${message.rpiId}`,
           ...commandMessage
-        };
-
-        ws.send(JSON.stringify(confirmationMessage));
+        }));
       } catch (err) {
-        console.error("Failed to parse message:", err);
+        console.error("[WebSocket] Failed to parse message:", err);
         ws.send(JSON.stringify({
           type: "error",
           message: "Invalid message format"
@@ -255,11 +262,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
+      console.error("[WebSocket] Error:", error);
     });
 
     ws.on("close", () => {
-      console.log("UI client disconnected");
+      console.log("[WebSocket] UI client disconnected");
     });
   });
 
@@ -412,4 +419,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   return httpServer;
+}
+
+function isAdmin(req: Express.Request) {
+  return req.isAuthenticated() && req.user?.isAdmin;
 }

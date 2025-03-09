@@ -27,9 +27,12 @@ export function StationCard({ station }: { station: Station }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [wsConnection, setWsConnection] = useState<{connected: boolean, send: (msg: any) => void}>({ 
+  const [wsConnection, setWsConnection] = useState<{
+    connected: boolean;
+    send: (msg: any) => void;
+  }>({
     connected: false,
-    send: () => {} 
+    send: () => {},
   });
   const wsRef = useRef<WebSocket>();
   const { toast } = useToast();
@@ -45,7 +48,7 @@ export function StationCard({ station }: { station: Station }) {
     wsRef.current.onopen = () => {
       setWsConnection({
         connected: true,
-        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg))
+        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
       });
       toast({
         title: "Connected to control system",
@@ -142,7 +145,8 @@ export function StationCard({ station }: { station: Station }) {
       wsConnection.send({
         type: command,
         value,
-        stationId: station.id
+        stationId: station.id,
+        rpiId: station.rpiId // Added rpiId
       });
     }
   };
@@ -152,11 +156,11 @@ export function StationCard({ station }: { station: Station }) {
   };
 
   const handleContactUs = () => {
-    window.open('https://xeryon.com/contact/', '_blank');
+    window.open("https://xeryon.com/contact/", "_blank");
   };
 
   const handlePurchase = () => {
-    window.open('https://xeryon.com/products/development-kits/', '_blank');
+    window.open("https://xeryon.com/products/development-kits/", "_blank");
   };
 
   const handleFeedbackSubmit = () => {
@@ -165,7 +169,7 @@ export function StationCard({ station }: { station: Station }) {
     }
   };
 
-  const cardClasses = isFullscreen 
+  const cardClasses = isFullscreen
     ? "fixed inset-0 z-50 m-0 rounded-none overflow-auto bg-background"
     : "";
 
@@ -188,11 +192,13 @@ export function StationCard({ station }: { station: Station }) {
                   <Maximize2 className="h-4 w-4" />
                 )}
               </Button>
-              <span className={`text-sm px-2 py-1 rounded-full ${
-                station.status === "available" 
-                  ? "bg-green-100 text-green-700" 
-                  : "bg-yellow-100 text-yellow-700"
-              }`}>
+              <span
+                className={`text-sm px-2 py-1 rounded-full ${
+                  station.status === "available"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
                 {station.status === "available" ? "Available" : "In Use"}
               </span>
             </div>
@@ -204,20 +210,20 @@ export function StationCard({ station }: { station: Station }) {
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
-                  <CameraFeed stationId={station.id} />
+                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
               </div>
               <div className="space-y-8">
                 <AdvancedControls
-                  stationId={station.id}
+                  station={station}
                   enabled={isMySession}
                   isConnected={wsConnection.connected}
                   onCommand={handleCommand}
                 />
                 {station.sessionStart && isMySession && (
                   <div>
-                    <SessionTimer 
-                      startTime={station.sessionStart} 
+                    <SessionTimer
+                      startTime={station.sessionStart}
                       onTimeout={() => {
                         endSession.mutate();
                         setShowThankYouDialog(true);
@@ -226,7 +232,7 @@ export function StationCard({ station }: { station: Station }) {
                   </div>
                 )}
                 {station.status === "available" ? (
-                  <Button 
+                  <Button
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => startSession.mutate()}
                     disabled={startSession.isPending}
@@ -234,7 +240,7 @@ export function StationCard({ station }: { station: Station }) {
                     Start Session
                   </Button>
                 ) : isMySession ? (
-                  <Button 
+                  <Button
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
@@ -257,12 +263,12 @@ export function StationCard({ station }: { station: Station }) {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-video relative">
-                  <CameraFeed stationId={station.id} />
+                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
                 <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
                   {station.previewImage ? (
-                    <img 
-                      src={station.previewImage} 
+                    <img
+                      src={station.previewImage}
                       alt={`${station.name} preview`}
                       className="w-full h-full object-cover"
                     />
@@ -275,8 +281,8 @@ export function StationCard({ station }: { station: Station }) {
               </div>
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
-                  <SessionTimer 
-                    startTime={station.sessionStart} 
+                  <SessionTimer
+                    startTime={station.sessionStart}
                     onTimeout={() => {
                       endSession.mutate();
                       setShowThankYouDialog(true);
@@ -286,7 +292,7 @@ export function StationCard({ station }: { station: Station }) {
               )}
               <div className="space-y-4">
                 {station.status === "available" ? (
-                  <Button 
+                  <Button
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => startSession.mutate()}
                     disabled={startSession.isPending}
@@ -294,7 +300,7 @@ export function StationCard({ station }: { station: Station }) {
                     Start Session
                   </Button>
                 ) : isMySession ? (
-                  <Button 
+                  <Button
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
@@ -333,11 +339,7 @@ export function StationCard({ station }: { station: Station }) {
                 <CreditCard className="h-4 w-4 mr-2" />
                 Purchase Development Kit
               </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleContactUs}
-              >
+              <Button variant="outline" className="w-full" onClick={handleContactUs}>
                 <Mail className="h-4 w-4 mr-2" />
                 Contact Us
               </Button>
@@ -352,7 +354,7 @@ export function StationCard({ station }: { station: Station }) {
                 onChange={(e) => setFeedback(e.target.value)}
                 className="min-h-[100px]"
               />
-              <Button 
+              <Button
                 className="w-full"
                 onClick={handleFeedbackSubmit}
                 disabled={submitFeedback.isPending || !feedback.trim()}

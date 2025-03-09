@@ -16,6 +16,7 @@ export function useWebSocket() {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    // Create WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     console.log("[WebSocket] Attempting connection to:", wsUrl);
@@ -53,6 +54,8 @@ export function useWebSocket() {
             frameSize: data.frame?.length || 0
           });
           setFrame(data.frame);
+        } else if (data.type === 'error') {
+          console.error("[WebSocket] Server error:", data.message, data.details || {});
         } else {
           console.log("[WebSocket] Received message:", data);
         }
@@ -76,13 +79,20 @@ export function useWebSocket() {
     }
 
     if (socketRef.current?.readyState === WebSocket.OPEN) {
+      // Convert rpiId to string for consistency
+      const finalMessage = {
+        ...message,
+        rpiId: String(message.rpiId)
+      };
+
       console.log("[WebSocket] Sending message:", {
-        type: message.type,
-        command: message.command,
-        direction: message.direction,
-        rpiId: message.rpiId
+        type: finalMessage.type,
+        command: finalMessage.command,
+        direction: finalMessage.direction,
+        rpiId: finalMessage.rpiId
       });
-      socketRef.current.send(JSON.stringify(message));
+
+      socketRef.current.send(JSON.stringify(finalMessage));
     } else {
       console.warn("[WebSocket] Cannot send - connection not open. State:", socketRef.current?.readyState);
     }
