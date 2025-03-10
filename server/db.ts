@@ -10,8 +10,15 @@ neonConfig.webSocketConstructor = ws;
 const constructConnectionString = () => {
   const { DATABASE_URL, PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT } = process.env;
 
+  console.log('Checking database configuration...');
+  console.log('PGHOST:', PGHOST);
+  console.log('PGDATABASE:', PGDATABASE);
+  console.log('PGPORT:', PGPORT);
+  // Don't log sensitive credentials
+
   // If DATABASE_URL is provided and properly formatted, use it
   if (DATABASE_URL && (DATABASE_URL.startsWith('postgres://') || DATABASE_URL.startsWith('postgresql://'))) {
+    console.log('Using DATABASE_URL connection string');
     return DATABASE_URL;
   }
 
@@ -20,6 +27,7 @@ const constructConnectionString = () => {
     throw new Error("Database configuration missing. Required: PGHOST, PGUSER, PGPASSWORD, PGDATABASE");
   }
 
+  console.log('Constructing connection string from individual components');
   return `postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT || '5432'}/${PGDATABASE}`;
 };
 
@@ -30,23 +38,19 @@ const dbUrl = constructConnectionString();
 const logUrl = new URL(dbUrl);
 console.log(`Connecting to database at ${logUrl.host}${logUrl.pathname}...`);
 
-// Create a new pool with proper error handling and automatic reconnection
+// Create a new pool with proper error handling
 export const pool = new Pool({ 
   connectionString: dbUrl,
   ssl: {
     rejectUnauthorized: false // Required for Neon database
   },
-  connectionTimeoutMillis: 5000, // 5 second timeout
+  connectionTimeoutMillis: 10000, // 10 second timeout
   max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  retryStrategy: (err, retriesLeft) => {
-    console.log(`Database connection error: ${err.message}. Retries left: ${retriesLeft}`);
-    return true; // Always retry
-  }
+  idleTimeoutMillis: 30000 // Close idle clients after 30 seconds
 });
 
 // Handle pool errors to prevent crashes
-pool.on('error', (err) => {
+pool.on('error', (err: Error) => {
   console.error('Unexpected database pool error:', err.message);
   // Don't crash the server on connection errors
 });
@@ -56,18 +60,14 @@ async function validateConnection() {
   let client;
   try {
     client = await pool.connect();
-    console.log('Successfully connected to database');
+    const result = await client.query('SELECT NOW()');
+    console.log('Successfully connected to database at:', result.rows[0].now);
     return true;
   } catch (err) {
     console.error('Error connecting to database:', {
-      code: err.code,
-      message: err.message,
-      detail: err.detail,
-      hint: err.hint
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined
     });
-    
-    // Don't throw an error, but let the application continue
-    console.log('Will retry connecting to database automatically...');
     return false;
   } finally {
     if (client) client.release();
@@ -75,13 +75,17 @@ async function validateConnection() {
 }
 
 // Initial connection attempt
-validateConnection();
+validateConnection().then((success) => {
+  if (!success) {
+    console.log('Initial database connection failed, will retry automatically...');
+  }
+});
 
-// Set up periodic reconnection check (every 60 seconds)
+// Set up periodic reconnection check (every 30 seconds)
 setInterval(async () => {
   console.log('Validating database connection...');
   await validateConnection();
-}, 60000);
+}, 30000);
 
 // Create drizzle database instance
 export const db = drizzle(pool, { schema });
