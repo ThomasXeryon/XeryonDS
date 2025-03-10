@@ -7,14 +7,7 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 // Get database configuration from environment variables
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
-}
-
-console.log('Initializing database connection...');
-
-// Create connection pool
-export const pool = new Pool({
+const dbConfig = {
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false // Required for Neon database
@@ -22,7 +15,13 @@ export const pool = new Pool({
   connectionTimeoutMillis: 10000, // 10 second timeout
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000 // Close idle clients after 30 seconds
-});
+};
+
+console.log('Initializing database connection...');
+console.log('Using host:', new URL(process.env.DATABASE_URL!).hostname);
+
+// Create connection pool
+export const pool = new Pool(dbConfig);
 
 // Handle pool errors
 pool.on('error', (err: Error) => {
