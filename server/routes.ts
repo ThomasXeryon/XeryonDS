@@ -160,14 +160,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardCount} clients`);
         } else {
-          // Handle other messages
+          // Handle RPi command responses
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({
-                type: response.type || "rpi_response",
+                type: "rpi_response",
                 rpiId,
-                message: response.message,
-                status: response.status
+                status: response.status,
+                message: response.message
               }));
             }
           });
@@ -237,8 +237,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Forward command to RPi with timestamp
         const commandMessage = {
-          type: message.type,
-          command: message.command,
+          type: "command",
+          command: message.command || "unknown",
           direction: message.direction || "none",
           timestamp: new Date().toISOString()
         };

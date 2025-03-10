@@ -56,6 +56,12 @@ export function useWebSocket() {
           setFrame(data.frame);
         } else if (data.type === 'error') {
           console.error("[WebSocket] Server error:", data.message, data.details || {});
+        } else if (data.type === 'rpi_response') {
+          console.log("[WebSocket] RPi response:", {
+            status: data.status,
+            rpiId: data.rpi_id,
+            message: data.message
+          });
         } else {
           console.log("[WebSocket] Received message:", data);
         }

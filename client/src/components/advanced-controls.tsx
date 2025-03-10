@@ -23,6 +23,13 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
     onCommand("speed", value[0].toString());
   };
 
+  // Get rpiId from station object
+  const rpiId = station?.rpiId;
+  if (!rpiId && enabled) {
+    console.error("[AdvancedControls] No RPi ID available");
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       {/* Step Controls */}
@@ -31,7 +38,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("step", "-" + stepSize)}
+          onClick={() => onCommand("move", "left")} // Changed to use direction
         >
           <MinusCircle className="h-4 w-4 mr-1" />
           Step
@@ -47,7 +54,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("step", stepSize)}
+          onClick={() => onCommand("move", "right")} // Changed to use direction
         >
           <PlusCircle className="h-4 w-4 mr-1" />
           Step

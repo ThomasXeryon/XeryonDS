@@ -140,13 +140,14 @@ export function StationCard({ station }: { station: Station }) {
     },
   });
 
-  const handleCommand = (command: string, value?: number) => {
+  const handleCommand = (command: string, direction?: string) => {
     if (wsConnection.connected) {
+      console.log("[StationCard] Sending command:", { command, direction, rpiId: station.rpiId });
       wsConnection.send({
-        type: command,
-        value,
-        stationId: station.id,
-        rpiId: station.rpiId // Added rpiId
+        type: "command",
+        command,
+        direction: direction || "none",
+        rpiId: station.rpiId
       });
     }
   };
