@@ -13,6 +13,8 @@ export function useWebSocket() {
   const [frame, setFrame] = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<RPiResponse | null>(null);
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
+  const [lastFrameTime, setLastFrameTime] = useState<number>(0);
+
 
   useEffect(() => {
     const ws = new WebSocket('ws://localhost:8080'); // Replace with your WebSocket URL
@@ -36,6 +38,7 @@ export function useWebSocket() {
         });
         setFrame(data.frame || null);
         setLastUpdateTime(Date.now()); // Update timestamp to trigger re-renders
+        setLastFrameTime(Date.now());
       } else {
         console.log('[WebSocket] Received:', data);
       }
@@ -72,6 +75,7 @@ export function useWebSocket() {
     frame,
     lastResponse,
     lastUpdateTime,
+    lastFrameTime,
     sendCommand,
   };
 }

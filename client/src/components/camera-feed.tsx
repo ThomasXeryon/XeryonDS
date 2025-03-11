@@ -9,8 +9,9 @@ interface CameraFeedProps {
 
 export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
-  const { connectionStatus, frame, lastUpdateTime } = useWebSocket();
+  const { connectionStatus, frame, lastUpdateTime, lastFrameTime } = useWebSocket();
   const [key, setKey] = useState(Date.now()); // Add a key to force re-render
+  const [isFrameRecent, setIsFrameRecent] = useState(false);
 
   // Force re-render on frame updates
   useEffect(() => {
@@ -20,10 +21,28 @@ export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
     }
   }, [frame, lastUpdateTime]);
 
+  // Check if we've received a frame in the last 2 seconds
+  useEffect(() => {
+    const checkFrameRecency = () => {
+      const now = Date.now();
+      const isRecent = lastFrameTime > 0 && now - lastFrameTime < 2000;
+      setIsFrameRecent(isRecent);
+    };
+
+    // Initial check
+    checkFrameRecency();
+    
+    // Set up interval to continuously check
+    const interval = setInterval(checkFrameRecency, 500);
+    
+    return () => clearInterval(interval);
+  }, [lastFrameTime]);
+
   // Show reconnecting state when connection is lost
   useEffect(() => {
     if (!connectionStatus) {
       setLoading(true);
+      setIsFrameRecent(false);
     }
   }, [connectionStatus]);
 
@@ -54,7 +73,7 @@ export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
         </div>
       )}
       <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-        {connectionStatus ? "Connected" : "Reconnecting..."}
+        {isFrameRecent ? "Connected" : "Reconnecting..."}
       </div>
     </div>
   );
