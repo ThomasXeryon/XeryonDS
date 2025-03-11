@@ -59,7 +59,7 @@ export function StationCard({ station }: { station: Station }) {
     wsRef.current.onclose = () => {
       setWsConnection({ connected: false, send: () => {} });
 
-      // Attempt to reconnect
+      // Attempt to reconnect without showing thank you dialog
       const reconnect = () => {
         console.log("[StationCard] Attempting to reconnect WebSocket...");
         wsRef.current = new WebSocket(wsUrl);

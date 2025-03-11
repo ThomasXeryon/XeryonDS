@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const rpiId = (req as any).rpiId;
     console.log(`[RPi ${rpiId}] Connected`);
 
-    // Store the connection
+    // Store the connection without any timeout
     rpiConnections.set(rpiId, ws);
 
     // Notify UI clients about new RPi connection
