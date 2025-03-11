@@ -38,20 +38,37 @@ export default function StationsPage() {
 
   const createStation = useMutation({
     mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => {
-      const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
-      const station = await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || `Failed to create station: ${res.status} ${res.statusText}`);
+        }
+        
+        const station = await res.json();
 
-      if (selectedImage) {
-        const formData = new FormData();
-        formData.append('image', selectedImage);
-        await fetch(`/api/admin/stations/${station.id}/image`, {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        });
+        if (selectedImage) {
+          const formData = new FormData();
+          formData.append('image', selectedImage);
+          formData.append('name', name); // Add name to formData in case it's needed
+          
+          const uploadRes = await fetch(`/api/admin/stations/${station.id}/image`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+          
+          if (!uploadRes.ok) {
+            console.warn("Image upload failed, but station was created");
+          }
+        }
+
+        return station;
+      } catch (error) {
+        console.error("Station creation error:", error);
+        throw error;
       }
-
-      return station;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
@@ -64,10 +81,10 @@ export default function StationsPage() {
       setSelectedImage(null);
       setIsAddDialogOpen(false);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Failed to create station",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     },

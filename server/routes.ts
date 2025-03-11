@@ -301,8 +301,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations POST");
-      return res.sendStatus(403);
+      return res.status(403).json({ message: "Unauthorized: Admin access required" });
     }
+    
+    console.log("Station creation request body:", req.body);
     const { name, rpiId } = req.body;
 
     if (!name || !rpiId) {
@@ -310,11 +312,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // Check if a station with this rpiId already exists
+      const stations = await storage.getStations();
+      const existingStation = stations.find(s => s.rpiId === rpiId);
+      
+      if (existingStation) {
+        return res.status(409).json({ message: `A station with RPi ID "${rpiId}" already exists` });
+      }
+      
       const station = await storage.createStation(name, rpiId);
+      console.log("Station created successfully:", station);
       res.status(201).json(station);
     } catch (error) {
       console.error("Error creating station:", error);
-      res.status(500).json({ message: "Failed to create station" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: `Failed to create station: ${errorMessage}` });
     }
   });
 
