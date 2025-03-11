@@ -327,9 +327,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const stationId = parseInt(req.params.id);
 
     try {
-      const station = await storage.updateStation(stationId, { 
-        name, 
-        rpiId 
+      const station = await storage.updateStation(stationId, {
+        name,
+        rpiId
       });
       res.json(station);
     } catch (error) {
@@ -382,15 +382,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           previewImage: imageUrl
         });
 
-        res.json({ 
+        res.json({
           url: imageUrl,
-          station 
+          station
         });
       } catch (error) {
         console.error("Error handling image upload:", error);
         // Clean up temporary file if it exists
         if (req.file?.path) {
-          await fs.unlink(req.file.path).catch(err => 
+          await fs.unlink(req.file.path).catch(err =>
             console.error("Failed to clean up temp file:", err)
           );
         }

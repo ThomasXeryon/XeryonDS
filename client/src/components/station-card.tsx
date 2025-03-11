@@ -37,12 +37,12 @@ export function StationCard({ station }: { station: Station }) {
   const wsRef = useRef<WebSocket>();
   const { toast } = useToast();
 
-  // WebSocket connection handling
+  // Update WebSocket connection logic
   useEffect(() => {
     if (!isMySession) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/appws`;
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {

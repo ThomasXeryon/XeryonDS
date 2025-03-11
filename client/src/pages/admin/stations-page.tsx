@@ -290,35 +290,6 @@ export default function StationsPage() {
                 <CardTitle className="flex justify-between items-center">
                   <span>{station.name}</span>
                   <div className="flex items-center gap-2">
-                    <label
-                      className="cursor-pointer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            uploadImage.mutate({ stationId: station.id, file });
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-colors"
-                        title="Upload preview image"
-                        disabled={uploadImage.isPending}
-                      >
-                        {uploadImage.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </label>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -336,11 +307,9 @@ export default function StationsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Add CameraFeed for live feed */}
                   <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                     <CameraFeed rpiId={station.rpiId} />
                   </div>
-                  {/* Keep previewImage as fallback or additional info */}
                   {station.previewImage && (
                     <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                       <img
@@ -356,18 +325,6 @@ export default function StationsPage() {
                       status={station.status as "available" | "in_use" | "connecting"}
                     />
                   </div>
-                  {station.ipAddress && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">IP Address</span>
-                      <span>{station.ipAddress}</span>
-                    </div>
-                  )}
-                  {station.port && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Port</span>
-                      <span>{station.port}</span>
-                    </div>
-                  )}
                   {station.currentUserId && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Current Session</span>
@@ -381,7 +338,6 @@ export default function StationsPage() {
         </div>
       </main>
 
-      {/* Edit Station Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -407,11 +363,25 @@ export default function StationsPage() {
                   onChange={(e) => setSelectedStation({ ...selectedStation, rpiId: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-preview">Preview Image</Label>
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Current Preview Image</Label>
+                {selectedStation.previewImage ? (
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={selectedStation.previewImage}
+                      alt="Current preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-lg bg-muted flex items-center justify-center text-sm text-muted-foreground">
+                    No preview image set
+                  </div>
+                )}
                 <Input
                   id="edit-preview"
                   type="file"
+                  className="hidden"
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -420,11 +390,15 @@ export default function StationsPage() {
                     }
                   }}
                 />
-                {selectedImage && (
-                  <div className="text-sm text-muted-foreground">
-                    Selected: {selectedImage.name}
-                  </div>
-                )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full mt-2"
+                  onClick={() => document.getElementById('edit-preview')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {selectedImage ? selectedImage.name : "Upload New Preview Image"}
+                </Button>
               </div>
               <Button
                 className="w-full bg-primary hover:bg-primary/90 transition-colors"
