@@ -44,13 +44,39 @@ export function useWebSocket() {
         reason: event.reason,
         wasClean: event.wasClean
       });
-      setState(prev => ({ ...prev, connectionStatus: false, frame: null })); // Clear frame on disconnect
+      setState(prev => ({ ...prev, connectionStatus: false })); // Don't clear frame immediately to avoid flickering
+      
+      // Set a flag to show reconnecting status after a short delay
+      const reconnectStatusTimeout = window.setTimeout(() => {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          console.log("[WebSocket] Setting reconnecting status");
+          setState(prev => ({ ...prev, connectionStatus: false, frame: null }));
+        }
+      }, 2000);
 
-      // Attempt to reconnect after a short delay
+      // Implement exponential backoff for reconnection attempts
+      const backoffTime = Math.min(1000 * (Math.pow(2, Math.floor(Math.random() * 4))), 10000);
+      console.log(`[WebSocket] Will attempt to reconnect in ${backoffTime}ms`);
+      
+      // Attempt to reconnect with exponential backoff
       reconnectTimeoutRef.current = window.setTimeout(() => {
         console.log("[WebSocket] Attempting to reconnect...");
-        wsRef.current = new WebSocket(wsUrl);
-      }, 1000);
+        try {
+          const newSocket = new WebSocket(wsUrl);
+          wsRef.current = newSocket;
+          
+          // Set up event handlers for the new socket
+          newSocket.onopen = socket.onopen;
+          newSocket.onmessage = socket.onmessage;
+          newSocket.onerror = socket.onerror;
+          newSocket.onclose = socket.onclose;
+        } catch (error) {
+          console.error("[WebSocket] Failed to create new connection:", error);
+        }
+        
+        // Clear the reconnect status timeout
+        window.clearTimeout(reconnectStatusTimeout);
+      }, backoffTime);
     };
 
     socket.onerror = (error) => {

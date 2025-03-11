@@ -15,84 +15,118 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   const wsRef = useRef<WebSocket>();
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+  let reconnectTimer: NodeJS.Timeout | null = null;
+
 
   useEffect(() => {
     if (!enabled) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/appws`;
-    
+
     // Close existing connection if it exists
     if (wsRef.current) {
       wsRef.current.close();
     }
-    
-    wsRef.current = new WebSocket(wsUrl);
 
-    wsRef.current.onopen = () => {
-      setIsConnected(true);
-      onConnectionChange(true, (msg: any) => {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify(msg));
+    // Helper function to initialize WebSocket
+    function initWebSocket() {
+      const ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "error") {
+            toast({
+              title: "Control system error",
+              description: data.message,
+              variant: "destructive",
+            });
+          } else if (data.type === "rpi_response") {
+            toast({
+              title: "RPi Response",
+              description: data.message,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to parse WebSocket message:", err);
         }
-      });
-      
-      // Register with the server to receive messages for this station
-      const registerMsg = {
-        type: "register",
-        stationId,
-        rpiId
       };
-      wsRef.current.send(JSON.stringify(registerMsg));
-      
-      toast({
-        title: "Connected to control system",
-        description: "You can now control the actuator",
-      });
-    };
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
 
-    wsRef.current.onclose = () => {
-      setIsConnected(false);
-      onConnectionChange(false, () => {});
-      toast({
-        title: "Connection lost",
-        description: "Your session has ended. Thank you for using our demo station.",
-        variant: "destructive",
-      });
-    };
+      // Handle open event
+      ws.onopen = () => {
+        setIsConnected(true);
+        onConnectionChange(true, (msg: any) => {
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify(msg));
+          }
+        });
+        reconnectAttempts = 0;
+        console.log('WebSocket connected');
 
-    wsRef.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "error") {
+        // Register with the server to receive messages for this station
+        const registerMsg = {
+          type: "register",
+          stationId,
+          rpiId
+        };
+        ws.send(JSON.stringify(registerMsg));
+
+        toast({
+          title: "Connected to control system",
+          description: "You can now control the actuator",
+        });
+      };
+
+      // Add connection close handler with reconnection logic
+      ws.onclose = () => {
+        setIsConnected(false);
+        onConnectionChange(false, () => {});
+        console.log('WebSocket connection closed');
+
+        // Implement reconnection with exponential backoff
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const backoffTime = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+          console.log(`Attempting to reconnect in ${backoffTime}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+
+          reconnectTimer = window.setTimeout(() => {
+            reconnectAttempts++;
+            initWebSocket();
+          }, backoffTime);
+        } else {
           toast({
-            title: "Control system error",
-            description: data.message,
+            title: "Connection lost",
+            description: "Maximum reconnection attempts reached. Please check your connection.",
             variant: "destructive",
           });
-        } else if (data.type === "rpi_response") {
-          toast({
-            title: "RPi Response",
-            description: data.message,
-          });
+          console.error('Maximum reconnection attempts reached');
         }
-      } catch (err) {
-        console.error("Failed to parse WebSocket message:", err);
+      };
+
+      wsRef.current = ws;
+      return ws;
+    }
+
+    // Initialize the first connection
+    initWebSocket();
+
+    // Cleanup function
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer);
       }
     };
-
-    wsRef.current.onerror = () => {
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to control system",
-        variant: "destructive",
-      });
-    };
-
-    return () => {
-      wsRef.current?.close();
-    };
-  }, [enabled, toast, onConnectionChange]);
+  }, [enabled, toast, onConnectionChange, stationId, rpiId]);
 
   const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
     if (!wsRef.current || !enabled || !isConnected) {
