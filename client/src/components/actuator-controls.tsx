@@ -20,7 +20,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
     if (!enabled) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/appws`;
     
     // Close existing connection if it exists
     if (wsRef.current) {
