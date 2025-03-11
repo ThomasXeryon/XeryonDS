@@ -4,17 +4,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface CameraFeedProps {
   rpiId: string | number;
+  stationId?: number;
 }
 
-export function CameraFeed({ rpiId }: CameraFeedProps) {
+export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
-  const { connectionStatus, frame } = useWebSocket();
+  const { connectionStatus, frame, lastUpdateTime } = useWebSocket();
+  const [key, setKey] = useState(Date.now()); // Add a key to force re-render
 
+  // Force re-render on frame updates
   useEffect(() => {
     if (frame) {
       setLoading(false); // Stop loading when frame arrives
+      setKey(Date.now()); // Update key to force re-render
     }
-  }, [frame]);
+  }, [frame, lastUpdateTime]);
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
@@ -34,6 +38,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </>
       ) : frame ? (
         <img
+          key={key} // Use key to force re-render when frame updates
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
