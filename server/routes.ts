@@ -424,19 +424,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stationId = parseInt(req.params.id);
 
       try {
-        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
-        await fs.rename(req.file.path, path.join(uploadsPath, filename));
+        // Ensure uploads directory exists
+        await fs.mkdir(uploadsPath, { recursive: true });
+        
+        // Create a unique filename
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname || '.jpg')}`;
+        const destinationPath = path.join(uploadsPath, filename);
+        
+        // Use fs.copyFile instead of rename to avoid issues across partitions
+        await fs.copyFile(req.file.path, destinationPath);
+        console.log(`Image saved successfully to ${destinationPath}`);
+        
+        // Delete the temporary file
+        await fs.unlink(req.file.path).catch(err => 
+          console.warn(`Warning: Could not delete temp file ${req.file.path}:`, err)
+        );
 
         const imageUrl = `/uploads/${filename}`;
-        await storage.updateStation(stationId, {
-          name: req.body.name || undefined,
+        console.log(`Updating station ${stationId} with image URL: ${imageUrl}`);
+        
+        // Update the station with the new image URL
+        const updatedStation = await storage.updateStation(stationId, {
           previewImage: imageUrl
         });
-
-        res.json({ url: imageUrl });
+        
+        console.log(`Station updated successfully:`, updatedStation);
+        res.json({ url: imageUrl, station: updatedStation });
       } catch (error) {
         console.error("Error handling image upload:", error);
-        res.status(500).json({ message: "Failed to process image upload" });
+        res.status(500).json({ message: `Failed to process image upload: ${error.message}` });
       }
     }
   );

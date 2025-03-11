@@ -330,35 +330,6 @@ export default function StationsPage() {
                 <CardTitle className="flex justify-between items-center">
                   <span>{station.name}</span>
                   <div className="flex items-center gap-2">
-                    <label
-                      className="cursor-pointer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            uploadImage.mutate({ stationId: station.id, file });
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-colors"
-                        title="Upload preview image"
-                        disabled={uploadImage.isPending}
-                      >
-                        {uploadImage.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </label>
                     <Button
                       variant="ghost"
                       size="icon"
