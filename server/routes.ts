@@ -135,8 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Check if it's already a data URL or just base64
           const isDataUrl = response.frame.startsWith('data:');
-          console.log(`[RPi ${rpiId}] Frame format: ${isDataUrl ? 'data URL' : 'raw base64'}`);
-
+          
           let frameToSend = response.frame;
           if (!isDataUrl) {
             try {
@@ -149,16 +148,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          // Create the message once to avoid excessive string operations
+          const frameMessage = JSON.stringify({
+            type: "camera_frame",
+            rpiId,
+            frame: frameToSend
+          });
+          
           let forwardCount = 0;
+          // Send to all connected UI clients that are ready
           wssUI.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
-              console.log(`[RPi ${rpiId}] Forwarding frame to client, size: ${frameToSend.length} bytes`);
-              client.send(JSON.stringify({
-                type: "camera_frame",
-                rpiId,
-                frame: frameToSend
-              }));
-              forwardCount++;
+              try {
+                client.send(frameMessage);
+                forwardCount++;
+              } catch (error) {
+                console.error(`[RPi ${rpiId}] Error sending frame to client:`, error);
+              }
             }
           });
 

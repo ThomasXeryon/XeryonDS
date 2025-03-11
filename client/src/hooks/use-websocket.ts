@@ -1,20 +1,28 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from "./use-toast";
 
-export interface WebSocketMessage {
-  type: string;
-  command?: string;
-  direction?: string;
-  rpiId?: string | number;
-  stationId?: number;
-  value?: any;
-  frame?: string;
+// Define the structure for WebSocket hook data
+interface WebSocketState {
+  connectionStatus: boolean;
+  frame: string | null;
+  rpiStatus: Record<string, boolean>;
+  lastResponse: any;
+  lastFrameTime: number | null;
 }
 
 export function useWebSocket() {
-  const [connectionStatus, setConnectionStatus] = useState<boolean>(false);
-  const [frame, setFrame] = useState<string | null>(null);
-  const socketRef = useRef<WebSocket | null>(null);
+  const [state, setState] = useState<WebSocketState>({
+    connectionStatus: false,
+    frame: null,
+    rpiStatus: {},
+    lastResponse: null,
+    lastFrameTime: null
+  });
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const frameTimeoutRef = useRef<number | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Create WebSocket connection with new path
@@ -23,11 +31,11 @@ export function useWebSocket() {
     console.log("[WebSocket] Attempting connection to:", wsUrl);
 
     const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
+    wsRef.current = socket;
 
     socket.onopen = () => {
       console.log("[WebSocket] Connected successfully");
-      setConnectionStatus(true);
+      setState(prev => ({ ...prev, connectionStatus: true }));
     };
 
     socket.onclose = (event) => {
@@ -36,63 +44,112 @@ export function useWebSocket() {
         reason: event.reason,
         wasClean: event.wasClean
       });
-      setConnectionStatus(false);
-      setFrame(null); // Clear frame on disconnect
+      setState(prev => ({ ...prev, connectionStatus: false, frame: null })); // Clear frame on disconnect
 
       // Attempt to reconnect after a short delay
-      setTimeout(() => {
+      reconnectTimeoutRef.current = window.setTimeout(() => {
         console.log("[WebSocket] Attempting to reconnect...");
-        socketRef.current = new WebSocket(wsUrl);
+        wsRef.current = new WebSocket(wsUrl);
       }, 1000);
     };
 
     socket.onerror = (error) => {
       console.error("[WebSocket] Connection error:", error);
-      setConnectionStatus(false);
+      setState(prev => ({ ...prev, connectionStatus: false }));
     };
 
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'camera_frame') {
-          console.log("[WebSocket] Received camera frame:", {
-            type: data.type,
-            rpiId: data.rpiId,
-            frameSize: data.frame?.length || 0
-          });
-          setFrame(data.frame);
-        } else if (data.type === 'error') {
-          console.error("[WebSocket] Server error:", data.message, data.details || {});
-        } else if (data.type === 'rpi_response') {
-          console.log("[WebSocket] RPi response:", {
-            status: data.status,
-            rpiId: data.rpi_id,
-            message: data.message
-          });
-        } else {
-          console.log("[WebSocket] Received message:", data);
-        }
-      } catch (err) {
-        console.error("[WebSocket] Failed to parse message:", err);
-      }
-    };
+    socket.onmessage = handleMessage;
 
-    // Only clean up on component unmount
+    // Cleanup function to close WebSocket when component unmounts
     return () => {
-      if (socketRef.current) {
-        console.log("[WebSocket] Cleaning up connection");
-        socketRef.current.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      if (frameTimeoutRef.current) {
+        window.clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
       }
     };
   }, []);
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
+  const handleMessage = useCallback((event: MessageEvent) => {
+    try {
+      const data = JSON.parse(event.data);
+
+      // Handle different message types
+      if (data.type === 'camera_frame') {
+        // Clear any existing frame timeout
+        if (frameTimeoutRef.current) {
+          window.clearTimeout(frameTimeoutRef.current);
+          frameTimeoutRef.current = null;
+        }
+
+        // Set a timeout to detect if frames stop arriving
+        frameTimeoutRef.current = window.setTimeout(() => {
+          console.log("No camera frames received for 5 seconds");
+          setState(prev => ({
+            ...prev,
+            frame: null, // Clear frame to show "waiting for camera" message
+          }));
+        }, 5000);
+
+        setState(prev => ({
+          ...prev,
+          frame: data.frame,
+          lastFrameTime: Date.now()
+        }));
+      } else if (data.type === 'rpi_connected') {
+        setState(prev => ({
+          ...prev,
+          rpiStatus: {
+            ...prev.rpiStatus,
+            [data.rpiId]: true
+          }
+        }));
+        toast({
+          title: "Device Connected",
+          description: `RPi ${data.rpiId} is now connected`,
+        });
+      } else if (data.type === 'rpi_disconnected') {
+        setState(prev => ({
+          ...prev,
+          rpiStatus: {
+            ...prev.rpiStatus,
+            [data.rpiId]: false
+          },
+          frame: null // Clear frame when RPi disconnects
+        }));
+        toast({
+          title: "Device Disconnected",
+          description: `RPi ${data.rpiId} has disconnected`,
+          variant: "destructive",
+        });
+      } else {
+        // Store all other responses in lastResponse
+        setState(prev => ({
+          ...prev,
+          lastResponse: data
+        }));
+      }
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+    }
+  }, [toast]);
+
+  const sendMessage = useCallback((message: any) => { //Added any type for message
     if (!message.rpiId) {
       console.error("[WebSocket] Cannot send message - rpiId is missing:", message);
       return;
     }
 
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
       // Convert rpiId to string for consistency
       const finalMessage = {
         ...message,
@@ -106,16 +163,18 @@ export function useWebSocket() {
         rpiId: finalMessage.rpiId
       });
 
-      socketRef.current.send(JSON.stringify(finalMessage));
+      wsRef.current.send(JSON.stringify(finalMessage));
     } else {
-      console.warn("[WebSocket] Cannot send - connection not open. State:", socketRef.current?.readyState);
+      console.warn("[WebSocket] Cannot send - connection not open. State:", wsRef.current?.readyState);
     }
   }, []);
 
   return {
-    socket: socketRef.current,
-    connectionStatus,
+    socket: wsRef.current,
+    connectionStatus: state.connectionStatus,
     sendMessage,
-    frame
+    frame: state.frame,
+    rpiStatus: state.rpiStatus,
+    lastResponse: state.lastResponse
   };
 }
