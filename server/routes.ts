@@ -303,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/admin/stations POST");
       return res.status(403).json({ message: "Unauthorized: Admin access required" });
     }
-    
+
     console.log("Station creation request body:", req.body);
     const { name, rpiId } = req.body;
 
@@ -315,11 +315,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if a station with this rpiId already exists
       const stations = await storage.getStations();
       const existingStation = stations.find(s => s.rpiId === rpiId);
-      
+
       if (existingStation) {
         return res.status(409).json({ message: `A station with RPi ID "${rpiId}" already exists` });
       }
-      
+
       const station = await storage.createStation(name, rpiId);
       console.log("Station created successfully:", station);
       res.status(201).json(station);
@@ -345,12 +345,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (rpiId) {
         const stations = await storage.getStations();
         const existingStation = stations.find(s => s.rpiId === rpiId && s.id !== stationId);
-        
+
         if (existingStation) {
           return res.status(409).json({ message: `A station with RPi ID "${rpiId}" already exists` });
         }
       }
-      
+
       const station = await storage.updateStation(stationId, { name, rpiId });
       res.json(station);
     } catch (error) {
@@ -365,35 +365,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/admin/stations DELETE");
       return res.sendStatus(403);
     }
-    
+
     const stationId = parseInt(req.params.id);
-    
+
     try {
       // Get the station before deletion to log details
       const station = await storage.getStation(stationId);
       if (!station) {
         return res.status(404).json({ message: "Station not found" });
       }
-      
+
       console.log(`Deleting station: ID=${stationId}, Name=${station.name}, RPI ID=${station.rpiId}`);
-      
+
       await storage.deleteStation(stationId);
       console.log(`Successfully deleted station ${stationId}`);
-      
+
       res.status(200).json({ message: `Station ${stationId} deleted successfully` });
     } catch (error) {
       console.error(`Error deleting station ${stationId}:`, error);
       res.status(500).json({ message: "Failed to delete station" });
     }
   });
-  
+
   // Add cleanup endpoint for orphaned stations
   app.post("/api/admin/stations/cleanup", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations/cleanup POST");
       return res.sendStatus(403);
     }
-    
+
     try {
       await storage.cleanupOrphanedStations();
       res.status(200).json({ message: "Orphaned stations cleanup completed" });

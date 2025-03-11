@@ -288,3 +288,21 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Delete a station
+export async function deleteStation(stationId: number) {
+  // First find the station to get its details
+  const stationToDelete = await db
+    .select()
+    .from(stations)
+    .where(eq(stations.id, stationId))
+    .then((rows) => rows[0]);
+
+  // Then delete it
+  const result = await db.delete(stations).where(eq(stations.id, stationId));
+
+  // Log deletion for debugging
+  console.log(`Deleted station ${stationId}, affected rows: ${result.rowCount}`);
+
+  return result;
+}

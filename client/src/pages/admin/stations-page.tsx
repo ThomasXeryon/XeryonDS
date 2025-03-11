@@ -447,6 +447,27 @@ export default function StationsPage() {
                   onChange={(e) => setSelectedStation({ ...selectedStation, rpiId: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-preview">Preview Image</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="edit-preview"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && selectedStation) {
+                        uploadImage.mutate({ stationId: selectedStation.id, file });
+                      }
+                    }}
+                  />
+                  {selectedStation.previewImage && (
+                    <div className="text-sm text-muted-foreground">
+                      Current image set
+                    </div>
+                  )}
+                </div>
+              </div>
               <Button
                 className="w-full bg-primary hover:bg-primary/90 transition-colors"
                 onClick={() => updateStation.mutate(selectedStation)}
