@@ -389,14 +389,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedStation = await storage.updateStationSession(station.id, req.user.id);
     res.json(updatedStation);
 
-    setTimeout(async () => {
-      await storage.updateStationSession(station.id, null);
+    // Set session duration to 30 minutes
+    const SESSION_DURATION = 30 * 60 * 1000;
+    const WARNING_BEFORE = 5 * 60 * 1000; // Warning 5 minutes before end
+
+    // Send warning before session ends
+    setTimeout(() => {
       wssUI.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
+          client.send(JSON.stringify({ 
+            type: "session_warning",
+            message: "Your session will end in 5 minutes",
+            stationId: station.id 
+          }));
         }
       });
-    }, 5 * 60 * 1000);
+    }, SESSION_DURATION - WARNING_BEFORE);
+
+    // End session after duration
+    setTimeout(async () => {
+      const currentStation = await storage.getStation(station.id);
+      if (currentStation?.currentUserId === req.user.id) {
+        await storage.updateStationSession(station.id, null);
+        wssUI.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
+          }
+        });
+      }
+    }, SESSION_DURATION);
   });
 
   app.delete("/api/stations/:id/session", async (req, res) => {

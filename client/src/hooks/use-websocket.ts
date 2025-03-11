@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'react-hot-toast'; // Assuming react-hot-toast is used
 
 export interface WebSocketMessage {
   type: string;
@@ -62,6 +63,20 @@ export function useWebSocket() {
             rpiId: data.rpi_id,
             message: data.message
           });
+        } else if (data.type === 'session_warning') {
+          // Show warning toast
+          toast({
+            title: "Session Ending Soon",
+            description: data.message,
+            variant: "warning",
+            duration: 10000 // Show for 10 seconds
+          });
+        } else if (data.type === 'session_ended') {
+          toast({
+            title: "Session Ended",
+            description: "Your demo session has ended. Thank you for using our demo station.",
+            variant: "default"
+          });
         } else {
           console.log("[WebSocket] Received message:", data);
         }
@@ -76,7 +91,7 @@ export function useWebSocket() {
         socketRef.current.close();
       }
     };
-  }, []);
+  }, [toast]); // Added toast to dependencies
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (!message.rpiId) {
