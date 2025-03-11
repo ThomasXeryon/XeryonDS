@@ -243,8 +243,9 @@ export function StationCard({ station }: { station: Station }) {
                     <SessionTimer
                       startTime={station.sessionStart}
                       onTimeout={() => {
-                        endSession.mutate();
-                        setShowThankYouDialog(true);
+                        endSession.mutate().then(() => {
+                          setShowThankYouDialog(true);
+                        });
                       }}
                     />
                   </div>
@@ -262,8 +263,9 @@ export function StationCard({ station }: { station: Station }) {
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
+                      endSession.mutate().then(() => {
+                        setShowThankYouDialog(true);
+                      });
                     }}
                     disabled={endSession.isPending}
                   >
@@ -302,8 +304,9 @@ export function StationCard({ station }: { station: Station }) {
                   <SessionTimer
                     startTime={station.sessionStart}
                     onTimeout={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
+                      endSession.mutate().then(() => {
+                        setShowThankYouDialog(true);
+                      });
                     }}
                   />
                 </div>
@@ -322,8 +325,9 @@ export function StationCard({ station }: { station: Station }) {
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
+                      endSession.mutate().then(() => {
+                        setShowThankYouDialog(true);
+                      });
                     }}
                     disabled={endSession.isPending}
                   >
