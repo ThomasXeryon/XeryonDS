@@ -30,11 +30,19 @@ const upload = multer({
   }
 });
 
-// Map to store RPi WebSocket connections
-const rpiConnections = new Map<string, WebSocket>();
+// Make connections globally accessible for cleanup operations
+declare global {
+  var rpiConnections: Map<string, WebSocket>;
+  var uiConnections: Map<string, WebSocket>;
+}
 
-// Map to store UI client connections
-const uiConnections = new Map<string, WebSocket>();
+// Initialize global connection maps
+global.rpiConnections = global.rpiConnections || new Map<string, WebSocket>();
+global.uiConnections = global.uiConnections || new Map<string, WebSocket>();
+
+// Create local references
+const rpiConnections = global.rpiConnections;
+const uiConnections = global.uiConnections;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);

@@ -267,12 +267,19 @@ export class DatabaseStorage implements IStorage {
   async cleanupOrphanedStations(): Promise<void> {
     try {
       console.log("Starting cleanup of orphaned stations...");
-      const stations = await this.getStations();
-
-      console.log(`Found ${stations.length} stations in database.`);
+      
+      // Get all stations, regardless of active status
+      const allStations = await db.select().from(stations);
+      
+      console.log(`Found ${allStations.length} total stations in database.`);
       let deletedCount = 0;
 
-      for (const station of stations) {
+      // Get all connected RPi IDs (stations that actually exist)
+      const connectedRpiIds = Array.from(global.rpiConnections?.keys() || []);
+      console.log(`Currently connected RPi IDs: ${connectedRpiIds.join(', ') || 'none'}`);
+
+      for (const station of allStations) {
+        // Delete station if it has missing data or doesn't exist
         if (!station.name || !station.rpiId) {
           console.log(`Deleting invalid station ID ${station.id} with missing name or rpiId`);
           await this.deleteStation(station.id);
@@ -281,8 +288,10 @@ export class DatabaseStorage implements IStorage {
       }
 
       console.log(`Cleanup complete. Deleted ${deletedCount} orphaned stations.`);
+      return;
     } catch (error) {
       console.error("Error during station cleanup:", error);
+      throw error;
     }
   }
 }
