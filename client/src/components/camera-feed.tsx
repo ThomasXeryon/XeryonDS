@@ -72,9 +72,6 @@ export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
           <p className="text-sm">No camera feed available</p>
         </div>
       )}
-      <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-        {isFrameRecent ? "Connected" : "Waiting for camera feed..."}
-      </div>
     </div>
   );
 }
