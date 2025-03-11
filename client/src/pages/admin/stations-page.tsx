@@ -75,11 +75,28 @@ export default function StationsPage() {
 
   const updateStation = useMutation({
     mutationFn: async (station: Station) => {
+      // First update basic station info
       const res = await apiRequest("PATCH", `/api/admin/stations/${station.id}`, {
         name: station.name,
         rpiId: station.rpiId,
       });
-      return await res.json();
+      const updatedStation = await res.json();
+
+      // If there's also an image to upload, do that separately
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        formData.append('name', station.name); // Pass current name
+        formData.append('rpiId', station.rpiId); // Pass current rpiId
+
+        await fetch(`/api/admin/stations/${station.id}/image`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+      }
+
+      return updatedStation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
@@ -88,6 +105,7 @@ export default function StationsPage() {
         description: "Station details have been updated successfully",
       });
       setSelectedStation(null);
+      setSelectedImage(null); // Clear selected image after successful update
       setIsEditDialogOpen(false);
     },
     onError: (error: Error) => {
@@ -388,6 +406,25 @@ export default function StationsPage() {
                   value={selectedStation.rpiId}
                   onChange={(e) => setSelectedStation({ ...selectedStation, rpiId: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-preview">Preview Image</Label>
+                <Input
+                  id="edit-preview"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedImage(file);
+                    }
+                  }}
+                />
+                {selectedImage && (
+                  <div className="text-sm text-muted-foreground">
+                    Selected: {selectedImage.name}
+                  </div>
+                )}
               </div>
               <Button
                 className="w-full bg-primary hover:bg-primary/90 transition-colors"

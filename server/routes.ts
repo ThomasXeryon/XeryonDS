@@ -327,7 +327,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const stationId = parseInt(req.params.id);
 
     try {
-      const station = await storage.updateStation(stationId, { name });
+      const station = await storage.updateStation(stationId, { 
+        name, 
+        rpiId 
+      });
       res.json(station);
     } catch (error) {
       console.error("Error updating station:", error);
@@ -357,18 +360,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stationId = parseInt(req.params.id);
 
       try {
-        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
-        await fs.rename(req.file.path, path.join(uploadsPath, filename));
+        // Ensure uploads directory exists
+        await fs.mkdir(uploadsPath, { recursive: true });
 
+        // Generate unique filename with timestamp and original extension
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        const filePath = path.join(uploadsPath, filename);
+
+        // Move uploaded file to final location
+        await fs.rename(req.file.path, filePath);
+        console.log(`[Image Upload] Saved image to: ${filePath}`);
+
+        // Generate public URL path
         const imageUrl = `/uploads/${filename}`;
-        await storage.updateStation(stationId, {
-          name: req.body.name || undefined,
+        console.log(`[Image Upload] Public URL: ${imageUrl}`);
+
+        // Update station with new image URL
+        const station = await storage.updateStation(stationId, {
+          name: req.body.name,
+          rpiId: req.body.rpiId,
           previewImage: imageUrl
         });
 
-        res.json({ url: imageUrl });
+        res.json({ 
+          url: imageUrl,
+          station 
+        });
       } catch (error) {
         console.error("Error handling image upload:", error);
+        // Clean up temporary file if it exists
+        if (req.file?.path) {
+          await fs.unlink(req.file.path).catch(err => 
+            console.error("Failed to clean up temp file:", err)
+          );
+        }
         res.status(500).json({ message: "Failed to process image upload" });
       }
     }
