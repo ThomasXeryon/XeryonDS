@@ -142,10 +142,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteStation(id: number): Promise<void> {
-    await db
-      .update(stations)
-      .set({ isActive: false })
-      .where(eq(stations.id, id));
+    try {
+      // First, check if the station exists
+      const station = await this.getStation(id);
+      if (!station) {
+        console.log(`Station with ID ${id} not found, nothing to delete.`);
+        return;
+      }
+
+      console.log(`Deleting station with ID ${id} and RPI ID ${station.rpiId}...`);
+
+      // Delete any session logs related to this station
+      await db.delete(sessionLogs).where(eq(sessionLogs.stationId, id));
+
+      // Finally delete the station itself
+      await db.delete(stations).where(eq(stations.id, id));
+
+      console.log(`Station with ID ${id} successfully deleted.`);
+    } catch (error) {
+      console.error(`Error deleting station with ID ${id}:`, error);
+      throw error;
+    }
   }
 
   async updateStation(id: number, update: Partial<StationUpdate>): Promise<Station> {
@@ -243,6 +260,29 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error updating user admin status:", error);
       throw error;
+    }
+  }
+
+  // Utility function to clean up orphaned stations
+  async cleanupOrphanedStations(): Promise<void> {
+    try {
+      console.log("Starting cleanup of orphaned stations...");
+      const stations = await this.getStations();
+
+      console.log(`Found ${stations.length} stations in database.`);
+      let deletedCount = 0;
+
+      for (const station of stations) {
+        if (!station.name || !station.rpiId) {
+          console.log(`Deleting invalid station ID ${station.id} with missing name or rpiId`);
+          await this.deleteStation(station.id);
+          deletedCount++;
+        }
+      }
+
+      console.log(`Cleanup complete. Deleted ${deletedCount} orphaned stations.`);
+    } catch (error) {
+      console.error("Error during station cleanup:", error);
     }
   }
 }

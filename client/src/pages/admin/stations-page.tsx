@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -184,6 +184,27 @@ export default function StationsPage() {
     setIsEditDialogOpen(true);
   };
 
+  const cleanupOrphanedStations = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/stations/cleanup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(`Failed to cleanup orphaned stations: ${error}`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+      toast({ title: "Database cleanup complete", description: "Orphaned stations removed." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Database cleanup failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+
   if (!user?.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -222,72 +243,78 @@ export default function StationsPage() {
             </Button>
             <h1 className="text-2xl font-bold">Manage Stations</h1>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 transition-colors">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Station
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Demo Station</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Station Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Station Name"
-                    value={newStationName}
-                    onChange={(e) => setNewStationName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rpiId">RPi ID</Label>
-                  <Input
-                    id="rpiId"
-                    placeholder="RPi ID (e.g., RPI1)"
-                    value={rpiId}
-                    onChange={(e) => setRpiId(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="preview">Preview Image</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      id="preview"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setSelectedImage(file);
-                        }
-                      }}
-                    />
-                    {selectedImage && (
-                      <div className="text-sm text-muted-foreground">
-                        {selectedImage.name}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={() => createStation.mutate({ name: newStationName, rpiId })}
-                  disabled={createStation.isPending || !newStationName.trim() || !rpiId.trim()}
-                >
-                  {createStation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Plus className="h-4 w-4 mr-2" />
-                  )}
-                  Create Station
+          <div className="flex gap-2">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 transition-colors">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Station
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Demo Station</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Station Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Station Name"
+                      value={newStationName}
+                      onChange={(e) => setNewStationName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rpiId">RPi ID</Label>
+                    <Input
+                      id="rpiId"
+                      placeholder="RPi ID (e.g., RPI1)"
+                      value={rpiId}
+                      onChange={(e) => setRpiId(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="preview">Preview Image</Label>
+                    <div className="flex items-center gap-4">
+                      <Input
+                        id="preview"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setSelectedImage(file);
+                          }
+                        }}
+                      />
+                      {selectedImage && (
+                        <div className="text-sm text-muted-foreground">
+                          {selectedImage.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    onClick={() => createStation.mutate({ name: newStationName, rpiId })}
+                    disabled={createStation.isPending || !newStationName.trim() || !rpiId.trim()}
+                  >
+                    {createStation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Create Station
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" onClick={() => cleanupOrphanedStations.mutate()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Cleanup DB
+            </Button>
+          </div>
         </div>
       </header>
 
