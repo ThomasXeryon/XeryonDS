@@ -48,11 +48,11 @@ export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
 
   return (
     <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black">
-      {loading ? (
+      {loading || !isFrameRecent ? (
         <>
           <Skeleton className="h-full w-full" />
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
-            {connectionStatus ? 'Waiting for camera feed...' : 'Reconnecting...'}
+            Waiting for camera feed...
           </div>
         </>
       ) : frame ? (
