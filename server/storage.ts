@@ -10,8 +10,6 @@ const PostgresSessionStore = connectPg(session);
 
 interface StationUpdate {
   name?: string;
-  rpiId?: string;
-  previewImage?: string;
   isActive?: boolean;
 }
 
@@ -142,27 +140,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteStation(id: number): Promise<void> {
-    try {
-      // First, check if the station exists
-      const station = await this.getStation(id);
-      if (!station) {
-        console.log(`Station with ID ${id} not found, nothing to delete.`);
-        return;
-      }
-
-      console.log(`Deleting station with ID ${id} and RPI ID ${station.rpiId}...`);
-
-      // Delete any session logs related to this station
-      await db.delete(sessionLogs).where(eq(sessionLogs.stationId, id));
-
-      // Finally delete the station itself
-      await db.delete(stations).where(eq(stations.id, id));
-
-      console.log(`Station with ID ${id} successfully deleted.`);
-    } catch (error) {
-      console.error(`Error deleting station with ID ${id}:`, error);
-      throw error;
-    }
+    await db
+      .update(stations)
+      .set({ isActive: false })
+      .where(eq(stations.id, id));
   }
 
   async updateStation(id: number, update: Partial<StationUpdate>): Promise<Station> {
@@ -262,56 +243,6 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-
-  // Utility function to clean up orphaned stations
-  async cleanupOrphanedStations(): Promise<void> {
-    try {
-      console.log("Starting cleanup of orphaned stations...");
-      
-      // Get all stations, regardless of active status
-      const allStations = await db.select().from(stations);
-      
-      console.log(`Found ${allStations.length} total stations in database.`);
-      let deletedCount = 0;
-
-      // Get all connected RPi IDs (stations that actually exist)
-      const connectedRpiIds = Array.from(global.rpiConnections?.keys() || []);
-      console.log(`Currently connected RPi IDs: ${connectedRpiIds.join(', ') || 'none'}`);
-
-      for (const station of allStations) {
-        // Delete station if it has missing data or doesn't exist
-        if (!station.name || !station.rpiId) {
-          console.log(`Deleting invalid station ID ${station.id} with missing name or rpiId`);
-          await this.deleteStation(station.id);
-          deletedCount++;
-        }
-      }
-
-      console.log(`Cleanup complete. Deleted ${deletedCount} orphaned stations.`);
-      return;
-    } catch (error) {
-      console.error("Error during station cleanup:", error);
-      throw error;
-    }
-  }
 }
 
 export const storage = new DatabaseStorage();
-
-// Delete a station
-export async function deleteStation(stationId: number) {
-  // First find the station to get its details
-  const stationToDelete = await db
-    .select()
-    .from(stations)
-    .where(eq(stations.id, stationId))
-    .then((rows) => rows[0]);
-
-  // Then delete it
-  const result = await db.delete(stations).where(eq(stations.id, stationId));
-
-  // Log deletion for debugging
-  console.log(`Deleted station ${stationId}, affected rows: ${result.rowCount}`);
-
-  return result;
-}

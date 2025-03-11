@@ -4,60 +4,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface CameraFeedProps {
   rpiId: string | number;
-  stationId?: number;
 }
 
-export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
+export function CameraFeed({ rpiId }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
-  const { connectionStatus, frame, lastUpdateTime, lastFrameTime } = useWebSocket();
-  const [key, setKey] = useState(Date.now()); // Add a key to force re-render
-  const [isFrameRecent, setIsFrameRecent] = useState(false);
+  const { connectionStatus, frame } = useWebSocket();
 
-  // Force re-render on frame updates
   useEffect(() => {
     if (frame) {
       setLoading(false); // Stop loading when frame arrives
-      setKey(Date.now()); // Update key to force re-render
     }
-  }, [frame, lastUpdateTime]);
-
-  // Check if we've received a frame in the last 2 seconds
-  useEffect(() => {
-    const checkFrameRecency = () => {
-      const now = Date.now();
-      const isRecent = lastFrameTime > 0 && now - lastFrameTime < 2000;
-      setIsFrameRecent(isRecent);
-    };
-
-    // Initial check
-    checkFrameRecency();
-    
-    // Set up interval to continuously check
-    const interval = setInterval(checkFrameRecency, 500);
-    
-    return () => clearInterval(interval);
-  }, [lastFrameTime]);
+  }, [frame]);
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
     if (!connectionStatus) {
       setLoading(true);
-      setIsFrameRecent(false);
     }
   }, [connectionStatus]);
 
   return (
     <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black">
-      {loading || !isFrameRecent ? (
+      {loading ? (
         <>
           <Skeleton className="h-full w-full" />
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
-            Waiting for camera feed...
+            {connectionStatus ? 'Waiting for camera feed...' : 'Reconnecting...'}
           </div>
         </>
       ) : frame ? (
         <img
-          key={key} // Use key to force re-render when frame updates
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
@@ -72,6 +48,9 @@ export function CameraFeed({ rpiId, stationId }: CameraFeedProps) {
           <p className="text-sm">No camera feed available</p>
         </div>
       )}
+      <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+        {connectionStatus ? "Connected" : "Reconnecting..."}
+      </div>
     </div>
   );
 }

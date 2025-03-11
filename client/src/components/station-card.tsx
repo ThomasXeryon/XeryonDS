@@ -228,7 +228,7 @@ export function StationCard({ station }: { station: Station }) {
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
-                  <CameraFeed key={`camera-${station.id}-${Date.now()}`} stationId={station.id} rpiId={station.rpiId} />
+                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
               </div>
               <div className="space-y-8">
@@ -243,9 +243,8 @@ export function StationCard({ station }: { station: Station }) {
                     <SessionTimer
                       startTime={station.sessionStart}
                       onTimeout={() => {
-                        endSession.mutate().then(() => {
-                          setShowThankYouDialog(true);
-                        });
+                        endSession.mutate();
+                        setShowThankYouDialog(true);
                       }}
                     />
                   </div>
@@ -263,9 +262,8 @@ export function StationCard({ station }: { station: Station }) {
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
-                      endSession.mutate().then(() => {
-                        setShowThankYouDialog(true);
-                      });
+                      endSession.mutate();
+                      setShowThankYouDialog(true);
                     }}
                     disabled={endSession.isPending}
                   >
@@ -283,7 +281,7 @@ export function StationCard({ station }: { station: Station }) {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-video relative">
-                  <CameraFeed key={`camera-${station.id}-${Date.now()}`} stationId={station.id} rpiId={station.rpiId} />
+                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
                 <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
                   {station.previewImage ? (
@@ -304,9 +302,8 @@ export function StationCard({ station }: { station: Station }) {
                   <SessionTimer
                     startTime={station.sessionStart}
                     onTimeout={() => {
-                      endSession.mutate().then(() => {
-                        setShowThankYouDialog(true);
-                      });
+                      endSession.mutate();
+                      setShowThankYouDialog(true);
                     }}
                   />
                 </div>
@@ -325,9 +322,8 @@ export function StationCard({ station }: { station: Station }) {
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
-                      endSession.mutate().then(() => {
-                        setShowThankYouDialog(true);
-                      });
+                      endSession.mutate();
+                      setShowThankYouDialog(true);
                     }}
                     disabled={endSession.isPending}
                   >

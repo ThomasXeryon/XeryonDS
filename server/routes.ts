@@ -30,19 +30,11 @@ const upload = multer({
   }
 });
 
-// Make connections globally accessible for cleanup operations
-declare global {
-  var rpiConnections: Map<string, WebSocket>;
-  var uiConnections: Map<string, WebSocket>;
-}
+// Map to store RPi WebSocket connections
+const rpiConnections = new Map<string, WebSocket>();
 
-// Initialize global connection maps
-global.rpiConnections = global.rpiConnections || new Map<string, WebSocket>();
-global.uiConnections = global.uiConnections || new Map<string, WebSocket>();
-
-// Create local references
-const rpiConnections = global.rpiConnections;
-const uiConnections = global.uiConnections;
+// Map to store UI client connections
+const uiConnections = new Map<string, WebSocket>();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -309,10 +301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations POST");
-      return res.status(403).json({ message: "Unauthorized: Admin access required" });
+      return res.sendStatus(403);
     }
-
-    console.log("Station creation request body:", req.body);
     const { name, rpiId } = req.body;
 
     if (!name || !rpiId) {
@@ -320,51 +310,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Check if a station with this rpiId already exists
-      const stations = await storage.getStations();
-      const existingStation = stations.find(s => s.rpiId === rpiId);
-
-      if (existingStation) {
-        return res.status(409).json({ message: `A station with RPi ID "${rpiId}" already exists` });
-      }
-
       const station = await storage.createStation(name, rpiId);
-      console.log("Station created successfully:", station);
       res.status(201).json(station);
     } catch (error) {
       console.error("Error creating station:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ message: `Failed to create station: ${errorMessage}` });
+      res.status(500).json({ message: "Failed to create station" });
     }
   });
 
   app.patch("/api/admin/stations/:id", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations PATCH");
-      return res.status(403).json({ message: "Unauthorized access" });
+      return res.sendStatus(403);
     }
     const { name, rpiId } = req.body;
     const stationId = parseInt(req.params.id);
 
-    console.log("Updating station:", { id: stationId, name, rpiId });
-
     try {
-      // Check if a station with this rpiId already exists (only if rpiId is being updated)
-      if (rpiId) {
-        const stations = await storage.getStations();
-        const existingStation = stations.find(s => s.rpiId === rpiId && s.id !== stationId);
-
-        if (existingStation) {
-          return res.status(409).json({ message: `A station with RPi ID "${rpiId}" already exists` });
-        }
-      }
-
-      const station = await storage.updateStation(stationId, { name, rpiId });
+      const station = await storage.updateStation(stationId, { name });
       res.json(station);
     } catch (error) {
       console.error("Error updating station:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ message: `Failed to update station: ${errorMessage}` });
+      res.status(500).json({ message: "Failed to update station" });
     }
   });
 
@@ -373,42 +340,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Unauthorized access to /api/admin/stations DELETE");
       return res.sendStatus(403);
     }
-
-    const stationId = parseInt(req.params.id);
-
-    try {
-      // Get the station before deletion to log details
-      const station = await storage.getStation(stationId);
-      if (!station) {
-        return res.status(404).json({ message: "Station not found" });
-      }
-
-      console.log(`Deleting station: ID=${stationId}, Name=${station.name}, RPI ID=${station.rpiId}`);
-
-      await storage.deleteStation(stationId);
-      console.log(`Successfully deleted station ${stationId}`);
-
-      res.status(200).json({ message: `Station ${stationId} deleted successfully` });
-    } catch (error) {
-      console.error(`Error deleting station ${stationId}:`, error);
-      res.status(500).json({ message: "Failed to delete station" });
-    }
-  });
-
-  // Add cleanup endpoint for orphaned stations
-  app.post("/api/admin/stations/cleanup", async (req, res) => {
-    if (!isAdmin(req)) {
-      console.log("Unauthorized access to /api/admin/stations/cleanup POST");
-      return res.sendStatus(403);
-    }
-
-    try {
-      await storage.cleanupOrphanedStations();
-      res.status(200).json({ message: "Orphaned stations cleanup completed" });
-    } catch (error) {
-      console.error("Error during cleanup:", error);
-      res.status(500).json({ message: "Failed to cleanup orphaned stations" });
-    }
+    await storage.deleteStation(parseInt(req.params.id));
+    res.sendStatus(200);
   });
 
   // Image upload endpoint
@@ -424,35 +357,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stationId = parseInt(req.params.id);
 
       try {
-        // Ensure uploads directory exists
-        await fs.mkdir(uploadsPath, { recursive: true });
-        
-        // Create a unique filename
-        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname || '.jpg')}`;
-        const destinationPath = path.join(uploadsPath, filename);
-        
-        // Use fs.copyFile instead of rename to avoid issues across partitions
-        await fs.copyFile(req.file.path, destinationPath);
-        console.log(`Image saved successfully to ${destinationPath}`);
-        
-        // Delete the temporary file
-        await fs.unlink(req.file.path).catch(err => 
-          console.warn(`Warning: Could not delete temp file ${req.file.path}:`, err)
-        );
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        await fs.rename(req.file.path, path.join(uploadsPath, filename));
 
         const imageUrl = `/uploads/${filename}`;
-        console.log(`Updating station ${stationId} with image URL: ${imageUrl}`);
-        
-        // Update the station with the new image URL
-        const updatedStation = await storage.updateStation(stationId, {
+        await storage.updateStation(stationId, {
+          name: req.body.name || undefined,
           previewImage: imageUrl
         });
-        
-        console.log(`Station updated successfully:`, updatedStation);
-        res.json({ url: imageUrl, station: updatedStation });
+
+        res.json({ url: imageUrl });
       } catch (error) {
         console.error("Error handling image upload:", error);
-        res.status(500).json({ message: `Failed to process image upload: ${error.message}` });
+        res.status(500).json({ message: "Failed to process image upload" });
       }
     }
   );

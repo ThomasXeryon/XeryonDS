@@ -107,7 +107,56 @@ export default function AdminPage() {
               <Home className="h-4 w-4 mr-2" />
               Back to Home
             </Button>
-            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 transition-colors">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Station
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Demo Station</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <Input
+                    placeholder="Station Name"
+                    value={newStationName}
+                    onChange={(e) => setNewStationName(e.target.value)}
+                  />
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="IP Address (e.g. 192.168.1.100)"
+                      value={ipAddress}
+                      onChange={(e) => setIpAddress(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Port (e.g. 8080)"
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Secret Key"
+                      type="password"
+                      value={secretKey}
+                      onChange={(e) => setSecretKey(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    onClick={() => createStation.mutate({ name: newStationName, ipAddress, port, secretKey })}
+                    disabled={createStation.isPending || !newStationName.trim() || !ipAddress.trim() || !port.trim() || !secretKey.trim()}
+                  >
+                    {createStation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Create Station
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>

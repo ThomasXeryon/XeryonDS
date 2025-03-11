@@ -1,13 +1,8 @@
-
 import asyncio
 import websockets
 import json
 from datetime import datetime
 import sys
-import base64
-import numpy as np
-from PIL import Image, ImageDraw
-import io
 
 async def rpi_client(rpi_id='RPI1', server_url=None):
     if not server_url:
@@ -41,31 +36,11 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                 frame_count = 0
                 while True:
                     try:
-                        # Create a simple test pattern (checkerboard)
-                        size = 320  # Small size for better performance
-                        img = np.zeros((size, size, 3), dtype=np.uint8)
-                        
-                        # Create 8x8 checkerboard
-                        tile_size = size // 8
-                        for i in range(8):
-                            for j in range(8):
-                                if (i + j) % 2 == 0:
-                                    img[i*tile_size:(i+1)*tile_size, j*tile_size:(j+1)*tile_size] = [200, 200, 200]
-                                    
-                        # Add frame counter to the image
-                        pil_img = Image.fromarray(img)
-                        draw = ImageDraw.Draw(pil_img)
-                        draw.text((10, 10), f"Frame #{frame_count}", fill=(255, 0, 0))
-                        
-                        # Convert to base64
-                        buffer = io.BytesIO()
-                        pil_img.save(buffer, format="JPEG")
-                        img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
-                        
+                        # Create a simulated frame (just a counter for testing)
                         frame_data = {
                             "type": "camera_frame",
                             "rpiId": rpi_id,
-                            "frame": img_str
+                            "frame": "SGVsbG8gV29ybGQ="  # Base64 "Hello World" as test data
                         }
                         await ws.send(json.dumps(frame_data))
                         frame_count += 1

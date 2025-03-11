@@ -4,7 +4,7 @@ import { Station } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Settings, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -38,37 +38,20 @@ export default function StationsPage() {
 
   const createStation = useMutation({
     mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => {
-      try {
-        const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
+      const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
+      const station = await res.json();
 
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || `Failed to create station: ${res.status} ${res.statusText}`);
-        }
-
-        const station = await res.json();
-
-        if (selectedImage) {
-          const formData = new FormData();
-          formData.append('image', selectedImage);
-          formData.append('name', name); // Add name to formData in case it's needed
-
-          const uploadRes = await fetch(`/api/admin/stations/${station.id}/image`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-          });
-
-          if (!uploadRes.ok) {
-            console.warn("Image upload failed, but station was created");
-          }
-        }
-
-        return station;
-      } catch (error) {
-        console.error("Station creation error:", error);
-        throw error;
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        await fetch(`/api/admin/stations/${station.id}/image`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
       }
+
+      return station;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
@@ -81,10 +64,10 @@ export default function StationsPage() {
       setSelectedImage(null);
       setIsAddDialogOpen(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Failed to create station",
-        description: error.message || "An unexpected error occurred",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -140,40 +123,26 @@ export default function StationsPage() {
     mutationFn: async ({ stationId, file }: { stationId: number; file: File }) => {
       const formData = new FormData();
       formData.append('image', file);
-
       const res = await fetch(`/api/admin/stations/${stationId}/image`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to upload image: ${res.status} ${res.statusText}`);
-      }
-
-      return await res.json();
+      if (!res.ok) throw new Error('Failed to upload image');
+      return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-
-      // Update the selectedStation with the new image URL if in edit dialog
-      if (selectedStation && data.url) {
-        setSelectedStation({
-          ...selectedStation,
-          previewImage: data.url
-        });
-      }
-
       toast({
         title: "Image uploaded",
-        description: "Station preview image has been updated",
+        description: "Preview image has been updated successfully",
       });
+      setSelectedImage(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Failed to upload image",
-        description: error.message || "An unexpected error occurred",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -183,27 +152,6 @@ export default function StationsPage() {
     setSelectedStation(station);
     setIsEditDialogOpen(true);
   };
-
-  const cleanupOrphanedStations = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/admin/stations/cleanup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) {
-        const error = await res.text();
-        throw new Error(`Failed to cleanup orphaned stations: ${error}`);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      toast({ title: "Database cleanup complete", description: "Orphaned stations removed." });
-    },
-    onError: (error: any) => {
-      toast({ title: "Database cleanup failed", description: error.message, variant: "destructive" });
-    }
-  });
-
 
   if (!user?.isAdmin) {
     return (
@@ -243,78 +191,72 @@ export default function StationsPage() {
             </Button>
             <h1 className="text-2xl font-bold">Manage Stations</h1>
           </div>
-          <div className="flex gap-2">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 transition-colors">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Station
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Demo Station</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Station Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Station Name"
-                      value={newStationName}
-                      onChange={(e) => setNewStationName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rpiId">RPi ID</Label>
-                    <Input
-                      id="rpiId"
-                      placeholder="RPi ID (e.g., RPI1)"
-                      value={rpiId}
-                      onChange={(e) => setRpiId(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="preview">Preview Image</Label>
-                    <div className="flex items-center gap-4">
-                      <Input
-                        id="preview"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setSelectedImage(file);
-                          }
-                        }}
-                      />
-                      {selectedImage && (
-                        <div className="text-sm text-muted-foreground">
-                          {selectedImage.name}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                    onClick={() => createStation.mutate({ name: newStationName, rpiId })}
-                    disabled={createStation.isPending || !newStationName.trim() || !rpiId.trim()}
-                  >
-                    {createStation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Create Station
-                  </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 transition-colors">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Station
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Demo Station</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Station Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Station Name"
+                    value={newStationName}
+                    onChange={(e) => setNewStationName(e.target.value)}
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
-            <Button variant="outline" onClick={() => cleanupOrphanedStations.mutate()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Cleanup DB
-            </Button>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rpiId">RPi ID</Label>
+                  <Input
+                    id="rpiId"
+                    placeholder="RPi ID (e.g., RPI1)"
+                    value={rpiId}
+                    onChange={(e) => setRpiId(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="preview">Preview Image</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="preview"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedImage(file);
+                        }
+                      }}
+                    />
+                    {selectedImage && (
+                      <div className="text-sm text-muted-foreground">
+                        {selectedImage.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  onClick={() => createStation.mutate({ name: newStationName, rpiId })}
+                  disabled={createStation.isPending || !newStationName.trim() || !rpiId.trim()}
+                >
+                  {createStation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Plus className="h-4 w-4 mr-2" />
+                  )}
+                  Create Station
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -330,6 +272,35 @@ export default function StationsPage() {
                 <CardTitle className="flex justify-between items-center">
                   <span>{station.name}</span>
                   <div className="flex items-center gap-2">
+                    <label
+                      className="cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            uploadImage.mutate({ stationId: station.id, file });
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-colors"
+                        title="Upload preview image"
+                        disabled={uploadImage.isPending}
+                      >
+                        {uploadImage.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </label>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -417,27 +388,6 @@ export default function StationsPage() {
                   value={selectedStation.rpiId}
                   onChange={(e) => setSelectedStation({ ...selectedStation, rpiId: e.target.value })}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-preview">Preview Image</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="edit-preview"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file && selectedStation) {
-                        uploadImage.mutate({ stationId: selectedStation.id, file });
-                      }
-                    }}
-                  />
-                  {selectedStation.previewImage && (
-                    <div className="text-sm text-muted-foreground">
-                      Current image set
-                    </div>
-                  )}
-                </div>
               </div>
               <Button
                 className="w-full bg-primary hover:bg-primary/90 transition-colors"
