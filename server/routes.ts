@@ -200,20 +200,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle web UI client connections
   wssUI.on("connection", (ws, req) => {
     console.log("[WebSocket] UI client connected");
-
-    // Send initial list of connected RPis
-    const connectedRpis = Array.from(rpiConnections.keys());
-    console.log("[WebSocket] Connected RPis:", connectedRpis);
-
-    ws.send(JSON.stringify({
-      type: "rpi_list",
-      rpiIds: connectedRpis
-    }));
+    let clientStationId: string | null = null;
+    let clientRpiId: string | null = null;
 
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
         console.log("[WebSocket] Received UI message:", message);
+
+        // Handle registration messages
+        if (message.type === 'register') {
+          clientStationId = message.stationId?.toString();
+          clientRpiId = message.rpiId;
+          console.log(`[WebSocket] UI client registered for station ${clientStationId}, RPi ${clientRpiId}`);
+
+          // Store the connection with a unique key for this station/rpi
+          if (clientStationId && clientRpiId) {
+            const clientKey = `ui_${clientStationId}_${clientRpiId}`;
+            uiConnections.set(clientKey, ws);
+
+            // Confirm registration
+            ws.send(JSON.stringify({
+              type: 'registered',
+              message: `Successfully registered for station ${clientStationId}`
+            }));
+          }
+          return;
+        }
+
 
         if (!message.rpiId) {
           console.error("[WebSocket] Message missing rpiId:", message);
@@ -271,6 +285,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on("close", () => {
       console.log("[WebSocket] UI client disconnected");
+      // Remove connection from the map
+      if (clientStationId && clientRpiId) {
+        const clientKey = `ui_${clientStationId}_${clientRpiId}`;
+        uiConnections.delete(clientKey);
+        console.log(`[WebSocket] Removed UI client for station ${clientStationId}, RPi ${clientRpiId}`);
+      }
     });
   });
 

@@ -21,11 +21,30 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    // Close existing connection if it exists
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
       setIsConnected(true);
-      onConnectionChange(true, (msg: any) => wsRef.current?.send(JSON.stringify(msg)));
+      onConnectionChange(true, (msg: any) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify(msg));
+        }
+      });
+      
+      // Register with the server to receive messages for this station
+      const registerMsg = {
+        type: "register",
+        stationId,
+        rpiId
+      };
+      wsRef.current.send(JSON.stringify(registerMsg));
+      
       toast({
         title: "Connected to control system",
         description: "You can now control the actuator",
@@ -76,7 +95,10 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   }, [enabled, toast, onConnectionChange]);
 
   const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
-    if (!wsRef.current || !enabled || !isConnected) return;
+    if (!wsRef.current || !enabled || !isConnected) {
+      console.log("Cannot send command - connection not ready", { enabled, isConnected });
+      return;
+    }
 
     const message: WebSocketMessage = {
       type,
@@ -86,7 +108,17 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       command: direction ? `move_${direction}` : 'stop'
     };
 
-    wsRef.current.send(JSON.stringify(message));
+    try {
+      console.log("Sending command:", message);
+      wsRef.current.send(JSON.stringify(message));
+    } catch (err) {
+      console.error("Failed to send command:", err);
+      toast({
+        title: "Command failed",
+        description: "Could not send command to the control system",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
