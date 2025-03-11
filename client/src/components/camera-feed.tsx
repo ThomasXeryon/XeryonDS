@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWebSocket } from '@/hooks/use-websocket';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -8,60 +7,41 @@ interface CameraFeedProps {
 }
 
 export function CameraFeed({ rpiId }: CameraFeedProps) {
-  const [frame, setFrame] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { socket, connectionStatus } = useWebSocket();
+  const { connectionStatus, frame } = useWebSocket();
 
   useEffect(() => {
-    if (!socket || !rpiId) {
-      return;
+    if (frame) {
+      setLoading(false); // Stop loading when frame arrives
     }
+  }, [frame]);
 
-    console.log("Setting up camera feed listener for RPI:", rpiId);
-    setLoading(true);
-
-    // Handler for WebSocket messages
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        // Check if this is a camera frame from the selected station
-        if (data.type === 'camera_frame' && data.rpiId === rpiId) {
-          setFrame(`data:image/jpeg;base64,${data.frame}`);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Error processing WebSocket message:', err);
-      }
-    };
-
-    // Add event listener
-    socket.addEventListener('message', handleMessage);
-
-    // Clean up
-    return () => {
-      socket.removeEventListener('message', handleMessage);
-    };
-  }, [socket, rpiId]);
-
-  if (loading) {
-    return (
-      <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black">
-        <Skeleton className="h-full w-full" />
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
-          Waiting for camera feed...
-        </div>
-      </div>
-    );
-  }
+  // Show reconnecting state when connection is lost
+  useEffect(() => {
+    if (!connectionStatus) {
+      setLoading(true);
+    }
+  }, [connectionStatus]);
 
   return (
     <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black">
-      {frame ? (
+      {loading ? (
+        <>
+          <Skeleton className="h-full w-full" />
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
+            {connectionStatus ? 'Waiting for camera feed...' : 'Reconnecting...'}
+          </div>
+        </>
+      ) : frame ? (
         <img
           src={frame}
           alt="Camera Feed"
           className="w-full h-full object-contain"
+          onError={(e) => {
+            console.error("[CameraFeed] Error loading frame:", e);
+            setLoading(true);
+          }}
+          onLoad={() => console.log("[CameraFeed] Frame loaded successfully for RPi:", rpiId)}
         />
       ) : (
         <div className="flex items-center justify-center h-full text-white/70">
@@ -69,7 +49,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </div>
       )}
       <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-        {connectionStatus ? "Connected" : "Disconnected"}
+        {connectionStatus ? "Connected" : "Reconnecting..."}
       </div>
     </div>
   );

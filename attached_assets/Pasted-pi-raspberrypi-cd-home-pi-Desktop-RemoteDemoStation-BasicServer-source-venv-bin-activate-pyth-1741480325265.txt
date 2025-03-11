@@ -1,0 +1,56 @@
+pi@raspberrypi:~ $ cd /home/pi/Desktop/RemoteDemoStation/BasicServer
+source venv/bin/activate
+python rpi_client.py
+[2025-03-09 00:31:05.812239] Starting RPI WebSocket client for RPI1
+[2025-03-09 00:31:05.812316] To use a different ID, run: python rpi-python-client.py YOUR_STATION_ID
+[2025-03-09 00:31:05.812324] Attempting to connect to server...
+[2025-03-09 00:31:05.812737] Trying to connect to ws://localhost:5000/rpi/RPI1...
+[2025-03-09 00:31:05.844654] Connection to ws://localhost:5000/rpi/RPI1 failed: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5000, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5000)
+[2025-03-09 00:31:05.844747] Error type: OSError
+[2025-03-09 00:31:05.844765] Trying to connect to ws://0.0.0.0:5000/rpi/RPI1...
+[2025-03-09 00:31:05.845542] Connection to ws://0.0.0.0:5000/rpi/RPI1 failed: [Errno 111] Connect call failed ('0.0.0.0', 5000)
+[2025-03-09 00:31:05.845585] Error type: ConnectionRefusedError
+[2025-03-09 00:31:05.845594] Trying to connect to wss://xeryonremotedemostation.replit.app/rpi/RPI1...
+[2025-03-09 00:31:06.611783] Connected to server as RPI1 via wss://xeryonremotedemostation.replit.app/rpi/RPI1
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+
+
+==================================================
+COMMAND RECEIVED FROM UI: unknown
+DIRECTION: none
+==================================================
+

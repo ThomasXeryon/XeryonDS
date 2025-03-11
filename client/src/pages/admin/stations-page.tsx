@@ -17,16 +17,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useEffect } from "react";
 import { StatusIndicator } from "@/components/station-status";
 import { cn } from "@/lib/utils";
+import { CameraFeed } from "@/components/camera-feed"; // Import CameraFeed
 
 export default function StationsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newStationName, setNewStationName] = useState("");
-  const [rpiId, setRpiId] = useState(""); // Added rpiId state
+  const [rpiId, setRpiId] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -37,11 +37,10 @@ export default function StationsPage() {
   });
 
   const createStation = useMutation({
-    mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => { // Updated mutationFn
+    mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => {
       const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
       const station = await res.json();
 
-      // If we have a selected image, upload it right after creating the station
       if (selectedImage) {
         const formData = new FormData();
         formData.append('image', selectedImage);
@@ -61,7 +60,7 @@ export default function StationsPage() {
         description: "New demo station has been added successfully",
       });
       setNewStationName("");
-      setRpiId(""); // Clear rpiId state
+      setRpiId("");
       setSelectedImage(null);
       setIsAddDialogOpen(false);
     },
@@ -78,7 +77,7 @@ export default function StationsPage() {
     mutationFn: async (station: Station) => {
       const res = await apiRequest("PATCH", `/api/admin/stations/${station.id}`, {
         name: station.name,
-        rpiId: station.rpiId, // Updated to include rpiId
+        rpiId: station.rpiId,
       });
       return await res.json();
     },
@@ -213,7 +212,6 @@ export default function StationsPage() {
                     onChange={(e) => setNewStationName(e.target.value)}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="rpiId">RPi ID</Label>
                   <Input
@@ -223,7 +221,6 @@ export default function StationsPage() {
                     onChange={(e) => setRpiId(e.target.value)}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="preview">Preview Image</Label>
                   <div className="flex items-center gap-4">
@@ -245,7 +242,6 @@ export default function StationsPage() {
                     )}
                   </div>
                 </div>
-
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
                   onClick={() => createStation.mutate({ name: newStationName, rpiId })}
@@ -322,6 +318,11 @@ export default function StationsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Add CameraFeed for live feed */}
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                    <CameraFeed rpiId={station.rpiId} />
+                  </div>
+                  {/* Keep previewImage as fallback or additional info */}
                   {station.previewImage && (
                     <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                       <img
