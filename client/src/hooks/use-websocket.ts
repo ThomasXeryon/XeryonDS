@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'react-hot-toast'; // Assuming react-hot-toast is used
+import { toast } from 'react-hot-toast';
 
 export interface WebSocketMessage {
   type: string;
@@ -17,9 +17,9 @@ export function useWebSocket() {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Create WebSocket connection
+    // Create WebSocket connection with new path
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/appws`; // Changed from '/ws' to '/appws'
     console.log("[WebSocket] Attempting connection to:", wsUrl);
 
     const socket = new WebSocket(wsUrl);
@@ -38,6 +38,12 @@ export function useWebSocket() {
       });
       setConnectionStatus(false);
       setFrame(null); // Clear frame on disconnect
+
+      // Attempt to reconnect after a short delay
+      setTimeout(() => {
+        console.log("[WebSocket] Attempting to reconnect...");
+        socketRef.current = new WebSocket(wsUrl);
+      }, 1000);
     };
 
     socket.onerror = (error) => {
@@ -63,20 +69,6 @@ export function useWebSocket() {
             rpiId: data.rpi_id,
             message: data.message
           });
-        } else if (data.type === 'session_warning') {
-          // Show warning toast
-          toast({
-            title: "Session Ending Soon",
-            description: data.message,
-            variant: "warning",
-            duration: 10000 // Show for 10 seconds
-          });
-        } else if (data.type === 'session_ended') {
-          toast({
-            title: "Session Ended",
-            description: "Your demo session has ended. Thank you for using our demo station.",
-            variant: "default"
-          });
         } else {
           console.log("[WebSocket] Received message:", data);
         }
@@ -85,13 +77,14 @@ export function useWebSocket() {
       }
     };
 
+    // Only clean up on component unmount
     return () => {
       if (socketRef.current) {
         console.log("[WebSocket] Cleaning up connection");
         socketRef.current.close();
       }
     };
-  }, [toast]); // Added toast to dependencies
+  }, []);
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (!message.rpiId) {

@@ -16,13 +16,20 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     }
   }, [frame]);
 
+  // Show reconnecting state when connection is lost
+  useEffect(() => {
+    if (!connectionStatus) {
+      setLoading(true);
+    }
+  }, [connectionStatus]);
+
   return (
     <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black">
       {loading ? (
         <>
           <Skeleton className="h-full w-full" />
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
-            Waiting for camera feed...
+            {connectionStatus ? 'Waiting for camera feed...' : 'Reconnecting...'}
           </div>
         </>
       ) : frame ? (
@@ -42,7 +49,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </div>
       )}
       <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-        {connectionStatus ? "Connected" : "Disconnected"}
+        {connectionStatus ? "Connected" : "Reconnecting..."}
       </div>
     </div>
   );

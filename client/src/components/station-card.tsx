@@ -58,11 +58,28 @@ export function StationCard({ station }: { station: Station }) {
 
     wsRef.current.onclose = () => {
       setWsConnection({ connected: false, send: () => {} });
-      toast({
-        title: "Connection lost",
-        description: "Your session has ended. Thank you for using our demo station.",
-        variant: "destructive",
-      });
+
+      // Attempt to reconnect
+      const reconnect = () => {
+        console.log("[StationCard] Attempting to reconnect WebSocket...");
+        wsRef.current = new WebSocket(wsUrl);
+        wsRef.current!.onopen = () => {
+          setWsConnection({
+            connected: true,
+            send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
+          });
+          toast({
+            title: "Reconnected to control system",
+            description: "You can now control the actuator again",
+          });
+        };
+        wsRef.current!.onclose = () => {
+          setWsConnection({ connected: false, send: () => {} });
+          setTimeout(reconnect, 1000);
+        };
+      };
+
+      setTimeout(reconnect, 1000);
     };
 
     wsRef.current.onerror = () => {

@@ -58,7 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const parsedUrl = new URL(request.url!, `http://${request.headers.host}`);
     const pathname = parsedUrl.pathname;
 
-    console.log(`[WebSocket] Upgrade request for path: ${pathname}`);
+    console.log(`[WebSocket] Upgrade request received:`, {
+      path: pathname,
+      headers: request.headers,
+      host: request.headers.host
+    });
 
     // Simple path-based routing for WebSockets
     if (pathname.startsWith('/rpi/')) {
@@ -82,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[WebSocket] RPi ${rpiId} upgrade successful`);
         wssRPi.emit('connection', ws, request);
       });
-    } else if (pathname === '/ws') {
+    } else if (pathname === '/appws') { // Changed from '/ws' to '/appws'
       // Handle the upgrade for UI clients without authentication
       console.log("[WebSocket] UI client connection request");
       wssUI.handleUpgrade(request, socket, head, (ws) => {
@@ -388,36 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updatedStation = await storage.updateStationSession(station.id, req.user.id);
     res.json(updatedStation);
-
-    // Set session duration to 30 minutes
-    const SESSION_DURATION = 30 * 60 * 1000;
-    const WARNING_BEFORE = 5 * 60 * 1000; // Warning 5 minutes before end
-
-    // Send warning before session ends
-    setTimeout(() => {
-      wssUI.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ 
-            type: "session_warning",
-            message: "Your session will end in 5 minutes",
-            stationId: station.id 
-          }));
-        }
-      });
-    }, SESSION_DURATION - WARNING_BEFORE);
-
-    // End session after duration
-    setTimeout(async () => {
-      const currentStation = await storage.getStation(station.id);
-      if (currentStation?.currentUserId === req.user.id) {
-        await storage.updateStationSession(station.id, null);
-        wssUI.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: "session_ended", stationId: station.id }));
-          }
-        });
-      }
-    }, SESSION_DURATION);
+    // No timeout - session stays active until explicitly ended
   });
 
   app.delete("/api/stations/:id/session", async (req, res) => {
