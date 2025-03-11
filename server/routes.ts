@@ -333,17 +333,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/stations/:id", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations PATCH");
-      return res.sendStatus(403);
+      return res.status(403).json({ message: "Unauthorized access" });
     }
     const { name, rpiId } = req.body;
     const stationId = parseInt(req.params.id);
 
+    console.log("Updating station:", { id: stationId, name, rpiId });
+
     try {
-      const station = await storage.updateStation(stationId, { name });
+      // Check if a station with this rpiId already exists (only if rpiId is being updated)
+      if (rpiId) {
+        const stations = await storage.getStations();
+        const existingStation = stations.find(s => s.rpiId === rpiId && s.id !== stationId);
+        
+        if (existingStation) {
+          return res.status(409).json({ message: `A station with RPi ID "${rpiId}" already exists` });
+        }
+      }
+      
+      const station = await storage.updateStation(stationId, { name, rpiId });
       res.json(station);
     } catch (error) {
       console.error("Error updating station:", error);
-      res.status(500).json({ message: "Failed to update station" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: `Failed to update station: ${errorMessage}` });
     }
   });
 

@@ -40,25 +40,25 @@ export default function StationsPage() {
     mutationFn: async ({ name, rpiId }: { name: string; rpiId: string }) => {
       try {
         const res = await apiRequest("POST", "/api/admin/stations", { name, rpiId });
-        
+
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.message || `Failed to create station: ${res.status} ${res.statusText}`);
         }
-        
+
         const station = await res.json();
 
         if (selectedImage) {
           const formData = new FormData();
           formData.append('image', selectedImage);
           formData.append('name', name); // Add name to formData in case it's needed
-          
+
           const uploadRes = await fetch(`/api/admin/stations/${station.id}/image`, {
             method: 'POST',
             body: formData,
             credentials: 'include'
           });
-          
+
           if (!uploadRes.ok) {
             console.warn("Image upload failed, but station was created");
           }
@@ -140,26 +140,40 @@ export default function StationsPage() {
     mutationFn: async ({ stationId, file }: { stationId: number; file: File }) => {
       const formData = new FormData();
       formData.append('image', file);
+
       const res = await fetch(`/api/admin/stations/${stationId}/image`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
       });
-      if (!res.ok) throw new Error('Failed to upload image');
-      return res.json();
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to upload image: ${res.status} ${res.statusText}`);
+      }
+
+      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+
+      // Update the selectedStation with the new image URL if in edit dialog
+      if (selectedStation && data.url) {
+        setSelectedStation({
+          ...selectedStation,
+          previewImage: data.url
+        });
+      }
+
       toast({
         title: "Image uploaded",
-        description: "Preview image has been updated successfully",
+        description: "Station preview image has been updated",
       });
-      setSelectedImage(null);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Failed to upload image",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     },

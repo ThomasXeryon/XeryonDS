@@ -10,6 +10,8 @@ const PostgresSessionStore = connectPg(session);
 
 interface StationUpdate {
   name?: string;
+  rpiId?: string;
+  previewImage?: string;
   isActive?: boolean;
 }
 
