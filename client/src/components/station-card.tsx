@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CameraFeed } from "./camera-feed";
+import { CameraFeed } from "@/components/camera-feed";
 import { AdvancedControls } from "./advanced-controls";
 import { SessionTimer } from "./session-timer";
 import { Station } from "@shared/schema";
@@ -27,126 +27,89 @@ export function StationCard({ station }: { station: Station }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [wsConnection, setWsConnection] = useState<{
-    connected: boolean;
-    send: (msg: any) => void;
-  }>({
+
+  // Reset dialog state when component updates
+  useEffect(() => {
+    if (!isMySession) {
+      setShowThankYouDialog(false);
+    }
+  }, [isMySession]);
+  const [wsConnection, setWsConnection] = useState<{connected: boolean, send: (msg: any) => void}>({ 
     connected: false,
-    send: () => {},
+    send: () => {} 
   });
   const wsRef = useRef<WebSocket>();
   const { toast } = useToast();
 
-  // WebSocket connection handling
-  useEffect(() => {
-    if (!isMySession) return;
-
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    wsRef.current = new WebSocket(wsUrl);
-
-    wsRef.current.onopen = () => {
-      setWsConnection({
-        connected: true,
-        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
-      });
-      toast({
-        title: "Connected to control system",
-        description: "You can now control the actuator",
-      });
-    };
-
-    wsRef.current.onclose = () => {
-      setWsConnection({ connected: false, send: () => {} });
-
-      // Attempt to reconnect
-      const reconnect = () => {
-        console.log("[StationCard] Attempting to reconnect WebSocket...");
-        wsRef.current = new WebSocket(wsUrl);
-        wsRef.current!.onopen = () => {
-          setWsConnection({
-            connected: true,
-            send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
-          });
-          toast({
-            title: "Reconnected to control system",
-            description: "You can now control the actuator again",
-          });
-        };
-        wsRef.current!.onclose = () => {
-          setWsConnection({ connected: false, send: () => {} });
-          setTimeout(reconnect, 1000);
-        };
-      };
-
-      setTimeout(reconnect, 1000);
-    };
-
-    wsRef.current.onerror = () => {
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to control system",
-        variant: "destructive",
-      });
-    };
-
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "error") {
-        toast({
-          title: "Control system error",
-          description: data.message,
-          variant: "destructive",
-        });
-      }
-    };
-
-    return () => {
-      wsRef.current?.close();
-    };
-  }, [isMySession, toast]);
-
   const startSession = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/stations/${station.id}/session`);
-      return await res.json();
+      const res = await apiRequest("POST", `/api/stations/${station.id}/start-session`);
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(true); // Auto fullscreen on session start
       toast({
         title: "Session started",
-        description: "You now have control of the station",
+        description: "You now have control of the demo station",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to start session",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
 
   const endSession = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("DELETE", `/api/stations/${station.id}/session`);
-      return await res.json();
+      const response = await fetch(`/api/stations/${station.id}/session`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to end session");
+      }
+      // Check if the response is JSON before parsing
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return response.json();
+      } else {
+        // Return empty object if not JSON
+        return {};
+      }
     },
     onSuccess: () => {
+      toast({
+        title: "Session ended",
+        description: "Thank you for using the demo station",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(false); // Back to overview on session end
-      setShowThankYouDialog(true); // Show thank you dialog
+      setShowThankYouDialog(true); // Show dialog here after successful end
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to end session",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const submitFeedback = useMutation({
-    mutationFn: async (feedback: string) => {
-      const res = await apiRequest("POST", "/api/feedback", {
-        type: "feedback",
-        message: feedback,
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/stations/${station.id}/feedback`, { 
+        feedback 
       });
       return res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Thank you for your feedback!",
-        description: "Your feedback has been submitted successfully.",
+        title: "Feedback submitted",
+        description: "Thank you for your feedback",
       });
       setFeedback("");
+      setShowThankYouDialog(false);
     },
     onError: (error: Error) => {
       toast({
@@ -157,39 +120,74 @@ export function StationCard({ station }: { station: Station }) {
     },
   });
 
-  const handleCommand = (command: string, direction?: string) => {
-    if (wsConnection.connected) {
-      console.log("[StationCard] Sending command:", { command, direction, rpiId: station.rpiId });
-      wsConnection.send({
-        type: "command",
-        command,
-        direction: direction || "none",
-        rpiId: station.rpiId
-      });
-    }
-  };
-
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleContactUs = () => {
-    window.open("https://xeryon.com/contact/", "_blank");
-  };
-
-  const handlePurchase = () => {
-    window.open("https://xeryon.com/products/development-kits/", "_blank");
+  const handleCommand = (command: string, direction: string) => {
+    console.log("Sending command:", command, "direction:", direction);
+    if (wsConnection.connected) {
+      wsConnection.send({ command, direction });
+    }
   };
 
   const handleFeedbackSubmit = () => {
     if (feedback.trim()) {
-      submitFeedback.mutate(feedback);
+      submitFeedback.mutate();
     }
   };
 
-  const cardClasses = isFullscreen
-    ? "fixed inset-0 z-50 m-0 rounded-none overflow-auto bg-background"
-    : "";
+  // Compute classes dynamically based on fullscreen state
+  const cardClasses = isFullscreen 
+    ? "fixed inset-4 z-50 overflow-auto" 
+    : "transition-all";
+
+  // Connect to WebSocket for station
+  useEffect(() => {
+    if (!user) return;
+
+    console.log("RPi ID:", station.rpiId);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    console.log("Connecting to WebSocket at:", wsUrl);
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("WebSocket connected");
+      setWsConnection({
+        connected: true,
+        send: (msg) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              ...msg,
+              stationId: station.id,
+              rpiId: station.rpiId
+            }));
+          }
+        }
+      });
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket disconnected");
+      setWsConnection({
+        connected: false,
+        send: () => {}
+      });
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [station.id, station.rpiId, user]);
 
   return (
     <>
@@ -210,13 +208,11 @@ export function StationCard({ station }: { station: Station }) {
                   <Maximize2 className="h-4 w-4" />
                 )}
               </Button>
-              <span
-                className={`text-sm px-2 py-1 rounded-full ${
-                  station.status === "available"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
+              <span className={`text-sm px-2 py-1 rounded-full ${
+                station.status === "available" 
+                  ? "bg-green-100 text-green-700" 
+                  : "bg-yellow-100 text-yellow-700"
+              }`}>
                 {station.status === "available" ? "Available" : "In Use"}
               </span>
             </div>
@@ -228,29 +224,31 @@ export function StationCard({ station }: { station: Station }) {
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
-                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
+                  <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
               <div className="space-y-8">
                 <AdvancedControls
-                  station={station}
+                  stationId={station.id}
                   enabled={isMySession}
                   isConnected={wsConnection.connected}
                   onCommand={handleCommand}
                 />
                 {station.sessionStart && isMySession && (
                   <div>
-                    <SessionTimer
-                      startTime={station.sessionStart}
+                    <SessionTimer 
+                      startTime={station.sessionStart} 
                       onTimeout={() => {
-                        endSession.mutate();
-                        setShowThankYouDialog(true);
+                        if (!endSession.isPending) {
+                          endSession.mutate();
+                          // Dialog will be shown in onSuccess handler
+                        }
                       }}
                     />
                   </div>
                 )}
                 {station.status === "available" ? (
-                  <Button
+                  <Button 
                     className="w-full bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => startSession.mutate()}
                     disabled={startSession.isPending}
@@ -258,12 +256,15 @@ export function StationCard({ station }: { station: Station }) {
                     Start Session
                   </Button>
                 ) : isMySession ? (
-                  <Button
+                  <Button 
                     className="w-full hover:bg-destructive/90 transition-colors"
                     variant="destructive"
                     onClick={() => {
                       endSession.mutate();
-                      setShowThankYouDialog(true);
+                      // Only show dialog once when session ends
+                      if (!showThankYouDialog) {
+                        setShowThankYouDialog(true);
+                      }
                     }}
                     disabled={endSession.isPending}
                   >
@@ -271,98 +272,96 @@ export function StationCard({ station }: { station: Station }) {
                   </Button>
                 ) : (
                   <Button className="w-full" disabled>
-                    Station Occupied
+                    In Use by Another User
                   </Button>
                 )}
               </div>
             </div>
           ) : (
-            // Overview layout - 50/50 split
+            // Regular layout - grid with camera feed on top
             <div className="space-y-6">
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                {station.previewImage && !wsConnection.connected ? (
+                  <img
+                    src={station.previewImage}
+                    alt={`${station.name} preview`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <CameraFeed rpiId={station.rpiId} />
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="aspect-video relative">
-                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
-                </div>
-                <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
-                  {station.previewImage ? (
-                    <img
-                      src={station.previewImage}
-                      alt={`${station.name} preview`}
-                      className="w-full h-full object-cover"
+                <AdvancedControls
+                  stationId={station.id}
+                  enabled={isMySession}
+                  isConnected={wsConnection.connected}
+                  onCommand={handleCommand}
+                />
+                <div className="space-y-4">
+                  {station.sessionStart && isMySession && (
+                    <SessionTimer 
+                      startTime={station.sessionStart} 
+                      onTimeout={() => {
+                        if (!endSession.isPending) {
+                          endSession.mutate();
+                          // Dialog will be shown in onSuccess handler
+                        }
+                      }}
                     />
+                  )}
+                  {station.status === "available" ? (
+                    <Button 
+                      className="w-full"
+                      onClick={() => startSession.mutate()}
+                      disabled={startSession.isPending}
+                    >
+                      Start Session
+                    </Button>
+                  ) : isMySession ? (
+                    <Button 
+                      className="w-full"
+                      variant="destructive"
+                      onClick={() => {
+                        endSession.mutate();
+                        // Only show dialog once when session ends
+                        if (!showThankYouDialog) {
+                          setShowThankYouDialog(true);
+                        }
+                      }}
+                      disabled={endSession.isPending}
+                    >
+                      End Session
+                    </Button>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      No preview image available
-                    </div>
+                    <Button className="w-full" disabled>
+                      In Use by Another User
+                    </Button>
                   )}
                 </div>
-              </div>
-              {station.sessionStart && isMySession && (
-                <div className="mb-4">
-                  <SessionTimer
-                    startTime={station.sessionStart}
-                    onTimeout={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
-                    }}
-                  />
-                </div>
-              )}
-              <div className="space-y-4">
-                {station.status === "available" ? (
-                  <Button
-                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                    onClick={() => startSession.mutate()}
-                    disabled={startSession.isPending}
-                  >
-                    Start Session
-                  </Button>
-                ) : isMySession ? (
-                  <Button
-                    className="w-full hover:bg-destructive/90 transition-colors"
-                    variant="destructive"
-                    onClick={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
-                    }}
-                    disabled={endSession.isPending}
-                  >
-                    End Session
-                  </Button>
-                ) : (
-                  <Button className="w-full" disabled>
-                    Station Occupied
-                  </Button>
-                )}
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={showThankYouDialog} onOpenChange={setShowThankYouDialog}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog 
+  open={showThankYouDialog} 
+  onOpenChange={(open) => {
+    setShowThankYouDialog(open);
+    if (!open) {
+      setFeedback(""); // Reset feedback when dialog closes
+    }
+  }}
+>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Thank You for Using Our Demo Station!</DialogTitle>
-            <DialogDescription className="pt-4">
-              We hope you enjoyed experiencing our high-precision actuators. Would you like to learn more about our products or get in touch with us?
+            <DialogTitle>Thank You!</DialogTitle>
+            <DialogDescription>
+              Your session has ended. We hope you enjoyed using the remote demo station.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
-            <div className="flex flex-col gap-4">
-              <Button
-                className="w-full bg-[#0079C1] hover:bg-[#006BA7] text-white transition-colors"
-                onClick={handlePurchase}
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Purchase Development Kit
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleContactUs}>
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Us
-              </Button>
-            </div>
-
+          <div>
             <div className="space-y-4 pt-4 border-t">
               <Label htmlFor="feedback">Quick Feedback</Label>
               <Textarea
@@ -372,9 +371,12 @@ export function StationCard({ station }: { station: Station }) {
                 onChange={(e) => setFeedback(e.target.value)}
                 className="min-h-[100px]"
               />
-              <Button
+              <Button 
                 className="w-full"
-                onClick={handleFeedbackSubmit}
+                onClick={() => {
+                  handleFeedbackSubmit();
+                  setShowThankYouDialog(false); // Close dialog after submitting
+                }}
                 disabled={submitFeedback.isPending || !feedback.trim()}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />

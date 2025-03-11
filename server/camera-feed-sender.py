@@ -1,3 +1,4 @@
+
 import asyncio
 import websockets
 import json
@@ -76,7 +77,7 @@ async def send_camera_feed():
                     # Send frame to server
                     frame_data = {
                         "type": "camera_frame",
-                        "rpiId": STATION_ID,  # Changed from rpi_id to rpiId for consistency
+                        "rpi_id": STATION_ID,
                         "frame": jpg_as_text
                     }
                     await websocket.send(json.dumps(frame_data))

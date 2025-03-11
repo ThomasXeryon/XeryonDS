@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, StopCircle } from "lucide-react";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -11,42 +12,31 @@ export function ControlPad({ rpiId, onCommand = () => {} }: ControlPadProps) {
   const { sendMessage } = useWebSocket();
 
   const handleArrowClick = (direction: string) => {
-    if (!rpiId) {
-      console.error("[ControlPad] Cannot send command - rpiId is missing");
-      return;
-    }
-
-    console.log("[ControlPad] Sending move command:", { direction, rpiId });
+    if (!rpiId) return;
+    
+    console.log("Sending move command:", direction, "to RPI:", rpiId);
     sendMessage({ 
       type: 'command', 
       command: 'move', 
       direction, 
       rpiId 
     });
-
+    
     onCommand(rpiId, direction);
   };
 
   const handleStopClick = () => {
-    if (!rpiId) {
-      console.error("[ControlPad] Cannot send command - rpiId is missing");
-      return;
-    }
-
-    console.log("[ControlPad] Sending stop command:", { rpiId });
+    if (!rpiId) return;
+    
+    console.log("Sending stop command to RPI:", rpiId);
     sendMessage({ 
       type: 'command', 
       command: 'stop', 
       rpiId 
     });
-
+    
     onCommand(rpiId, 'stop');
   };
-
-  if (!rpiId) {
-    console.warn("[ControlPad] No rpiId provided");
-    return null;
-  }
 
   return (
     <div className="grid grid-cols-3 gap-2 max-w-[180px] mx-auto">
@@ -69,7 +59,7 @@ export function ControlPad({ rpiId, onCommand = () => {} }: ControlPadProps) {
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>
-
+      
       <Button 
         variant="secondary" 
         size="sm" 
@@ -78,7 +68,7 @@ export function ControlPad({ rpiId, onCommand = () => {} }: ControlPadProps) {
       >
         <StopCircle className="h-5 w-5" />
       </Button>
-
+      
       <Button 
         variant="secondary" 
         size="sm" 
