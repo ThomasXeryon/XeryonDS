@@ -8,7 +8,7 @@ interface CameraFeedProps {
 
 export function CameraFeed({ rpiId }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
-  const { connectionStatus, frame, reconnect } = useWebSocket();
+  const { connectionStatus, frame } = useWebSocket(String(rpiId));
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -22,20 +22,16 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     }
   }, [frame]);
 
-  // Show reconnecting state when connection is lost and attempt reconnection
+  // Show reconnecting state when connection is lost
   useEffect(() => {
     if (!connectionStatus) {
       setIsReconnecting(true);
-      // Attempt reconnection after 3 seconds
-      setTimeout(() => {
-        reconnect();
-      }, 3000);
     }
-  }, [connectionStatus, reconnect]);
+  }, [connectionStatus]);
 
-  // Check if the frame is recent (within the last 5 seconds - increased for better resilience)
+  // Check if the frame is recent (within the last 5 seconds)
   const isFrameRecent = frame && lastFrameTime.current && (Date.now() - lastFrameTime.current < 5000);
-  
+
   // Determine if we should show the reconnecting overlay
   const showReconnectingOverlay = !isFrameRecent && isReconnecting;
 
@@ -70,7 +66,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
             }}
             onLoad={() => console.log("[CameraFeed] Frame loaded successfully for RPi:", rpiId)}
           />
-          
+
           {/* Reconnecting overlay that shows in corner when connection is lost */}
           {showReconnectingOverlay && (
             <div className="absolute top-2 right-2 bg-red-500/80 text-white px-2 py-1 rounded text-xs">

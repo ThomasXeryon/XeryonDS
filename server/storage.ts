@@ -1,8 +1,7 @@
-import type { SessionStore } from 'express-session';
+import session from 'express-session';
 import { users, stations, sessionLogs, feedback, type User, type InsertUser, type Station, type SessionLog, type Feedback, type InsertFeedback } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
-import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -38,11 +37,11 @@ interface IStorage {
   createFeedback(userId: number, feedback: InsertFeedback): Promise<Feedback>;
   updateFeedbackStatus(id: number, status: "pending" | "reviewed" | "resolved"): Promise<Feedback>;
 
-  sessionStore: SessionStore;
+  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
