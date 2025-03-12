@@ -10,7 +10,7 @@ interface WebSocketState {
   lastFrameTime: number | null;
 }
 
-export function useWebSocket() {
+export function useWebSocket(rpiId?: string) {
   const [state, setState] = useState<WebSocketState>({
     connectionStatus: false,
     frame: null,
@@ -36,6 +36,15 @@ export function useWebSocket() {
     socket.onopen = () => {
       console.log("[WebSocket] Connected successfully");
       setState(prev => ({ ...prev, connectionStatus: true }));
+
+      // Register for specific RPi's feed if an ID is provided
+      if (rpiId) {
+        socket.send(JSON.stringify({
+          type: 'register',
+          rpiId
+        }));
+        console.log(`[WebSocket] Registered for RPi ${rpiId}`);
+      }
     };
 
     socket.onclose = (event) => {
@@ -44,8 +53,8 @@ export function useWebSocket() {
         reason: event.reason,
         wasClean: event.wasClean
       });
-      setState(prev => ({ ...prev, connectionStatus: false })); // Don't clear frame immediately to avoid flickering
-      
+      setState(prev => ({ ...prev, connectionStatus: false }));
+
       // Set a flag to show reconnecting status after a short delay
       const reconnectStatusTimeout = window.setTimeout(() => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -57,14 +66,14 @@ export function useWebSocket() {
       // Implement exponential backoff for reconnection attempts
       const backoffTime = Math.min(1000 * (Math.pow(2, Math.floor(Math.random() * 4))), 10000);
       console.log(`[WebSocket] Will attempt to reconnect in ${backoffTime}ms`);
-      
+
       // Attempt to reconnect with exponential backoff
       reconnectTimeoutRef.current = window.setTimeout(() => {
         console.log("[WebSocket] Attempting to reconnect...");
         try {
           const newSocket = new WebSocket(wsUrl);
           wsRef.current = newSocket;
-          
+
           // Set up event handlers for the new socket
           newSocket.onopen = socket.onopen;
           newSocket.onmessage = socket.onmessage;
@@ -73,7 +82,7 @@ export function useWebSocket() {
         } catch (error) {
           console.error("[WebSocket] Failed to create new connection:", error);
         }
-        
+
         // Clear the reconnect status timeout
         window.clearTimeout(reconnectStatusTimeout);
       }, backoffTime);
@@ -103,7 +112,7 @@ export function useWebSocket() {
         frameTimeoutRef.current = null;
       }
     };
-  }, []);
+  }, [rpiId]); // Added rpiId to dependencies
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
@@ -111,21 +120,6 @@ export function useWebSocket() {
 
       // Handle different message types
       if (data.type === 'camera_frame') {
-        // Clear any existing frame timeout
-        if (frameTimeoutRef.current) {
-          window.clearTimeout(frameTimeoutRef.current);
-          frameTimeoutRef.current = null;
-        }
-
-        // Set a timeout to detect if frames stop arriving
-        frameTimeoutRef.current = window.setTimeout(() => {
-          console.log("No camera frames received for 5 seconds");
-          setState(prev => ({
-            ...prev,
-            frame: null, // Clear frame to show "waiting for camera" message
-          }));
-        }, 5000);
-
         setState(prev => ({
           ...prev,
           frame: data.frame,
@@ -169,7 +163,7 @@ export function useWebSocket() {
     }
   }, [toast]);
 
-  const sendMessage = useCallback((message: any) => { //Added any type for message
+  const sendMessage = useCallback((message: any) => {
     if (!message.rpiId) {
       console.error("[WebSocket] Cannot send message - rpiId is missing:", message);
       return;
