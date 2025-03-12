@@ -15,7 +15,7 @@ const appClients: Set<AppWebSocket> = new Set(); // Browser clients
 const rpiConnections: Map<string, WebSocket> = new Map(); // RPi connections (ID -> WebSocket)
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const server = require("http").createServer(app);
+  const server = new Server(app);
   const wsInstance = expressWs(app, server);
 
   // API routes
