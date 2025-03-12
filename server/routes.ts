@@ -11,25 +11,12 @@ import express from "express";
 import multer from "multer";
 import { URL } from "url";
 
-// Ensure uploads directory exists at top level to use a persistent storage location
-const uploadsPath = path.join(process.cwd(), 'persistent_uploads');
+// Define uploadsPath at the top level to use a persistent storage location
+const uploadsPath = path.join('/home/runner/workspace/persistent_uploads');
 
 // Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Ensure directory exists before saving
-    fs.mkdir(uploadsPath, { recursive: true })
-      .then(() => cb(null, uploadsPath))
-      .catch(err => cb(err, uploadsPath));
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    cb(null, `station-${req.params.id}-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
 const upload = multer({
-  storage: storage,
+  dest: uploadsPath,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -416,32 +403,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Unauthorized access to /api/admin/stations/:id/image POST");
         return res.sendStatus(403);
       }
-
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
       const stationId = parseInt(req.params.id);
 
       try {
-        console.log(`[Image Upload] Processing upload for station ${stationId}:`, {
-          originalName: req.file.originalname,
-          savedPath: req.file.path,
-          size: req.file.size
-        });
+        // Ensure uploads directory exists
+        await fs.mkdir(uploadsPath, { recursive: true });
+
+        // Generate unique filename with timestamp and original extension
+        const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        const filePath = path.join(uploadsPath, filename);
+
+        // Move uploaded file to final location
+        await fs.rename(req.file.path, filePath);
+        console.log(`[Image Upload] Saved image to: ${filePath}`);
 
         // Generate public URL path
-        const imageUrl = `/uploads/${path.basename(req.file.path)}`;
+        const imageUrl = `/uploads/${filename}`;
         console.log(`[Image Upload] Public URL: ${imageUrl}`);
 
         // Update station with new image URL
         const station = await storage.updateStation(stationId, {
+          name: req.body.name,
+          rpiId: req.body.rpiId,
           previewImage: imageUrl
-        });
-
-        console.log(`[Image Upload] Successfully updated station ${stationId} with new image:`, {
-          imageUrl,
-          stationId
         });
 
         res.json({
@@ -450,17 +436,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (error) {
         console.error("Error handling image upload:", error);
-
-        // Clean up uploaded file if database update fails
+        // Clean up temporary file if it exists
         if (req.file?.path) {
-          await fs.unlink(req.file.path)
-            .catch(err => console.error("Failed to clean up temp file:", err));
+          await fs.unlink(req.file.path).catch(err =>
+            console.error("Failed to clean up temp file:", err)
+          );
         }
-
-        res.status(500).json({
-          message: "Failed to process image upload",
-          error: error.message
-        });
+        res.status(500).json({ message: "Failed to process image upload" });
       }
     }
   );
