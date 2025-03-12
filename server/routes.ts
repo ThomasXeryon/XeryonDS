@@ -1,10 +1,10 @@
 
 import express, { type Express } from "express";
-import * as expressWs from "express-ws";
 import { Server } from "http";
 import WebSocket from "ws";
 import { log } from "./vite";
 import { storage } from "./storage";
+import expressWs from "express-ws";
 
 // WebSocket connections
 interface AppWebSocket extends WebSocket {

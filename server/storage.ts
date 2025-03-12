@@ -1,3 +1,15 @@
+import { db } from './db';
+import { eq } from 'drizzle-orm';
+import { users } from '@shared/schema';
+import WebSocket from 'ws';
+
+// Define User type
+interface User {
+  id: number;
+  username: string;
+  isAdmin: boolean;
+}
+
 // Extend WebSocket type to include rpiId property
 interface AppWebSocket extends WebSocket {
   rpiId?: string;

@@ -4,6 +4,9 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { hashPassword } from "@shared/auth-utils";
+import http from "http";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +41,20 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Configure session store for production
+if (process.env.NODE_ENV === 'production') {
+  const PgStore = connectPgSimple(session);
+  storage.sessionStore = new PgStore({
+    conObject: {
+      host: process.env.PGHOST,
+      port: parseInt(process.env.PGPORT || '5432'),
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE,
+    }
+  });
+}
 
 // Setup auth before routes
 setupAuth(app);
