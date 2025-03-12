@@ -61,7 +61,7 @@ export default function AuthPage() {
           <CardHeader className="space-y-4">
             <div className="flex justify-center">
               <img 
-                src="/Xeryon-logo-v2.png" 
+                src={theme === "dark" ? "/Xeryon-logo.png" : "/Xeryon-logo-v2.png"} 
                 alt="Xeryon Logo" 
                 className="h-12 object-contain"
               />
