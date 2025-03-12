@@ -5,6 +5,7 @@ import { StationCard } from "@/components/station-card";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard } from "lucide-react";
 import { useLocation } from "wouter";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
@@ -45,6 +46,7 @@ export default function HomePage() {
                 Dashboard
               </Button>
             )}
+            <ThemeToggle />
             <Button 
               variant="outline" 
               size="sm" 
