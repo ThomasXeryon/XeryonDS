@@ -8,7 +8,7 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "cloudrun"
 build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "NODE_ENV=production PORT=5000 node dist/server/index.js"]
+run = ["sh", "-c", "NODE_ENV=production PORT=5000 node --enable-source-maps dist/server/index.js"]
 
 [[ports]]
 localPort = 3333
@@ -21,6 +21,7 @@ externalPort = 3001
 [[ports]]
 localPort = 5000
 externalPort = 80
+primary = true
 
 [workflows]
 runButton = "Project"
