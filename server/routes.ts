@@ -1,6 +1,6 @@
 
 import express, { type Express } from "express";
-import expressWs from "express-ws";
+import * as expressWs from "express-ws";
 import { Server } from "http";
 import WebSocket from "ws";
 import { log } from "./vite";
