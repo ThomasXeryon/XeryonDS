@@ -16,6 +16,7 @@ import { SiteTour } from "@/components/site-tour";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import FeedbackPage from "@/pages/admin/feedback-page";
+import { Navbar } from "@/components/navbar"; // Added import for Navbar
 
 function AuthenticatedComponents() {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <Navbar /> {/* Added Navbar component */}
         <Router />
         <Toaster />
         <AuthenticatedComponents />
