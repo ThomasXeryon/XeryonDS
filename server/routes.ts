@@ -327,6 +327,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
+  app.get("/api/admin/users", async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/users GET");
+      return res.sendStatus(403);
+    }
+    try {
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error getting users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/session-logs", async (req, res) => {
+    if (!isAdmin(req)) {
+      console.log("Unauthorized access to /api/admin/session-logs GET");
+      return res.sendStatus(403);
+    }
+    try {
+      const logs = await storage.getSessionLogs();
+      res.json(logs);
+    } catch (error) {
+      console.error("Error getting session logs:", error);
+      res.status(500).json({ message: "Failed to fetch session logs" });
+    }
+  });
+  
   app.post("/api/admin/stations", async (req, res) => {
     if (!isAdmin(req)) {
       console.log("Unauthorized access to /api/admin/stations POST");
