@@ -11,8 +11,8 @@ import express from "express";
 import multer from "multer";
 import { URL } from "url";
 
-// Define uploadsPath at the top level
-const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+// Define uploadsPath at the top level to use a persistent storage location
+const uploadsPath = path.join('/home/runner/workspace/persistent_uploads');
 
 // Configure multer for image uploads
 const upload = multer({
@@ -304,8 +304,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await fs.mkdir(uploadsPath, { recursive: true })
     .catch(err => console.error('Error creating uploads directory:', err));
 
-  // Serve uploaded files statically
+  // Serve uploaded files statically from the persistent location
   app.use('/uploads', express.static(uploadsPath));
+  
+  // Make sure the URL path works correctly
+  console.log(`Serving uploaded files from: ${uploadsPath}`);
 
   // Add authentication logging middleware
   app.use((req, res, next) => {
