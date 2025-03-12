@@ -22,21 +22,6 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     }
   }, [frame]);
 
-  // Send message to server to watch this specific RPI
-  useEffect(() => {
-    if (connectionStatus && rpiId) {
-      // Tell the server which station this client wants to watch
-      const socket = (window as any).wsConnection;
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          type: 'watch_station',
-          rpiId: rpiId
-        }));
-        console.log(`Sent watch_station request for RPi ${rpiId}`);
-      }
-    }
-  }, [connectionStatus, rpiId]);
-
   // Show reconnecting state when connection is lost and attempt reconnection
   useEffect(() => {
     if (!connectionStatus) {
