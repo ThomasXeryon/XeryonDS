@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect } from "react";
+import { useTheme } from "@/hooks/use-theme"; // Assuming this hook exists
 
 const authSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -20,6 +21,7 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { theme } = useTheme(); // Added useTheme hook
 
   useEffect(() => {
     if (user) {

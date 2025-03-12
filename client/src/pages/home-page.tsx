@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard } from "lucide-react";
 import { useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
+  const { theme } = useTheme();
   const [, setLocation] = useLocation();
 
   const { data: stations } = useQuery<Station[]>({
@@ -25,7 +27,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img 
-              src="/Xeryon-logo-v2.png" 
+              src={theme === "dark" ? "/Xeryon-logo-dark.png" : "/Xeryon-logo-v2.png"} 
               alt="Xeryon Logo" 
               className="h-8 object-contain cursor-pointer"
               onClick={() => setLocation("/")}
