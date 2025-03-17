@@ -137,6 +137,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("message", (data) => {
       try {
         const response = JSON.parse(data.toString());
+        
+        // Handle ping messages silently
+        if (response.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong' }));
+          return;
+        }
+        
         console.log(`[RPi ${rpiId}] Message received: ${response.type}`);
 
         // Handle camera frames from RPi
