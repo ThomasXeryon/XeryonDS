@@ -19,6 +19,9 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       lastValidFrame.current = frame; // Store the last valid frame
       setLoading(false); // Stop loading when frame arrives
       setIsReconnecting(false);
+    } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
+      // Force reconnection if no frames for 5 seconds
+      window.location.reload();
     }
   }, [frame]);
 
@@ -26,6 +29,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   useEffect(() => {
     if (!connectionStatus) {
       setIsReconnecting(true);
+      // Force reconnection after 5 seconds of no connection
+      const timeout = setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+      return () => clearTimeout(timeout);
     }
   }, [connectionStatus]);
 
