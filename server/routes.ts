@@ -143,8 +143,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ws.send(JSON.stringify({ type: 'pong' }));
           return;
         }
-        
-        console.log(`[RPi ${rpiId}] Message received: ${response.type}`);
+
+        // Only log non-camera-frame messages
+        if (response.type !== 'camera_frame') {
+          console.log(`[RPi ${rpiId}] Message received: ${response.type}`);
+        }
 
         // Handle camera frames from RPi
         if (response.type === "camera_frame") {
