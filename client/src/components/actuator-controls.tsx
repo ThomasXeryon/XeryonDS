@@ -205,9 +205,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, currentEpos = 0, o
           </Button>
         </div>
       </div>
-      <div className="text-sm text-muted-foreground">
-        {currentEpos.toFixed(3)} mm
-      </div>
+      <div className="text-sm text-muted-foreground ml-2">{currentEpos.toFixed(3)} mm</div>
     </div>
   );
 }
