@@ -22,7 +22,7 @@ export function StationCard({ station }: { station: Station }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [currentEpos, setCurrentEpos] = useState<number>(0);
+  const [currentEpos, setCurrentEpos] = useState<number | null>(null);
   const [wsConnection, setWsConnection] = useState<{
     connected: boolean;
     send: (msg: any) => void;
@@ -31,8 +31,27 @@ export function StationCard({ station }: { station: Station }) {
     send: () => {},
   });
 
+  // EPOS Display Component
+  const EPOSDisplay = () => (
+    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+      <p className="text-lg font-semibold flex items-center justify-between">
+        <span>Current Position:</span>
+        <span className="text-primary">
+          {!isMySession 
+            ? 'No session'
+            : currentEpos !== null 
+              ? `${currentEpos.toFixed(3)} mm` 
+              : 'Waiting...'}
+        </span>
+      </p>
+    </div>
+  );
+
   useEffect(() => {
-    if (!isMySession) return;
+    if (!isMySession) {
+      setCurrentEpos(null);
+      return;
+    }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`; 
@@ -59,33 +78,10 @@ export function StationCard({ station }: { station: Station }) {
       });
     };
 
-    wsRef.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("[StationCard] Received message:", {
-          type: data.type,
-          rpiId: data.rpi_id,
-          epos: data.type === 'position_update' ? data.epos : undefined
-        });
-
-        if (data.type === "error") {
-          toast({
-            title: "Control system error",
-            description: data.message,
-            variant: "destructive",
-          });
-        } else if (data.type === "position_update" && data.rpi_id === station.rpiId) {
-          console.log(`[StationCard] Position update for ${data.rpi_id}:`, data.epos);
-          setCurrentEpos(parseFloat(data.epos));
-        }
-      } catch (error) {
-        console.error("[StationCard] Failed to parse message:", error);
-      }
-    };
-
     wsRef.current.onclose = () => {
       console.log("[StationCard] WebSocket connection closed");
       setWsConnection({ connected: false, send: () => {} });
+      setCurrentEpos(null); 
 
       const reconnect = () => {
         console.log("[StationCard] Attempting to reconnect...");
@@ -112,6 +108,7 @@ export function StationCard({ station }: { station: Station }) {
 
         ws.onclose = () => {
           setWsConnection({ connected: false, send: () => {} });
+          setCurrentEpos(null);
           setTimeout(reconnect, 2000); 
         };
 
@@ -128,6 +125,30 @@ export function StationCard({ station }: { station: Station }) {
         description: "Failed to connect to control system",
         variant: "destructive",
       });
+    };
+
+    wsRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("[StationCard] Received message:", {
+          type: data.type,
+          rpiId: data.rpi_id,
+          epos: data.type === 'position_update' ? data.epos : undefined
+        });
+
+        if (data.type === "error") {
+          toast({
+            title: "Control system error",
+            description: data.message,
+            variant: "destructive",
+          });
+        } else if (data.type === "position_update" && data.rpi_id === station.rpiId) {
+          console.log(`[StationCard] Position update for ${data.rpi_id}:`, data.epos);
+          setCurrentEpos(parseFloat(data.epos));
+        }
+      } catch (error) {
+        console.error("[StationCard] Failed to parse message:", error);
+      }
     };
 
     return () => {
@@ -253,6 +274,7 @@ export function StationCard({ station }: { station: Station }) {
               </span>
             </div>
           </CardTitle>
+          <EPOSDisplay />
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
@@ -263,23 +285,22 @@ export function StationCard({ station }: { station: Station }) {
                 </div>
               </div>
               <div className="space-y-8">
-                <div className="space-y-2">
-                  <AdvancedControls
-                    station={station}
-                    enabled={isMySession}
-                    isConnected={wsConnection.connected}
-                    currentEpos={currentEpos}
-                    onCommand={handleCommand}
-                  />
-                </div>
+                <AdvancedControls
+                  station={station}
+                  enabled={isMySession}
+                  isConnected={wsConnection.connected}
+                  onCommand={handleCommand}
+                />
                 {station.sessionStart && isMySession && (
-                  <SessionTimer
-                    startTime={station.sessionStart}
-                    onTimeout={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
-                    }}
-                  />
+                  <div>
+                    <SessionTimer
+                      startTime={station.sessionStart}
+                      onTimeout={() => {
+                        endSession.mutate();
+                        setShowThankYouDialog(true);
+                      }}
+                    />
+                  </div>
                 )}
                 {station.status === "available" ? (
                   <Button
