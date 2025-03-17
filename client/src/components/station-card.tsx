@@ -10,19 +10,14 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Maximize2, Minimize2, CreditCard, Mail, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export function StationCard({ station }: { station: Station }) {
   const { user } = useAuth();
+  const wsRef = useRef<WebSocket>();
+  const { toast } = useToast();
   const isMySession = station.currentUserId === user?.id;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
@@ -35,15 +30,24 @@ export function StationCard({ station }: { station: Station }) {
     connected: false,
     send: () => {},
   });
-  const wsRef = useRef<WebSocket>();
-  const { toast } = useToast();
 
-  // Update WebSocket connection logic
+  // EPOS Display Component
+  const EPOSDisplay = () => (
+    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+      <p className="text-lg font-semibold flex items-center justify-between">
+        <span>Current Position:</span>
+        <span className="text-primary">
+          {currentEpos !== null ? `${currentEpos.toFixed(3)} mm` : 'Waiting...'}
+        </span>
+      </p>
+    </div>
+  );
+
   useEffect(() => {
     if (!isMySession) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`; // Changed from '/appws' to '/ws'
+    const wsUrl = `${protocol}//${window.location.host}/ws`; 
     console.log("[StationCard] Connecting to WebSocket:", wsUrl);
 
     wsRef.current = new WebSocket(wsUrl);
@@ -55,7 +59,6 @@ export function StationCard({ station }: { station: Station }) {
         send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
       });
 
-      // Send registration message immediately after connection
       const registerMsg = {
         type: "register",
         rpiId: station.rpiId
@@ -71,9 +74,8 @@ export function StationCard({ station }: { station: Station }) {
     wsRef.current.onclose = () => {
       console.log("[StationCard] WebSocket connection closed");
       setWsConnection({ connected: false, send: () => {} });
-      setCurrentEpos(null); // Reset EPOS when connection closes
+      setCurrentEpos(null); 
 
-      // Attempt to reconnect
       const reconnect = () => {
         console.log("[StationCard] Attempting to reconnect...");
         const ws = new WebSocket(wsUrl);
@@ -85,7 +87,6 @@ export function StationCard({ station }: { station: Station }) {
             send: (msg: any) => ws.send(JSON.stringify(msg)),
           });
 
-          // Re-register after reconnection
           const registerMsg = {
             type: "register",
             rpiId: station.rpiId
@@ -101,7 +102,7 @@ export function StationCard({ station }: { station: Station }) {
         ws.onclose = () => {
           setWsConnection({ connected: false, send: () => {} });
           setCurrentEpos(null);
-          setTimeout(reconnect, 2000); // Increased delay to 2 seconds
+          setTimeout(reconnect, 2000); 
         };
 
         wsRef.current = ws;
@@ -151,7 +152,6 @@ export function StationCard({ station }: { station: Station }) {
     };
   }, [isMySession, toast, station.rpiId]);
 
-  // Rest of the component remains unchanged
   const startSession = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/stations/${station.id}/session`);
@@ -159,7 +159,7 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(true); // Auto fullscreen on session start
+      setIsFullscreen(true); 
       toast({
         title: "Session started",
         description: "You now have control of the station",
@@ -174,8 +174,8 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(false); // Back to overview on session end
-      setShowThankYouDialog(true); // Show thank you dialog
+      setIsFullscreen(false); 
+      setShowThankYouDialog(true); 
     },
   });
 
@@ -275,17 +275,7 @@ export function StationCard({ station }: { station: Station }) {
                 <div className="h-[600px]">
                   <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
-                {/* Add EPOS display when in fullscreen mode */}
-                {isMySession && (
-                  <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
-                    <p className="text-lg font-semibold flex items-center justify-between">
-                      <span>Current Position:</span>
-                      <span className="text-primary">
-                        {currentEpos !== null ? `${currentEpos.toFixed(3)} mm` : 'Waiting...'}
-                      </span>
-                    </p>
-                  </div>
-                )}
+                {isMySession && <EPOSDisplay />}
               </div>
               <div className="space-y-8">
                 <AdvancedControls
@@ -352,17 +342,7 @@ export function StationCard({ station }: { station: Station }) {
                   )}
                 </div>
               </div>
-              {/* Add EPOS display in overview mode */}
-              {isMySession && (
-                <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
-                  <p className="text-lg font-semibold flex items-center justify-between">
-                    <span>Current Position:</span>
-                    <span className="text-primary">
-                      {currentEpos !== null ? `${currentEpos.toFixed(3)} mm` : 'Waiting...'}
-                    </span>
-                  </p>
-                </div>
-              )}
+              {isMySession && <EPOSDisplay />}
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
                   <SessionTimer
