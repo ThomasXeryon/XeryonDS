@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[WebSocket] RPi ${rpiId} upgrade successful`);
         wssRPi.emit('connection', ws, request);
       });
-    } else if (pathname === '/appws') {
+    } else if (pathname === '/ws' || pathname === '/appws') { // Support both /ws and /appws
       // Handle the upgrade for UI clients without checking authentication
       console.log("[WebSocket] UI client connection request");
       wssUI.handleUpgrade(request, socket, head, (ws) => {
@@ -137,7 +137,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on("message", (data) => {
       try {
         const response = JSON.parse(data.toString());
-        
+
+        // Log position updates
+        if (response.type === 'position_update') {
+          console.log(`[RPi ${rpiId}] Position update:`, response.epos);
+          // Forward position updates to relevant UI clients
+          for (const client of uiConnections.values()) {
+            if (client.ws.readyState === WebSocket.OPEN && client.rpiId === rpiId) {
+              client.ws.send(JSON.stringify({
+                type: 'position_update',
+                rpi_id: rpiId,
+                epos: response.epos
+              }));
+            }
+          }
+          return;
+        }
+
         // Handle ping messages silently
         if (response.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong' }));
@@ -192,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          
+
         } else {
           // Handle RPi command responses - only send to relevant clients
           for (const client of uiConnections.values()) {

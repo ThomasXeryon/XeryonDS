@@ -43,14 +43,25 @@ export function StationCard({ station }: { station: Station }) {
     if (!isMySession) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/appws`;
+    const wsUrl = `${protocol}//${window.location.host}/ws`; // Changed from '/appws' to '/ws'
+    console.log("[StationCard] Connecting to WebSocket:", wsUrl);
+
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
+      console.log("[StationCard] WebSocket connected, registering for RPI:", station.rpiId);
       setWsConnection({
         connected: true,
         send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
       });
+
+      // Send registration message immediately after connection
+      const registerMsg = {
+        type: "register",
+        rpiId: station.rpiId
+      };
+      wsRef.current?.send(JSON.stringify(registerMsg));
+
       toast({
         title: "Connected to control system",
         description: "You can now control the actuator",
@@ -58,34 +69,49 @@ export function StationCard({ station }: { station: Station }) {
     };
 
     wsRef.current.onclose = () => {
+      console.log("[StationCard] WebSocket connection closed");
       setWsConnection({ connected: false, send: () => {} });
       setCurrentEpos(null); // Reset EPOS when connection closes
 
-      // Attempt to reconnect without showing thank you dialog
+      // Attempt to reconnect
       const reconnect = () => {
-        console.log("[StationCard] Attempting to reconnect WebSocket...");
-        wsRef.current = new WebSocket(wsUrl);
-        wsRef.current!.onopen = () => {
+        console.log("[StationCard] Attempting to reconnect...");
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log("[StationCard] Reconnected, registering for RPI:", station.rpiId);
           setWsConnection({
             connected: true,
-            send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
+            send: (msg: any) => ws.send(JSON.stringify(msg)),
           });
+
+          // Re-register after reconnection
+          const registerMsg = {
+            type: "register",
+            rpiId: station.rpiId
+          };
+          ws.send(JSON.stringify(registerMsg));
+
           toast({
             title: "Reconnected to control system",
             description: "You can now control the actuator again",
           });
         };
-        wsRef.current!.onclose = () => {
+
+        ws.onclose = () => {
           setWsConnection({ connected: false, send: () => {} });
           setCurrentEpos(null);
-          setTimeout(reconnect, 1000);
+          setTimeout(reconnect, 2000); // Increased delay to 2 seconds
         };
+
+        wsRef.current = ws;
       };
 
-      setTimeout(reconnect, 1000);
+      setTimeout(reconnect, 2000);
     };
 
-    wsRef.current.onerror = () => {
+    wsRef.current.onerror = (error) => {
+      console.error("[StationCard] WebSocket error:", error);
       toast({
         title: "Connection error",
         description: "Failed to connect to control system",
@@ -94,26 +120,38 @@ export function StationCard({ station }: { station: Station }) {
     };
 
     wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "error") {
-        toast({
-          title: "Control system error",
-          description: data.message,
-          variant: "destructive",
+      try {
+        const data = JSON.parse(event.data);
+        console.log("[StationCard] Received message:", {
+          type: data.type,
+          rpiId: data.rpi_id,
+          epos: data.type === 'position_update' ? data.epos : undefined
         });
-      } else if (data.type === "position_update" && data.rpi_id === station.rpiId) {
-        // Handle position updates from the correct RPi
-        setCurrentEpos(parseFloat(data.epos));
+
+        if (data.type === "error") {
+          toast({
+            title: "Control system error",
+            description: data.message,
+            variant: "destructive",
+          });
+        } else if (data.type === "position_update" && data.rpi_id === station.rpiId) {
+          console.log(`[StationCard] Position update for ${data.rpi_id}:`, data.epos);
+          setCurrentEpos(parseFloat(data.epos));
+        }
+      } catch (error) {
+        console.error("[StationCard] Failed to parse message:", error);
       }
     };
 
     return () => {
-      wsRef.current?.close();
+      if (wsRef.current) {
+        console.log("[StationCard] Cleaning up WebSocket connection");
+        wsRef.current.close();
+      }
     };
   }, [isMySession, toast, station.rpiId]);
 
-  // Rest of the component remains unchanged until we reach the render part
-
+  // Rest of the component remains unchanged
   const startSession = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/stations/${station.id}/session`);
@@ -238,10 +276,13 @@ export function StationCard({ station }: { station: Station }) {
                   <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
                 {/* Add EPOS display when in fullscreen mode */}
-                {isMySession && currentEpos !== null && (
-                  <div className="bg-accent/10 p-4 rounded-lg">
-                    <p className="text-sm font-medium">
-                      Current Position: {currentEpos.toFixed(3)} mm
+                {isMySession && (
+                  <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+                    <p className="text-lg font-semibold flex items-center justify-between">
+                      <span>Current Position:</span>
+                      <span className="text-primary">
+                        {currentEpos !== null ? `${currentEpos.toFixed(3)} mm` : 'Waiting...'}
+                      </span>
                     </p>
                   </div>
                 )}
@@ -312,10 +353,13 @@ export function StationCard({ station }: { station: Station }) {
                 </div>
               </div>
               {/* Add EPOS display in overview mode */}
-              {isMySession && currentEpos !== null && (
-                <div className="bg-accent/10 p-4 rounded-lg">
-                  <p className="text-sm font-medium">
-                    Current Position: {currentEpos.toFixed(3)} mm
+              {isMySession && (
+                <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+                  <p className="text-lg font-semibold flex items-center justify-between">
+                    <span>Current Position:</span>
+                    <span className="text-primary">
+                      {currentEpos !== null ? `${currentEpos.toFixed(3)} mm` : 'Waiting...'}
+                    </span>
                   </p>
                 </div>
               )}
