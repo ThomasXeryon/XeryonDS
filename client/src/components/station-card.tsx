@@ -37,10 +37,10 @@ export function StationCard({ station }: { station: Station }) {
       <p className="text-lg font-semibold flex items-center justify-between">
         <span>Current Position:</span>
         <span className="text-primary">
-          {!isMySession 
+          {!isMySession
             ? 'No session'
-            : currentEpos !== null 
-              ? `${currentEpos.toFixed(3)} mm` 
+            : currentEpos !== null
+              ? `${currentEpos.toFixed(3)} mm`
               : 'Waiting...'}
         </span>
       </p>
@@ -54,7 +54,7 @@ export function StationCard({ station }: { station: Station }) {
     }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`; 
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
     console.log("[StationCard] Connecting to WebSocket:", wsUrl);
 
     wsRef.current = new WebSocket(wsUrl);
@@ -81,7 +81,7 @@ export function StationCard({ station }: { station: Station }) {
     wsRef.current.onclose = () => {
       console.log("[StationCard] WebSocket connection closed");
       setWsConnection({ connected: false, send: () => {} });
-      setCurrentEpos(null); 
+      setCurrentEpos(null);
 
       const reconnect = () => {
         console.log("[StationCard] Attempting to reconnect...");
@@ -109,7 +109,7 @@ export function StationCard({ station }: { station: Station }) {
         ws.onclose = () => {
           setWsConnection({ connected: false, send: () => {} });
           setCurrentEpos(null);
-          setTimeout(reconnect, 2000); 
+          setTimeout(reconnect, 2000);
         };
 
         wsRef.current = ws;
@@ -166,7 +166,7 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(true); 
+      setIsFullscreen(true);
       toast({
         title: "Session started",
         description: "You now have control of the station",
@@ -181,8 +181,8 @@ export function StationCard({ station }: { station: Station }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
-      setIsFullscreen(false); 
-      setShowThankYouDialog(true); 
+      setIsFullscreen(false);
+      setShowThankYouDialog(true);
     },
   });
 
@@ -274,7 +274,6 @@ export function StationCard({ station }: { station: Station }) {
               </span>
             </div>
           </CardTitle>
-          <EPOSDisplay />
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
@@ -283,6 +282,7 @@ export function StationCard({ station }: { station: Station }) {
                 <div className="h-[600px]">
                   <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
+                <EPOSDisplay />
               </div>
               <div className="space-y-8">
                 <AdvancedControls
