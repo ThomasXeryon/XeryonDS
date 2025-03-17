@@ -279,11 +279,9 @@ export function StationCard({ station }: { station: Station }) {
           {isFullscreen ? (
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div>
-                <div className="h-[600px]">
+                <EPOSDisplay />
+                <div className="mt-4 h-[600px]">
                   <CameraFeed stationId={station.id} rpiId={station.rpiId} />
-                </div>
-                <div className="mt-2">
-                  <EPOSDisplay />
                 </div>
               </div>
               <div className="space-y-8">
