@@ -8,17 +8,17 @@ interface ActuatorControlsProps {
   stationId: number;
   rpiId: string;
   enabled: boolean;
+  currentEpos?: number;
   onConnectionChange: (connected: boolean, send: (msg: any) => void) => void;
 }
 
-export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange }: ActuatorControlsProps) {
+export function ActuatorControls({ stationId, rpiId, enabled, currentEpos = 0, onConnectionChange }: ActuatorControlsProps) {
   const wsRef = useRef<WebSocket>();
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
   let reconnectTimer: NodeJS.Timeout | null = null;
-
 
   useEffect(() => {
     if (!enabled) return;
@@ -54,11 +54,11 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
           console.error("Failed to parse WebSocket message:", err);
         }
       };
+
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
       };
 
-      // Handle open event
       ws.onopen = () => {
         setIsConnected(true);
         onConnectionChange(true, (msg: any) => {
@@ -69,7 +69,6 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
         reconnectAttempts = 0;
         console.log('WebSocket connected');
 
-        // Register with the server to receive messages for this station
         const registerMsg = {
           type: "register",
           stationId,
@@ -83,18 +82,16 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
         });
       };
 
-      // Add connection close handler with reconnection logic
       ws.onclose = () => {
         setIsConnected(false);
         onConnectionChange(false, () => {});
         console.log('WebSocket connection closed');
 
-        // Implement reconnection with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
           const backoffTime = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
           console.log(`Attempting to reconnect in ${backoffTime}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
 
-          reconnectTimer = window.setTimeout(() => {
+          reconnectTimer = setTimeout(() => {
             reconnectAttempts++;
             initWebSocket();
           }, backoffTime);
@@ -112,10 +109,8 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       return ws;
     }
 
-    // Initialize the first connection
     initWebSocket();
 
-    // Cleanup function
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
@@ -123,7 +118,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       }
 
       if (reconnectTimer) {
-        window.clearTimeout(reconnectTimer);
+        clearTimeout(reconnectTimer);
       }
     };
   }, [enabled, toast, onConnectionChange, stationId, rpiId]);
@@ -156,57 +151,62 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   };
 
   return (
-    <div className="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
-      <div className="col-start-2">
+    <div className="flex items-center gap-4">
+      <div className="grid grid-cols-3 gap-2 max-w-[200px]">
+        <div className="col-start-2">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!enabled || !isConnected}
+            onMouseDown={() => sendCommand("move", "up")}
+            onMouseUp={() => sendCommand("stop")}
+            onMouseLeave={() => sendCommand("stop")}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+        </div>
         <Button
           variant="outline"
           size="icon"
           disabled={!enabled || !isConnected}
-          onMouseDown={() => sendCommand("move", "up")}
+          onMouseDown={() => sendCommand("move", "left")}
           onMouseUp={() => sendCommand("stop")}
           onMouseLeave={() => sendCommand("stop")}
         >
-          <ChevronUp className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!enabled || !isConnected}
+        >
+          <Square className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!enabled || !isConnected}
+          onMouseDown={() => sendCommand("move", "right")}
+          onMouseUp={() => sendCommand("stop")}
+          onMouseLeave={() => sendCommand("stop")}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <div className="col-start-2">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!enabled || !isConnected}
+            onMouseDown={() => sendCommand("move", "down")}
+            onMouseUp={() => sendCommand("stop")}
+            onMouseLeave={() => sendCommand("stop")}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={!enabled || !isConnected}
-        onMouseDown={() => sendCommand("move", "left")}
-        onMouseUp={() => sendCommand("stop")}
-        onMouseLeave={() => sendCommand("stop")}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={!enabled || !isConnected}
-      >
-        <Square className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={!enabled || !isConnected}
-        onMouseDown={() => sendCommand("move", "right")}
-        onMouseUp={() => sendCommand("stop")}
-        onMouseLeave={() => sendCommand("stop")}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-      <div className="col-start-2">
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={!enabled || !isConnected}
-          onMouseDown={() => sendCommand("move", "down")}
-          onMouseUp={() => sendCommand("stop")}
-          onMouseLeave={() => sendCommand("stop")}
-        >
-          <ChevronDown className="h-4 w-4" />
-        </Button>
+      <div className="text-sm text-muted-foreground">
+        {currentEpos.toFixed(3)} mm
       </div>
     </div>
   );
