@@ -141,8 +141,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Handle camera frames from RPi
         if (response.type === "camera_frame") {
-          console.log(`[RPi ${rpiId}] Received camera frame, raw data length: ${response.frame?.length || 0} bytes`);
-
           // Validate frame data
           if (!response.frame) {
             console.warn(`[RPi ${rpiId}] Received camera_frame without frame data`);
@@ -184,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          console.log(`[RPi ${rpiId}] Forwarded camera frame to ${forwardCount} subscribed clients`);
+          
         } else {
           // Handle RPi command responses - only send to relevant clients
           for (const client of uiConnections.values()) {
