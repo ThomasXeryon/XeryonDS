@@ -42,11 +42,11 @@ function MyComponent() {
     // Reconnect if we haven't received a frame in 5 seconds
     const reconnectInterval = setInterval(() => {
       if (wsRef.current?.readyState !== WebSocket.OPEN || 
-          (state.frame && Date.now() - lastMessageTime.current > 5000)) {
+          (state.frame && Date.now() - lastMessageTime.current > 2000)) {
         console.log('[WebSocket] No recent frames, reconnecting...');
         connect();
       }
-    }, 5000);
+    }, 2000);
 
     return () => {
       clearInterval(pingInterval);
