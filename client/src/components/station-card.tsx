@@ -37,14 +37,21 @@ export function StationCard({ station }: { station: Station }) {
       <p className="text-lg font-semibold flex items-center justify-between">
         <span>Current Position:</span>
         <span className="text-primary">
-          {currentEpos !== null ? `${currentEpos.toFixed(3)} mm` : 'Waiting...'}
+          {!isMySession 
+            ? 'No session'
+            : currentEpos !== null 
+              ? `${currentEpos.toFixed(3)} mm` 
+              : 'Waiting...'}
         </span>
       </p>
     </div>
   );
 
   useEffect(() => {
-    if (!isMySession) return;
+    if (!isMySession) {
+      setCurrentEpos(null);
+      return;
+    }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`; 
@@ -267,6 +274,7 @@ export function StationCard({ station }: { station: Station }) {
               </span>
             </div>
           </CardTitle>
+          <EPOSDisplay />
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
@@ -275,7 +283,6 @@ export function StationCard({ station }: { station: Station }) {
                 <div className="h-[600px]">
                   <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
-                {isMySession && <EPOSDisplay />}
               </div>
               <div className="space-y-8">
                 <AdvancedControls
@@ -342,7 +349,6 @@ export function StationCard({ station }: { station: Station }) {
                   )}
                 </div>
               </div>
-              {isMySession && <EPOSDisplay />}
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
                   <SessionTimer
