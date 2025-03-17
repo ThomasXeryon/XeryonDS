@@ -27,6 +27,7 @@ export function StationCard({ station }: { station: Station }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThankYouDialog, setShowThankYouDialog] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [currentEpos, setCurrentEpos] = useState<number | null>(null);
   const [wsConnection, setWsConnection] = useState<{
     connected: boolean;
     send: (msg: any) => void;
@@ -58,6 +59,7 @@ export function StationCard({ station }: { station: Station }) {
 
     wsRef.current.onclose = () => {
       setWsConnection({ connected: false, send: () => {} });
+      setCurrentEpos(null); // Reset EPOS when connection closes
 
       // Attempt to reconnect without showing thank you dialog
       const reconnect = () => {
@@ -75,6 +77,7 @@ export function StationCard({ station }: { station: Station }) {
         };
         wsRef.current!.onclose = () => {
           setWsConnection({ connected: false, send: () => {} });
+          setCurrentEpos(null);
           setTimeout(reconnect, 1000);
         };
       };
@@ -98,13 +101,18 @@ export function StationCard({ station }: { station: Station }) {
           description: data.message,
           variant: "destructive",
         });
+      } else if (data.type === "position_update" && data.rpi_id === station.rpiId) {
+        // Handle position updates from the correct RPi
+        setCurrentEpos(parseFloat(data.epos));
       }
     };
 
     return () => {
       wsRef.current?.close();
     };
-  }, [isMySession, toast]);
+  }, [isMySession, toast, station.rpiId]);
+
+  // Rest of the component remains unchanged until we reach the render part
 
   const startSession = useMutation({
     mutationFn: async () => {
@@ -224,12 +232,19 @@ export function StationCard({ station }: { station: Station }) {
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
-            // Fullscreen layout - keep camera feed full width
             <div className="grid grid-cols-[1fr,300px] gap-8">
               <div className="space-y-6">
                 <div className="h-[600px]">
                   <CameraFeed stationId={station.id} rpiId={station.rpiId} />
                 </div>
+                {/* Add EPOS display when in fullscreen mode */}
+                {isMySession && currentEpos !== null && (
+                  <div className="bg-accent/10 p-4 rounded-lg">
+                    <p className="text-sm font-medium">
+                      Current Position: {currentEpos.toFixed(3)} mm
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="space-y-8">
                 <AdvancedControls
@@ -277,7 +292,6 @@ export function StationCard({ station }: { station: Station }) {
               </div>
             </div>
           ) : (
-            // Overview layout - 50/50 split
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-video relative">
@@ -297,6 +311,14 @@ export function StationCard({ station }: { station: Station }) {
                   )}
                 </div>
               </div>
+              {/* Add EPOS display in overview mode */}
+              {isMySession && currentEpos !== null && (
+                <div className="bg-accent/10 p-4 rounded-lg">
+                  <p className="text-sm font-medium">
+                    Current Position: {currentEpos.toFixed(3)} mm
+                  </p>
+                </div>
+              )}
               {station.sessionStart && isMySession && (
                 <div className="mb-4">
                   <SessionTimer
