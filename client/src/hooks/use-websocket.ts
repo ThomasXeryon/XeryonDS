@@ -61,7 +61,7 @@ export function useWebSocket(rpiId?: string) {
           console.log("[WebSocket] Setting reconnecting status");
           setState(prev => ({ ...prev, connectionStatus: false, frame: null }));
         }
-      }, 2000);
+      }, 5000);
 
       // Implement exponential backoff for reconnection attempts
       const backoffTime = Math.min(1000 * (Math.pow(2, Math.floor(Math.random() * 4))), 10000);

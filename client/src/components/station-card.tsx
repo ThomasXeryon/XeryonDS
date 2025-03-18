@@ -109,13 +109,13 @@ export function StationCard({ station }: { station: Station }) {
         ws.onclose = () => {
           setWsConnection({ connected: false, send: () => {} });
           setCurrentEpos(null);
-          setTimeout(reconnect, 2000);
+          setTimeout(reconnect, 5000);
         };
 
         wsRef.current = ws;
       };
 
-      setTimeout(reconnect, 2000);
+      setTimeout(reconnect, 5000);
     };
 
     wsRef.current.onerror = (error) => {
