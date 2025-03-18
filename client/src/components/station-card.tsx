@@ -40,7 +40,7 @@ export function StationCard({ station }: { station: Station }) {
           {!isMySession
             ? 'No session'
             : currentEpos !== null
-              ? `${currentEpos.toFixed(3)} mm`
+              ? `${currentEpos.toFixed(6)} mm`
               : 'Waiting...'}
         </span>
       </p>
