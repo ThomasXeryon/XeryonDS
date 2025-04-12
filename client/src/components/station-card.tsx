@@ -208,14 +208,16 @@ export function StationCard({ station }: { station: Station }) {
     },
   });
 
-  const handleCommand = (command: string, direction?: string) => {
+  const handleCommand = (command: string, direction?: string, options?: { stepSize?: number; stepUnit?: string }) => {
     if (wsConnection.connected) {
-      console.log("[StationCard] Sending command:", { command, direction, rpiId: station.rpiId });
+      console.log("[StationCard] Sending command:", { command, direction, rpiId: station.rpiId, ...options });
       wsConnection.send({
         type: "command",
         command,
         direction: direction || "none",
-        rpiId: station.rpiId
+        rpiId: station.rpiId,
+        stepSize: options?.stepSize,
+        stepUnit: options?.stepUnit
       });
     }
   };

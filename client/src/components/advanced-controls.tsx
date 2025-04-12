@@ -4,16 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { MinusCircle, PlusCircle, Square, Play, StopCircle } from "lucide-react";
 import { Station } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface AdvancedControlsProps {
   station: Station;
   enabled: boolean;
   isConnected: boolean;
-  onCommand: (command: string, direction?: string) => void;
+  onCommand: (command: string, direction?: string, options?: { stepSize?: number; stepUnit?: string }) => void;
 }
 
 export function AdvancedControls({ station, enabled, isConnected, onCommand }: AdvancedControlsProps) {
   const [stepSize, setStepSize] = useState("1.0");
+  const [stepUnit, setStepUnit] = useState("mm");
   const [speed, setSpeed] = useState([500]); // Default to middle of range
   const [isDemoRunning, setIsDemoRunning] = useState(false);
 
@@ -21,6 +24,30 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
     setSpeed(value);
     if (!enabled || !isConnected) return;
     onCommand("speed", value[0].toString());
+  };
+  
+  // Handle step size input change
+  const handleStepSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numeric values with up to one decimal point
+    if (/^\d*\.?\d*$/.test(value)) {
+      setStepSize(value);
+    }
+  };
+  
+  // Enhanced command handling with step size and unit
+  const handleCommand = (command: string, direction?: string) => {
+    if (!enabled || !isConnected) return;
+    
+    // Include step size and unit in the command if it's a step or move command
+    if (command === "move" || command === "step") {
+      onCommand(command, direction, {
+        stepSize: parseFloat(stepSize) || 1.0,
+        stepUnit
+      });
+    } else {
+      onCommand(command, direction);
+    }
   };
 
   // Get rpiId from station object
@@ -33,32 +60,62 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
   return (
     <div className="space-y-6">
       {/* Step Controls */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!enabled || !isConnected}
-          onClick={() => onCommand("move", "left")} // Changed to use direction
-        >
-          <MinusCircle className="h-4 w-4 mr-1" />
-          Step
-        </Button>
-        <Input
-          type="number"
-          value={stepSize}
-          onChange={(e) => setStepSize(e.target.value)}
-          className="w-24"
-          disabled={!enabled || !isConnected}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!enabled || !isConnected}
-          onClick={() => onCommand("move", "right")} // Changed to use direction
-        >
-          <PlusCircle className="h-4 w-4 mr-1" />
-          Step
-        </Button>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="stepSize" className="text-xs whitespace-nowrap">Step Size:</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="stepSize"
+              type="text"
+              value={stepSize}
+              onChange={handleStepSizeChange}
+              className="w-20 h-8"
+              disabled={!enabled || !isConnected}
+            />
+            <Select 
+              value={stepUnit} 
+              onValueChange={setStepUnit}
+              disabled={!enabled || !isConnected}
+            >
+              <SelectTrigger className="h-8 w-16 text-xs">
+                <SelectValue placeholder="Unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mm">mm</SelectItem>
+                <SelectItem value="µm">µm</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!enabled || !isConnected}
+            onClick={() => handleCommand("move", "left")}
+          >
+            <MinusCircle className="h-4 w-4 mr-1" />
+            Step
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={!enabled || !isConnected}
+            onClick={() => handleCommand("stop")}
+          >
+            <Square className="h-4 w-4" />
+            Stop
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!enabled || !isConnected}
+            onClick={() => handleCommand("move", "right")}
+          >
+            <PlusCircle className="h-4 w-4 mr-1" />
+            Step
+          </Button>
+        </div>
       </div>
 
       {/* Scan Controls */}
@@ -67,7 +124,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("scan", "left")}
+          onClick={() => handleCommand("scan", "left")}
         >
           <MinusCircle className="h-4 w-4 mr-1" />
           Scan
@@ -76,7 +133,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           variant="destructive"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("stop")}
+          onClick={() => handleCommand("stop")}
         >
           <Square className="h-4 w-4" />
           Stop
@@ -85,7 +142,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           variant="outline"
           size="sm"
           disabled={!enabled || !isConnected}
-          onClick={() => onCommand("scan", "right")}
+          onClick={() => handleCommand("scan", "right")}
         >
           <PlusCircle className="h-4 w-4 mr-1" />
           Scan
