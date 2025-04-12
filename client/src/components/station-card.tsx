@@ -33,26 +33,20 @@ export function StationCard({ station }: { station: Station }) {
 
   // EPOS Display Component
   const EPOSDisplay = () => (
-    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4">
       <p className="text-lg font-semibold flex items-center justify-between">
         <span>Current Position:</span>
         <span className="text-primary">
-          {!isMySession
-            ? 'No session'
-            : currentEpos !== null
-              ? `${currentEpos.toFixed(6)} mm`
-              : 'Waiting...'}
+          {currentEpos !== null
+            ? `${currentEpos.toFixed(3)} mm`
+            : 'Waiting...'}
         </span>
       </p>
     </div>
   );
 
   useEffect(() => {
-    if (!isMySession) {
-      setCurrentEpos(null);
-      return;
-    }
-
+    // Always connect to the WebSocket to get position updates, regardless of session status
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     console.log("[StationCard] Connecting to WebSocket:", wsUrl);
@@ -72,10 +66,13 @@ export function StationCard({ station }: { station: Station }) {
       };
       wsRef.current?.send(JSON.stringify(registerMsg));
 
-      toast({
-        title: "Connected to control system",
-        description: "You can now control the actuator",
-      });
+      // Only show connection toast if user has an active session
+      if (isMySession) {
+        toast({
+          title: "Connected to control system",
+          description: "You can now control the actuator",
+        });
+      }
     };
 
     wsRef.current.onclose = () => {
@@ -281,7 +278,7 @@ export function StationCard({ station }: { station: Station }) {
               <div>
                 <EPOSDisplay />
                 <div className="mt-4 h-[600px]">
-                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
+                  <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
               <div className="space-y-8">
