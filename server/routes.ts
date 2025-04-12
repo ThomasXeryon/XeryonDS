@@ -81,6 +81,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } catch (error) {
     console.error("Error creating demo user:", error);
   }
+  
+  // Start background job to auto-close sessions that exceed the 5-minute time limit
+  const SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const checkAndCloseExpiredSessions = async () => {
+    try {
+      const activeStations = await storage.getStations();
+      const now = new Date();
+      
+      for (const station of activeStations) {
+        if (station.status === "in_use" && station.sessionStart) {
+          const sessionStartTime = new Date(station.sessionStart);
+          const sessionDuration = now.getTime() - sessionStartTime.getTime();
+          
+          if (sessionDuration >= SESSION_DURATION_MS) {
+            console.log(`Auto-closing expired session for station ${station.id} (${station.name})`);
+            await storage.updateStationSession(station.id, null);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in session auto-close job:", error);
+    }
+  };
+  
+  // Run the check every minute
+  setInterval(checkAndCloseExpiredSessions, 60 * 1000);
+  console.log("Session auto-close background job started");
 
   const httpServer = createServer(app);
 
@@ -559,7 +586,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).send("Station not found");
     }
 
-    if (station.currentUserId !== req.user.id) {
+    // Allow admins to end any session, regular users can only end their own
+    const isAdmin = req.user.isAdmin === true;
+    if (!isAdmin && station.currentUserId !== req.user.id) {
       return res.status(403).send("Not your session");
     }
 
