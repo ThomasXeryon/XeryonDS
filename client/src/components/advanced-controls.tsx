@@ -60,7 +60,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
   return (
     <div className="space-y-6">
       {/* Step Controls */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Label htmlFor="stepSize" className="text-xs whitespace-nowrap">Step Size:</Label>
           <div className="flex items-center gap-2">
@@ -87,10 +87,11 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
             </Select>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-2 mx-auto w-full max-w-xs">
           <Button
             variant="outline"
             size="sm"
+            className="w-full h-9"
             disabled={!enabled || !isConnected}
             onClick={() => handleCommand("move", "left")}
           >
@@ -100,7 +101,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           <Button
             variant="default"
             size="sm"
-            className="bg-white text-primary hover:bg-slate-100 border-2 border-primary"
+            className="w-full h-9 bg-white text-primary hover:bg-slate-100 border border-primary shadow-none"
             disabled={!enabled || !isConnected}
             onClick={() => handleCommand("home")}
           >
@@ -110,6 +111,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           <Button
             variant="outline"
             size="sm"
+            className="w-full h-9"
             disabled={!enabled || !isConnected}
             onClick={() => handleCommand("move", "right")}
           >
@@ -120,10 +122,11 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
       </div>
 
       {/* Scan Controls */}
-      <div className="flex items-center gap-2">
+      <div className="grid grid-cols-3 gap-2 mx-auto w-full max-w-xs">
         <Button
           variant="outline"
           size="sm"
+          className="w-full h-9"
           disabled={!enabled || !isConnected}
           onClick={() => handleCommand("scan", "left")}
         >
@@ -133,15 +136,17 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
         <Button
           variant="destructive"
           size="sm"
+          className="w-full h-9"
           disabled={!enabled || !isConnected}
           onClick={() => handleCommand("stop")}
         >
-          <Square className="h-4 w-4" />
+          <Square className="h-4 w-4 mr-1" />
           Stop
         </Button>
         <Button
           variant="outline"
           size="sm"
+          className="w-full h-9"
           disabled={!enabled || !isConnected}
           onClick={() => handleCommand("scan", "right")}
         >
@@ -166,9 +171,9 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
       </div>
 
       {/* Demo Controls */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2 mx-auto w-full max-w-xs">
         <Button
-          className="flex-1"
+          className="w-full h-9"
           variant={isDemoRunning ? "outline" : "default"}
           disabled={!enabled || !isConnected || isDemoRunning}
           onClick={() => {
@@ -180,7 +185,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           Start Demo
         </Button>
         <Button
-          className="flex-1"
+          className="w-full h-9"
           variant="outline"
           disabled={!enabled || !isConnected || !isDemoRunning}
           onClick={() => {
