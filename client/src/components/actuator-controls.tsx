@@ -178,8 +178,9 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
     }
   };
 
-  // Handle step command
+  // Handle step command with step size and units
   const handleStepCommand = (direction: "up" | "down" | "left" | "right") => {
+    // The sendCommand function already includes stepSize and stepUnit in the message
     sendCommand("step", direction);
   };
 
@@ -209,6 +210,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
           <SelectContent>
             <SelectItem value="mm">mm</SelectItem>
             <SelectItem value="µm">µm</SelectItem>
+            <SelectItem value="nm">nm</SelectItem>
           </SelectContent>
         </Select>
       </div>

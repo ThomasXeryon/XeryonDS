@@ -83,6 +83,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
               <SelectContent>
                 <SelectItem value="mm">mm</SelectItem>
                 <SelectItem value="µm">µm</SelectItem>
+                <SelectItem value="nm">nm</SelectItem>
               </SelectContent>
             </Select>
           </div>
