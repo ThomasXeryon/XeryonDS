@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import type { WebSocketMessage } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ActuatorControlsProps {
   stationId: number;
@@ -15,6 +18,8 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   const wsRef = useRef<WebSocket>();
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
+  const [stepSize, setStepSize] = useState<string>("1.0");
+  const [stepUnit, setStepUnit] = useState<string>("mm");
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
   let reconnectTimer: NodeJS.Timeout | null = null;
@@ -128,7 +133,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
     };
   }, [enabled, toast, onConnectionChange, stationId, rpiId]);
 
-  const sendCommand = (type: "move" | "stop", direction?: "up" | "down" | "left" | "right") => {
+  const sendCommand = (type: "move" | "stop" | "step", direction?: "up" | "down" | "left" | "right") => {
     if (!wsRef.current || !enabled || !isConnected) {
       console.log("Cannot send command - connection not ready", { enabled, isConnected });
       return;
@@ -139,7 +144,9 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       direction,
       stationId,
       rpiId,
-      command: direction ? `move_${direction}` : 'stop'
+      command: direction ? `move_${direction}` : 'stop',
+      stepSize: parseFloat(stepSize),
+      stepUnit
     };
 
     try {
@@ -155,58 +162,107 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
     }
   };
 
+  // Handle step size input change
+  const handleStepSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numeric values with up to one decimal point
+    if (/^\d*\.?\d*$/.test(value)) {
+      setStepSize(value);
+    }
+  };
+
+  // Handle step command
+  const handleStepCommand = (direction: "up" | "down" | "left" | "right") => {
+    sendCommand("step", direction);
+  };
+
   return (
-    <div className="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
-      <div className="col-start-2">
-        <Button
-          variant="outline"
-          size="icon"
+    <div className="flex flex-col gap-4 max-w-[250px] mx-auto">
+      {/* Step size controls */}
+      <div className="flex items-center gap-2 mb-2">
+        <Label htmlFor="stepSize" className="text-xs whitespace-nowrap">Step Size:</Label>
+        <div className="flex-1">
+          <Input
+            id="stepSize"
+            type="text"
+            value={stepSize}
+            onChange={handleStepSizeChange}
+            className="h-8 text-xs"
+            disabled={!enabled || !isConnected}
+          />
+        </div>
+        <Select 
+          value={stepUnit} 
+          onValueChange={setStepUnit}
           disabled={!enabled || !isConnected}
-          onMouseDown={() => sendCommand("move", "up")}
-          onMouseUp={() => sendCommand("stop")}
-          onMouseLeave={() => sendCommand("stop")}
         >
-          <ChevronUp className="h-4 w-4" />
-        </Button>
+          <SelectTrigger className="h-8 w-16 text-xs">
+            <SelectValue placeholder="Unit" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="mm">mm</SelectItem>
+            <SelectItem value="µm">µm</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={!enabled || !isConnected}
-        onMouseDown={() => sendCommand("move", "left")}
-        onMouseUp={() => sendCommand("stop")}
-        onMouseLeave={() => sendCommand("stop")}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={!enabled || !isConnected}
-      >
-        <Square className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        disabled={!enabled || !isConnected}
-        onMouseDown={() => sendCommand("move", "right")}
-        onMouseUp={() => sendCommand("stop")}
-        onMouseLeave={() => sendCommand("stop")}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-      <div className="col-start-2">
+
+      {/* Direction controls */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-start-2">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!enabled || !isConnected}
+            onMouseDown={() => sendCommand("move", "up")}
+            onMouseUp={() => sendCommand("stop")}
+            onMouseLeave={() => sendCommand("stop")}
+            onDoubleClick={() => handleStepCommand("up")}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+        </div>
         <Button
           variant="outline"
           size="icon"
           disabled={!enabled || !isConnected}
-          onMouseDown={() => sendCommand("move", "down")}
+          onMouseDown={() => sendCommand("move", "left")}
           onMouseUp={() => sendCommand("stop")}
           onMouseLeave={() => sendCommand("stop")}
+          onDoubleClick={() => handleStepCommand("left")}
         >
-          <ChevronDown className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!enabled || !isConnected}
+        >
+          <Square className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!enabled || !isConnected}
+          onMouseDown={() => sendCommand("move", "right")}
+          onMouseUp={() => sendCommand("stop")}
+          onMouseLeave={() => sendCommand("stop")}
+          onDoubleClick={() => handleStepCommand("right")}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <div className="col-start-2">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!enabled || !isConnected}
+            onMouseDown={() => sendCommand("move", "down")}
+            onMouseUp={() => sendCommand("stop")}
+            onMouseLeave={() => sendCommand("stop")}
+            onDoubleClick={() => handleStepCommand("down")}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
