@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createUser({
         username: "demo@xeryon.com",
         password: "demoxeryon",
-        displayName: "Demo User",
+        name: "Demo User",
         isAdmin: false
       });
       console.log("Demo user created successfully");
