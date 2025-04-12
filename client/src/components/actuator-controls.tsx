@@ -22,7 +22,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   const [stepUnit, setStepUnit] = useState<string>("mm");
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
-  let reconnectTimer: NodeJS.Timeout | null = null;
+  let reconnectTimer: number | null = null;
 
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
           reconnectTimer = window.setTimeout(() => {
             reconnectAttempts++;
             initWebSocket();
-          }, backoffTime);
+          }, backoffTime) as unknown as number;
         } else {
           toast({
             title: "Connection lost",
@@ -124,7 +124,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
-        wsRef.current = null;
+        wsRef.current = undefined;
       }
 
       if (reconnectTimer) {

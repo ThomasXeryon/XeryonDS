@@ -72,6 +72,8 @@ export type WebSocketMessage = {
   stationId: number;
   rpiId: string;
   command: string;
+  stepSize?: number;
+  stepUnit?: string;
 };
 
 export type RPiResponse = {
