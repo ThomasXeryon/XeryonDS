@@ -43,8 +43,20 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                             "frame": "SGVsbG8gV29ybGQ="  # Base64 "Hello World" as test data
                         }
                         await ws.send(json.dumps(frame_data))
+                        
+                        # Also send position data update (EPOS value)
+                        # Send a sine wave oscillation for interesting movement
+                        import math
+                        position_value = round(10.0 + 5.0 * math.sin(frame_count * 0.2), 3)
+                        position_data = {
+                            "type": "position_update",
+                            "rpiId": rpi_id,
+                            "epos": position_value
+                        }
+                        await ws.send(json.dumps(position_data))
+                        
                         frame_count += 1
-                        print(f"[{datetime.now()}] Sent frame #{frame_count}")
+                        print(f"[{datetime.now()}] Sent frame #{frame_count} with position {position_value}")
 
                         # Process any incoming messages
                         try:

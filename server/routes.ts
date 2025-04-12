@@ -62,6 +62,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`Station ID: ${station.id}, Name: ${station.name}, RPi ID: ${station.rpiId}`);
   });
   console.log("=======================");
+  
+  // Create a test user if it doesn't exist
+  try {
+    const testUser = await storage.getUserByUsername("demo@xeryon.com");
+    if (!testUser) {
+      console.log("Creating demo user for testing...");
+      await storage.createUser({
+        username: "demo@xeryon.com",
+        password: "demoxeryon",
+        displayName: "Demo User",
+        isAdmin: false
+      });
+      console.log("Demo user created successfully");
+    } else {
+      console.log("Demo user already exists");
+    }
+  } catch (error) {
+    console.error("Error creating demo user:", error);
+  }
 
   const httpServer = createServer(app);
 
@@ -72,10 +91,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle WebSocket upgrade requests
   httpServer.on('upgrade', (request, socket, head) => {
     const parsedUrl = new URL(request.url!, `http://${request.headers.host}`);
-    const pathname = parsedUrl.pathname;
+    let pathname = parsedUrl.pathname;
+
+    // Check if the request is from Replit preview, which might add an extra path prefix
+    const host = request.headers.host || '';
+    if (host.includes('replit.dev') || host.includes('replit.app')) {
+      // For deployed endpoints, the full path might include a project-specific prefix
+      // Strip it if needed to match our expected paths
+      if (pathname.includes('/ws')) {
+        pathname = pathname.substring(pathname.indexOf('/ws'));
+      } else if (pathname.includes('/appws')) {
+        pathname = pathname.substring(pathname.indexOf('/appws'));
+      } else if (pathname.includes('/rpi/')) {
+        pathname = pathname.substring(pathname.indexOf('/rpi/'));
+      }
+    }
 
     console.log(`[WebSocket] Upgrade request received:`, {
-      path: pathname,
+      originalPath: parsedUrl.pathname,
+      normalizedPath: pathname,
       headers: request.headers,
       host: request.headers.host
     });
@@ -102,9 +136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[WebSocket] RPi ${rpiId} upgrade successful`);
         wssRPi.emit('connection', ws, request);
       });
-    } else if (pathname === '/ws' || pathname === '/appws') { // Support both /ws and /appws
+    } else if (pathname === '/ws' || pathname === '/appws' || pathname.endsWith('/ws') || pathname.endsWith('/appws')) {
       // Handle the upgrade for UI clients without checking authentication
-      console.log("[WebSocket] UI client connection request");
+      // Support both direct paths and paths with prefixes
+      console.log("[WebSocket] UI client connection request:", pathname);
       wssUI.handleUpgrade(request, socket, head, (ws) => {
         console.log("[WebSocket] UI client upgrade successful");
         wssUI.emit('connection', ws, request);
