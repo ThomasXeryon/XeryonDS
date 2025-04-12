@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CameraFeed } from "./camera-feed";
 import { AdvancedControls } from "./advanced-controls";
+import { ActuatorControls } from "./actuator-controls"; 
 import { SessionTimer } from "./session-timer";
 import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -282,11 +283,16 @@ export function StationCard({ station }: { station: Station }) {
                 </div>
               </div>
               <div className="space-y-8">
-                <AdvancedControls
-                  station={station}
+                <ActuatorControls
+                  stationId={station.id}
+                  rpiId={station.rpiId}
                   enabled={isMySession}
-                  isConnected={wsConnection.connected}
-                  onCommand={handleCommand}
+                  onConnectionChange={(connected, send) => {
+                    setWsConnection({
+                      connected,
+                      send: send || (() => {})
+                    });
+                  }}
                 />
                 {station.sessionStart && isMySession && (
                   <div>
