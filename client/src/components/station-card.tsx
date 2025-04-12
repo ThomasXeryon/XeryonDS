@@ -48,7 +48,7 @@ export function StationCard({ station }: { station: Station }) {
   useEffect(() => {
     // Always connect to the WebSocket to get position updates, regardless of session status
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/appws`;
     console.log("[StationCard] Connecting to WebSocket:", wsUrl);
 
     wsRef.current = new WebSocket(wsUrl);
@@ -154,7 +154,7 @@ export function StationCard({ station }: { station: Station }) {
         wsRef.current.close();
       }
     };
-  }, [isMySession, toast, station.rpiId]);
+  }, [toast, station.rpiId]); // Removed isMySession dependency as we always want to connect
 
   const startSession = useMutation({
     mutationFn: async () => {
@@ -330,7 +330,7 @@ export function StationCard({ station }: { station: Station }) {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-video relative">
-                  <CameraFeed stationId={station.id} rpiId={station.rpiId} />
+                  <CameraFeed rpiId={station.rpiId} />
                 </div>
                 <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
                   {station.previewImage ? (
