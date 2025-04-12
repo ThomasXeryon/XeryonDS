@@ -66,7 +66,7 @@ export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type WebSocketMessage = {
-  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop";
+  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop" | "home";
   direction?: "up" | "down" | "left" | "right";
   value?: number;
   stationId: number;

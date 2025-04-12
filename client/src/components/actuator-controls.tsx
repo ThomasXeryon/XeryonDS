@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Square } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import type { WebSocketMessage } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -133,10 +133,17 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
     };
   }, [enabled, toast, onConnectionChange, stationId, rpiId]);
 
-  const sendCommand = (type: "move" | "stop" | "step", direction?: "up" | "down" | "left" | "right") => {
+  const sendCommand = (type: "move" | "stop" | "step" | "home", direction?: "up" | "down" | "left" | "right") => {
     if (!wsRef.current || !enabled || !isConnected) {
       console.log("Cannot send command - connection not ready", { enabled, isConnected });
       return;
+    }
+
+    let commandStr = 'stop';
+    if (type === 'home') {
+      commandStr = 'home';
+    } else if (direction) {
+      commandStr = `move_${direction}`;
     }
 
     const message: WebSocketMessage = {
@@ -144,7 +151,7 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       direction,
       stationId,
       rpiId,
-      command: direction ? `move_${direction}` : 'stop',
+      command: commandStr,
       stepSize: parseFloat(stepSize),
       stepUnit
     };
@@ -207,60 +214,72 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       </div>
 
       {/* Direction controls */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="col-start-2">
+      <div className="grid grid-cols-3 gap-2 w-full max-w-[160px] mx-auto">
+        <div className="col-start-2 flex justify-center">
           <Button
             variant="outline"
             size="icon"
+            className="w-10 h-10"
             disabled={!enabled || !isConnected}
             onMouseDown={() => sendCommand("move", "up")}
             onMouseUp={() => sendCommand("stop")}
             onMouseLeave={() => sendCommand("stop")}
             onDoubleClick={() => handleStepCommand("up")}
           >
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="h-5 w-5" />
           </Button>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={!enabled || !isConnected}
-          onMouseDown={() => sendCommand("move", "left")}
-          onMouseUp={() => sendCommand("stop")}
-          onMouseLeave={() => sendCommand("stop")}
-          onDoubleClick={() => handleStepCommand("left")}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={!enabled || !isConnected}
-        >
-          <Square className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={!enabled || !isConnected}
-          onMouseDown={() => sendCommand("move", "right")}
-          onMouseUp={() => sendCommand("stop")}
-          onMouseLeave={() => sendCommand("stop")}
-          onDoubleClick={() => handleStepCommand("right")}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <div className="col-start-2">
+        <div className="flex justify-center">
           <Button
             variant="outline"
             size="icon"
+            className="w-10 h-10"
+            disabled={!enabled || !isConnected}
+            onMouseDown={() => sendCommand("move", "left")}
+            onMouseUp={() => sendCommand("stop")}
+            onMouseLeave={() => sendCommand("stop")}
+            onDoubleClick={() => handleStepCommand("left")}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-10 h-10 bg-white text-primary hover:bg-primary/10"
+            disabled={!enabled || !isConnected}
+            onClick={() => sendCommand("home")}
+          >
+            <Home className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-10 h-10"
+            disabled={!enabled || !isConnected}
+            onMouseDown={() => sendCommand("move", "right")}
+            onMouseUp={() => sendCommand("stop")}
+            onMouseLeave={() => sendCommand("stop")}
+            onDoubleClick={() => handleStepCommand("right")}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="col-start-2 flex justify-center">
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-10 h-10"
             disabled={!enabled || !isConnected}
             onMouseDown={() => sendCommand("move", "down")}
             onMouseUp={() => sendCommand("stop")}
             onMouseLeave={() => sendCommand("stop")}
             onDoubleClick={() => handleStepCommand("down")}
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-5 w-5" />
           </Button>
         </div>
       </div>
