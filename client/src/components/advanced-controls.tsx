@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { MinusCircle, PlusCircle, Square, Play, StopCircle } from "lucide-react";
+import { MinusCircle, PlusCircle, Square, Play, StopCircle, Home } from "lucide-react";
 import { Station } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -98,13 +98,14 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
             Step
           </Button>
           <Button
-            variant="destructive"
+            variant="default"
             size="sm"
+            className="bg-white text-primary hover:bg-slate-100 border-2 border-primary"
             disabled={!enabled || !isConnected}
-            onClick={() => handleCommand("stop")}
+            onClick={() => handleCommand("home")}
           >
-            <Square className="h-4 w-4" />
-            Stop
+            <Home className="h-4 w-4 mr-1" />
+            Home
           </Button>
           <Button
             variant="outline"
