@@ -285,16 +285,11 @@ export function StationCard({ station }: { station: Station }) {
                 </div>
               </div>
               <div className="space-y-8">
-                <ActuatorControls
-                  stationId={station.id}
-                  rpiId={station.rpiId}
+                <AdvancedControls
+                  station={station}
                   enabled={isMySession}
-                  onConnectionChange={(connected, send) => {
-                    setWsConnection({
-                      connected,
-                      send: send || (() => {})
-                    });
-                  }}
+                  isConnected={wsConnection.connected}
+                  onCommand={handleCommand}
                 />
                 {station.sessionStart && isMySession && (
                   <div>

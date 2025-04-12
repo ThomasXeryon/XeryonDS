@@ -172,7 +172,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           disabled={!enabled || !isConnected || isDemoRunning}
           onClick={() => {
             setIsDemoRunning(true);
-            onCommand("demo_start");
+            handleCommand("demo_start");
           }}
         >
           <Play className="h-4 w-4 mr-1" />
@@ -184,7 +184,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           disabled={!enabled || !isConnected || !isDemoRunning}
           onClick={() => {
             setIsDemoRunning(false);
-            onCommand("demo_stop");
+            handleCommand("demo_stop");
           }}
         >
           <StopCircle className="h-4 w-4 mr-1" />

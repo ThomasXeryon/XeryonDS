@@ -47,6 +47,8 @@ interface WebSocketCommandMessage {
   rpiId: string;
   command: string;
   direction?: string;
+  stepSize?: number;
+  stepUnit?: string;
 }
 
 type WebSocketMessage = WebSocketRegistrationMessage | WebSocketCommandMessage;
@@ -356,11 +358,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Forward command to RPi with timestamp
+        // Forward command to RPi with timestamp and step information
         const commandMessage = {
           type: "command",
           command: message.command || "unknown",
           direction: message.direction || "none",
+          stepSize: message.stepSize,
+          stepUnit: message.stepUnit,
           timestamp: new Date().toISOString()
         };
 
@@ -368,6 +372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: commandMessage.type,
           command: commandMessage.command,
           direction: commandMessage.direction,
+          stepSize: commandMessage.stepSize,
+          stepUnit: commandMessage.stepUnit,
           rpiId: message.rpiId
         });
 
