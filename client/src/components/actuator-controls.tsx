@@ -214,72 +214,72 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       </div>
 
       {/* Direction controls */}
-      <div className="grid grid-cols-3 gap-2 w-full max-w-[160px] mx-auto">
+      <div className="grid grid-cols-3 gap-3 w-full max-w-[180px] mx-auto mt-2">
         <div className="col-start-2 flex justify-center">
           <Button
             variant="outline"
             size="icon"
-            className="w-10 h-10"
+            className="w-12 h-12 shadow-sm border-2"
             disabled={!enabled || !isConnected}
             onMouseDown={() => sendCommand("move", "up")}
             onMouseUp={() => sendCommand("stop")}
             onMouseLeave={() => sendCommand("stop")}
             onDoubleClick={() => handleStepCommand("up")}
           >
-            <ChevronUp className="h-5 w-5" />
+            <ChevronUp className="h-6 w-6" />
           </Button>
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center">
           <Button
             variant="outline"
             size="icon"
-            className="w-10 h-10"
+            className="w-12 h-12 shadow-sm border-2"
             disabled={!enabled || !isConnected}
             onMouseDown={() => sendCommand("move", "left")}
             onMouseUp={() => sendCommand("stop")}
             onMouseLeave={() => sendCommand("stop")}
             onDoubleClick={() => handleStepCommand("left")}
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-6 w-6" />
           </Button>
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center">
           <Button
-            variant="outline"
+            variant="default"
             size="icon"
-            className="w-10 h-10 bg-white text-primary hover:bg-primary/10"
+            className="w-12 h-12 bg-white text-primary hover:bg-slate-100 font-semibold border-2 border-primary shadow-md"
             disabled={!enabled || !isConnected}
             onClick={() => sendCommand("home")}
           >
-            <Home className="h-5 w-5" />
+            <Home className="h-6 w-6" />
           </Button>
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center">
           <Button
             variant="outline"
             size="icon"
-            className="w-10 h-10"
+            className="w-12 h-12 shadow-sm border-2"
             disabled={!enabled || !isConnected}
             onMouseDown={() => sendCommand("move", "right")}
             onMouseUp={() => sendCommand("stop")}
             onMouseLeave={() => sendCommand("stop")}
             onDoubleClick={() => handleStepCommand("right")}
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-6 w-6" />
           </Button>
         </div>
         <div className="col-start-2 flex justify-center">
           <Button
             variant="outline"
             size="icon"
-            className="w-10 h-10"
+            className="w-12 h-12 shadow-sm border-2"
             disabled={!enabled || !isConnected}
             onMouseDown={() => sendCommand("move", "down")}
             onMouseUp={() => sendCommand("stop")}
             onMouseLeave={() => sendCommand("stop")}
             onDoubleClick={() => handleStepCommand("down")}
           >
-            <ChevronDown className="h-5 w-5" />
+            <ChevronDown className="h-6 w-6" />
           </Button>
         </div>
       </div>
