@@ -282,7 +282,7 @@ export function StationCard({ station }: { station: Station }) {
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
-            <div className="grid grid-cols-[400px,1fr,350px] gap-6">
+            <div className="grid grid-cols-[1fr,1fr,350px] gap-6">
               <div>
                 <EPOSDisplay />
                 <div className="mt-2 h-[500px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
