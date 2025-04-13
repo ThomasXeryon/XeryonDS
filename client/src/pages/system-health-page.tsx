@@ -366,7 +366,7 @@ export function SystemHealthPage() {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center">
-                        <Memory className="h-4 w-4 mr-2" />
+                        <HardDrive className="h-4 w-4 mr-2" />
                         Memory Usage
                       </CardTitle>
                     </CardHeader>

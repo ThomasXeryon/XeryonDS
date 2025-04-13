@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { 
-  Activity, Tool, Ruler, Settings, FileText, Cpu, 
+  Activity, Wrench, Ruler, Settings, FileText, Cpu, 
   Plus, Pencil, RefreshCw, AlertTriangle, InfoIcon 
 } from "lucide-react";
 
