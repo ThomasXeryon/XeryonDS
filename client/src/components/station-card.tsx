@@ -399,11 +399,15 @@ export function StationCard({ station }: { station: Station }) {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Command: User → Server → Xeryon:</span>
-                        <span className="font-medium">100.00ms</span>
+                        <span className="font-medium">{networkMetrics.totalLatency > 0 
+                          ? `${(networkMetrics.totalLatency / 2).toFixed(2)}ms` 
+                          : '75.00ms'}</span>
                       </div>
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Video: Xeryon → Server → User:</span>
-                        <span className="font-medium">100.00ms</span>
+                        <span className="font-medium">{networkMetrics.totalLatency > 0
+                          ? `${(networkMetrics.totalLatency / 2).toFixed(2)}ms`
+                          : '75.00ms'}</span>
                       </div>
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">RPi processing delay:</span>
@@ -414,7 +418,7 @@ export function StationCard({ station }: { station: Station }) {
                         <span className="font-medium text-primary">
                           {networkMetrics.totalLatency > 0 
                             ? `${networkMetrics.totalLatency.toFixed(2)}ms` 
-                            : '225.00ms'}
+                            : '175.00ms'}
                         </span>
                       </div>
                       <div className="flex justify-between col-span-2">
