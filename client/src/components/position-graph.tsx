@@ -69,8 +69,33 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
     }
   }, [currentPosition, windowSize]);
   
-  // No continuous data sampling - only plot the exact values as they arrive
-  // Only the window size management is kept to maintain the 10-second view
+  // Continuous data movement effect - ensures the graph keeps scrolling even without new data
+  useEffect(() => {
+    // Set up an interval to keep the graph moving
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      
+      setPositionData(prevData => {
+        if (prevData.length === 0) return prevData;
+        
+        // We don't add any new points if there's no change,
+        // but we do filter the data to simulate movement by removing old points
+        const cutoffTime = now - windowSize;
+        const filteredData = prevData.filter(point => point.time >= cutoffTime);
+        
+        // If we've filtered out all data points, keep at least the most recent one
+        if (filteredData.length === 0 && prevData.length > 0) {
+          return [{ ...prevData[prevData.length - 1], time: now - windowSize + 100 }];
+        }
+        
+        return filteredData;
+      });
+    }, 50); // Update every 50ms for smooth scrolling
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [windowSize]);
 
   // Format time for tooltip
   const formatTime = (time: number) => {
@@ -102,7 +127,15 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
               dataKey="time" 
               scale="time" 
               type="number"
-              domain={['dataMin', 'dataMax']}
+              domain={[
+                (dataMin: number) => {
+                  const now = Date.now();
+                  return now - windowSize;
+                }, 
+                (dataMax: number) => {
+                  return Date.now();
+                }
+              ]}
               tick={false}
               tickLine={false}
             />
@@ -135,11 +168,11 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
               type="stepAfter" // Using stepAfter to clearly show the discrete nature of the data
               dataKey="position" 
               stroke="#0373fc" 
-              dot={{ r: 2 }} // Small dots for each data point
-              strokeWidth={1}
+              dot={false} // No dots, just the line
+              strokeWidth={1.5}
               isAnimationActive={false}
               connectNulls={true}
-              activeDot={{ r: 4 }}
+              activeDot={false}
             />
           </LineChart>
         </ResponsiveContainer>
