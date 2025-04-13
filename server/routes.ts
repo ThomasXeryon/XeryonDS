@@ -30,8 +30,11 @@ const upload = multer({
   }
 });
 
-// Map to store RPi WebSocket connections
-const rpiConnections = new Map<string, WebSocket>();
+// Modified to store connection type with the RPi connections
+const rpiConnections = new Map<string, { 
+  ws: WebSocket; 
+  connectionType: 'camera' | 'control' 
+}>();
 
 // Map to store UI client connections with their associated RPi IDs
 const uiConnections = new Map<string, { ws: WebSocket; rpiId?: string }>();
@@ -40,6 +43,7 @@ const uiConnections = new Map<string, { ws: WebSocket; rpiId?: string }>();
 interface WebSocketRegistrationMessage {
   type: 'register';
   rpiId: string;
+  connectionType?: 'camera' | 'control';
 }
 
 interface WebSocketCommandMessage {
@@ -185,9 +189,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const rpiId = (req as any).rpiId;
     console.log(`[RPi ${rpiId}] Connected`);
 
-    // Store the connection
-    rpiConnections.set(rpiId, ws);
-
+    // Wait for registration message before adding to connections map
+    // The connection will be added when we receive a "register" message with connectionType
+    
+    // Default to "camera" until we get explicit connection type
+    let connectionType: 'camera' | 'control' = 'camera';
+    
     // Notify UI clients about new RPi connection
     for (const client of uiConnections.values()) {
       if (client.ws.readyState === WebSocket.OPEN) {
@@ -263,6 +270,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (response.type !== 'camera_frame') {
           console.log(`[RPi ${rpiId}] Message received: ${response.type}`);
         }
+        
+        // Handle registration message with connection type
+        if (response.type === 'register') {
+          // Get the connection type from the message
+          connectionType = response.connectionType || 'camera';
+          console.log(`[RPi ${rpiId}] Registered as ${connectionType} connection`);
+          
+          // Store the connection with its type
+          rpiConnections.set(rpiId, { 
+            ws, 
+            connectionType 
+          });
+          
+          return;
+        }
 
         // Handle camera frames from RPi
         if (response.type === "camera_frame") {
@@ -327,17 +349,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on("close", () => {
-      console.log(`[RPi ${rpiId}] Disconnected`);
-      rpiConnections.delete(rpiId);
-
-      // Notify UI clients about RPi disconnection
-      for (const client of uiConnections.values()) {
-        if (client.ws.readyState === WebSocket.OPEN) {
-          client.ws.send(JSON.stringify({
-            type: "rpi_disconnected",
-            rpiId
-          }));
+      console.log(`[RPi ${rpiId}] Disconnected, connection type: ${connectionType}`);
+      
+      // Check if there are multiple connections for this RPi
+      const existingConnection = rpiConnections.get(rpiId);
+      
+      // If this was the only connection or if it was the current stored connection, remove it
+      if (existingConnection && existingConnection.ws === ws) {
+        console.log(`[RPi ${rpiId}] Removing ${connectionType} connection`);
+        rpiConnections.delete(rpiId);
+        
+        // Notify UI clients about RPi disconnection
+        for (const client of uiConnections.values()) {
+          if (client.ws.readyState === WebSocket.OPEN) {
+            client.ws.send(JSON.stringify({
+              type: "rpi_disconnected",
+              rpiId,
+              connectionType
+            }));
+          }
         }
+      } else {
+        console.log(`[RPi ${rpiId}] Connection closed but not removing from map as it's not the current connection`);
       }
     });
   });
@@ -391,16 +424,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        const rpiWs = rpiConnections.get(String(message.rpiId));
+        const rpiConnection = rpiConnections.get(String(message.rpiId));
 
-        if (!rpiWs || rpiWs.readyState !== WebSocket.OPEN) {
-          console.log(`[WebSocket] RPi ${message.rpiId} not connected or not ready`);
+        if (!rpiConnection) {
+          console.log(`[WebSocket] RPi ${message.rpiId} not connected`);
           ws.send(JSON.stringify({
             type: "error",
-            message: `RPi ${message.rpiId} not connected`,
+            message: `RPi ${message.rpiId} not connected`
+          }));
+          return;
+        }
+        
+        // Check if this is a control connection
+        if (rpiConnection.connectionType !== 'control') {
+          console.log(`[WebSocket] RPi ${message.rpiId} has no control connection, only ${rpiConnection.connectionType}`);
+          ws.send(JSON.stringify({
+            type: "error",
+            message: `RPi ${message.rpiId} control connection not available - try refreshing the page`,
             details: {
-              connected: !!rpiWs,
-              readyState: rpiWs?.readyState
+              connectionType: rpiConnection.connectionType
+            }
+          }));
+          return;
+        }
+        
+        if (rpiConnection.ws.readyState !== WebSocket.OPEN) {
+          console.log(`[WebSocket] RPi ${message.rpiId} control connection not ready`);
+          ws.send(JSON.stringify({
+            type: "error",
+            message: `RPi ${message.rpiId} control connection not ready`,
+            details: {
+              readyState: rpiConnection.ws.readyState
             }
           }));
           return;
@@ -416,16 +470,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         };
 
-        console.log(`[WebSocket] Sending command to RPi ${message.rpiId}:`, {
+        console.log(`[WebSocket] Sending command to RPi ${message.rpiId} control connection:`, {
           type: commandMessage.type,
           command: commandMessage.command,
           direction: commandMessage.direction,
           stepSize: commandMessage.stepSize,
-          stepUnit: commandMessage.stepUnit,
+          stepUnit: message.stepUnit,
           rpiId: message.rpiId
         });
 
-        rpiWs.send(JSON.stringify(commandMessage));
+        // Send to the WebSocket connection inside the rpiConnection object
+        rpiConnection.ws.send(JSON.stringify(commandMessage));
 
         // Echo back confirmation
         ws.send(JSON.stringify({
