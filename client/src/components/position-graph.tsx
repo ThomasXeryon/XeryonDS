@@ -1,6 +1,16 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "./ui/card";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer, 
+  CartesianGrid, 
+  ReferenceLine 
+} from "recharts";
+import { curveCardinal } from "d3-shape";
 
 interface PositionGraphProps {
   rpiId: string;
@@ -58,9 +68,9 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
     }
   }, [currentPosition, windowSize]);
   
-  // Continuous data sampling effect (runs independently of currentPosition updates)
+  // Continuous data sampling effect with enhanced interpolation between points
   useEffect(() => {
-    console.log('[PositionGraph] Setting up sampling interval');
+    console.log('[PositionGraph] Setting up sampling interval with interpolation');
     
     // Set up an interval to continuously add data points
     const intervalId = setInterval(() => {
@@ -89,10 +99,52 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
           
           // Filter out points older than our window size
           const cutoffTime = now - windowSize;
-          return updatedData.filter(point => point.time >= cutoffTime);
+          const filteredData = updatedData.filter(point => point.time >= cutoffTime);
+          
+          // If we have at least 3 data points, we can start interpolating
+          if (filteredData.length >= 3) {
+            // Generate intermediate points for smoother plotting (every 50ms)
+            const lastThreePoints = filteredData.slice(-3);
+            const interpolatedData = [...filteredData];
+            
+            // Only interpolate if the points aren't already too close together
+            const timeGap = lastThreePoints[2].time - lastThreePoints[1].time;
+            if (timeGap > 300) { // Only interpolate for gaps larger than 300ms
+              const numIntermediatePoints = Math.floor(timeGap / 50) - 1;
+              
+              for (let i = 1; i <= numIntermediatePoints; i++) {
+                const t = i / (numIntermediatePoints + 1);
+                const intermediateTime = lastThreePoints[1].time + t * (lastThreePoints[2].time - lastThreePoints[1].time);
+                
+                // Use quadratic interpolation for smoother curves
+                const p0 = lastThreePoints[0].position;
+                const p1 = lastThreePoints[1].position;
+                const p2 = lastThreePoints[2].position;
+                
+                // Simple quadratic interpolation
+                const a = (p0 - 2*p1 + p2) / 2;
+                const b = (-3*p0 + 4*p1 - p2) / 2;
+                const c = p0;
+                
+                const intermediatePosition = a*t*t + b*t + c;
+                
+                interpolatedData.push({
+                  time: intermediateTime,
+                  position: intermediatePosition
+                });
+              }
+              
+              // Sort data by time to ensure correct ordering
+              interpolatedData.sort((a, b) => a.time - b.time);
+            }
+            
+            return interpolatedData;
+          }
+          
+          return filteredData;
         });
       }
-    }, sampleInterval);
+    }, 30); // Reduced interval for more frequent updates
     
     return () => {
       console.log('[PositionGraph] Cleaning up sampling interval');
@@ -160,13 +212,14 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
               contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '4px' }}
             />
             <Line 
-              type="linear" // Changed from monotone to linear for less smoothing
+              type="monotone" // Changed back to monotone for smoother motion visualization
               dataKey="position" 
               stroke="#0373fc" 
               dot={false} 
-              strokeWidth={1.5} // Reduced stroke width
+              strokeWidth={1.5}
               isAnimationActive={false}
               connectNulls={true}
+              activeDot={{ r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>
