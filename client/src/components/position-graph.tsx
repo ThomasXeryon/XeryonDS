@@ -21,19 +21,63 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
   // Sampling interval (add points every 100ms for a continuous graph)
   const sampleInterval = 100;
   
+  // Log for debugging
   useEffect(() => {
-    // Update the last known position when we receive a valid position
+    console.log(`[PositionGraph] Current position received: ${currentPosition}`);
+  }, [currentPosition]);
+
+  // Effect for updating position data whenever currentPosition changes
+  useEffect(() => {
+    // Only proceed if there's a valid position value
     if (currentPosition !== null) {
+      console.log(`[PositionGraph] Adding position to graph: ${currentPosition}`);
+      
+      // Update the reference to the latest position value
       lastPositionRef.current = currentPosition;
+      
+      // Add a new data point immediately when position changes
+      const now = Date.now();
+      
+      setPositionData(prevData => {
+        // Create a new data point with the current timestamp and position
+        const newDataPoint = {
+          time: now,
+          position: currentPosition
+        };
+        
+        // Add the new point
+        const updatedData = [...prevData, newDataPoint];
+        
+        // Filter out points older than our window size
+        const cutoffTime = now - windowSize;
+        const filtered = updatedData.filter(point => point.time >= cutoffTime);
+        
+        console.log(`[PositionGraph] Data points in chart: ${filtered.length}`);
+        return filtered;
+      });
     }
+  }, [currentPosition, windowSize]);
+  
+  // Continuous data sampling effect (runs independently of currentPosition updates)
+  useEffect(() => {
+    console.log('[PositionGraph] Setting up sampling interval');
     
     // Set up an interval to continuously add data points
     const intervalId = setInterval(() => {
       const now = Date.now();
       
-      // If we have a position, add it to the graph
+      // If we have a position stored in our ref, add it to the graph
       if (lastPositionRef.current !== null) {
         setPositionData(prevData => {
+          // Only add a new point if we have data points
+          if (prevData.length === 0) return prevData;
+          
+          // Get the last point we added
+          const lastPoint = prevData[prevData.length - 1];
+          
+          // If the last point is too recent, don't add a new one yet
+          if (now - lastPoint.time < sampleInterval * 0.8) return prevData;
+          
           // Create a new data point with the current timestamp and latest position
           const newDataPoint = {
             time: now,
@@ -50,8 +94,11 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
       }
     }, sampleInterval);
     
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      console.log('[PositionGraph] Cleaning up sampling interval');
+      clearInterval(intervalId);
+    };
+  }, [sampleInterval, windowSize]);
 
   // Format time for tooltip
   const formatTime = (time: number) => {

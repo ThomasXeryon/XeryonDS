@@ -291,9 +291,9 @@ export function StationCard({ station }: { station: Station }) {
               </div>
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Position Monitoring</h3>
-                <div className="h-[500px] bg-slate-50 rounded-lg p-4">
-                  <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
-                </div>
+                {/* Pass currentEpos directly as currentPosition */}
+                <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
+                
               </div>
               <div className="space-y-6">
                 <AdvancedControls
