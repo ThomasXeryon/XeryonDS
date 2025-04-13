@@ -202,6 +202,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const response = JSON.parse(data.toString());
 
+        // Handle ping messages from the RPi (for latency measurement)
+        if (response.type === 'ping') {
+          console.log(`[RPi ${rpiId}] Received ping message`);
+          
+          // Send back a pong immediately with the same timestamp
+          ws.send(JSON.stringify({
+            type: 'pong',
+            timestamp: response.timestamp,
+            serverTimestamp: new Date().toISOString()
+          }));
+          
+          // Also forward the ping to any connected UI clients for this RPi
+          for (const client of uiConnections.values()) {
+            if (client.ws.readyState === WebSocket.OPEN && client.rpiId === rpiId) {
+              client.ws.send(JSON.stringify({
+                type: 'rpi_ping',
+                rpiId: rpiId,
+                timestamp: response.timestamp
+              }));
+            }
+          }
+          return;
+        }
+
         // Log position updates
         if (response.type === 'position_update') {
           console.log(`[RPi ${rpiId}] Position update:`, response.epos);
@@ -233,11 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Handle ping messages silently
-        if (response.type === 'ping') {
-          ws.send(JSON.stringify({ type: 'pong' }));
-          return;
-        }
+        // Ping messages are handled by the dedicated handler above
 
         // Only log non-camera-frame messages
         if (response.type !== 'camera_frame') {
@@ -345,6 +365,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ws.send(JSON.stringify({
             type: 'registered',
             message: `Successfully registered for RPi ${rpiId}`
+          }));
+          return;
+        }
+        
+        // Handle ping messages and respond with pong
+        if (message.type === 'ping') {
+          console.log(`[WebSocket] Received ping from client ${clientId}`);
+          
+          // Send back pong with the same timestamp
+          ws.send(JSON.stringify({
+            type: 'pong',
+            timestamp: message.timestamp,
+            rpiId: message.rpiId
           }));
           return;
         }
