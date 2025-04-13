@@ -6,6 +6,7 @@ import { AdvancedControls } from "./advanced-controls";
 import { ActuatorControls } from "./actuator-controls"; 
 import { SessionTimer } from "./session-timer";
 import { PositionGraph } from "./position-graph";
+import { ConnectionVisualizer } from "./connection-visualizer";
 import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
@@ -395,7 +396,14 @@ export function StationCard({ station }: { station: Station }) {
                       <span className={`inline-block w-2 h-2 rounded-full mr-2 ${wsConnection.connected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                       Connection Status
                     </h4>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                    
+                    {/* Animated Connection Visualizer */}
+                    <ConnectionVisualizer 
+                      totalLatency={networkMetrics.totalLatency || 225} 
+                      isConnected={wsConnection.connected} 
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs mt-2">
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Command: User → Server → Xeryon:</span>
                         <span className="font-medium">100.00ms</span>
@@ -411,7 +419,9 @@ export function StationCard({ station }: { station: Station }) {
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Total roundtrip:</span>
                         <span className="font-medium text-primary">
-                          225.00ms
+                          {networkMetrics.totalLatency > 0 
+                            ? `${networkMetrics.totalLatency.toFixed(2)}ms` 
+                            : '225.00ms'}
                         </span>
                       </div>
                       <div className="flex justify-between col-span-2">
