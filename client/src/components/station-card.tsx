@@ -141,21 +141,13 @@ export function StationCard({ station }: { station: Station }) {
             
             // Update network metrics with actual measured values
             setNetworkMetrics(prev => {
-              // Distribute latency according to network topology:
-              // Client-Server: ~25% of the total roundtrip
-              // Server-Belgium: ~60% of the total roundtrip
-              // Belgium-RPI: ~15% of the total roundtrip
-              const clientToServer = Math.round(roundTripTime * 0.25);
-              const serverToBelgium = Math.round(roundTripTime * 0.60);
-              const belgiumToRPI = Math.round(roundTripTime * 0.15);
+              // We now show simplified segments for better understanding:
+              // Just measure the total roundtrip and subtract 25ms for RPi processing
               
               console.log("[NetworkMetrics] Round trip:", roundTripTime.toFixed(2), "ms");
               
               return {
                 ...prev,
-                clientToServer,
-                serverToBelgium,
-                belgiumToRPI,
                 totalLatency: roundTripTime,
                 lastUpdateTime: new Date()
               };
@@ -404,19 +396,19 @@ export function StationCard({ station }: { station: Station }) {
                       Connection Status
                     </h4>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Client → Server:</span>
-                        <span className="font-medium">{networkMetrics.clientToServer.toFixed(2)}ms</span>
+                      <div className="flex justify-between col-span-2">
+                        <span className="text-slate-500">Command: Client → Server → Belgium:</span>
+                        <span className="font-medium">{Math.max(0, networkMetrics.totalLatency - 25).toFixed(2)}ms</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Server → Belgium:</span>
-                        <span className="font-medium">{networkMetrics.serverToBelgium.toFixed(2)}ms</span>
+                      <div className="flex justify-between col-span-2">
+                        <span className="text-slate-500">Video: Belgium → Server → Client:</span>
+                        <span className="font-medium">{Math.max(0, networkMetrics.totalLatency - 25).toFixed(2)}ms</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Belgium → RPI:</span>
-                        <span className="font-medium">{networkMetrics.belgiumToRPI.toFixed(2)}ms</span>
+                      <div className="flex justify-between col-span-2">
+                        <span className="text-slate-500">RPi processing delay:</span>
+                        <span className="font-medium">25.00ms</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Total roundtrip:</span>
                         <span className="font-medium text-primary">
                           {networkMetrics.totalLatency.toFixed(2)}ms
