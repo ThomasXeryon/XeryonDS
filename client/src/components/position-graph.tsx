@@ -97,7 +97,7 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
   // If we don't have any data yet, show a placeholder message
   if (positionData.length === 0) {
     return (
-      <Card className="w-full h-[500px] mb-4 bg-slate-50">
+      <Card className="w-full h-full bg-slate-50">
         <CardContent className="flex justify-center items-center h-full">
           <p className="text-gray-500">Move the actuator to see position data</p>
         </CardContent>
@@ -106,7 +106,7 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
   }
 
   return (
-    <Card className="w-full h-[500px] mb-4 bg-slate-50">
+    <Card className="w-full h-full bg-slate-50">
       <CardContent className="p-2 h-full">
         <div className="text-sm font-medium mb-2 text-center">
           Position History for {rpiId} ({positionData.length > 0 ? `${positionData[positionData.length - 1].position.toFixed(3)} mm` : 'N/A'})

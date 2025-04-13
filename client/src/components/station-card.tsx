@@ -33,17 +33,17 @@ export function StationCard({ station }: { station: Station }) {
     send: () => {},
   });
 
-  // EPOS Display Component
+  // EPOS Display Component with consistent height and improved styling
   const EPOSDisplay = () => (
-    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4">
-      <p className="text-lg font-semibold flex items-center justify-between">
-        <span>Current Position:</span>
-        <span className="text-primary">
+    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 h-16 flex items-center">
+      <div className="w-full flex justify-between items-center">
+        <span className="text-lg font-semibold">Current Position:</span>
+        <span className="text-primary text-xl font-bold tracking-wider">
           {currentEpos !== null
             ? `${currentEpos.toFixed(3)} mm`
             : 'Waiting...'}
         </span>
-      </p>
+      </div>
     </div>
   );
 
@@ -264,61 +264,72 @@ export function StationCard({ station }: { station: Station }) {
         <CardContent>
           {isFullscreen ? (
             <div className="grid grid-cols-[1fr,1fr,350px] gap-6">
-              <div>
-                <EPOSDisplay />
-                <div className="mt-2 h-[500px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
+              <div className="flex flex-col h-full">
+                {/* Position display moved to top with full width */}
+                <div className="mb-3">
+                  <EPOSDisplay />
+                </div>
+                {/* Camera feed with adjusted height to match position graph */}
+                <div className="flex-grow h-[460px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Position Monitoring</h3>
-                {/* Pass currentEpos directly as currentPosition */}
-                <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
-                
+              <div className="flex flex-col h-full">
+                <h3 className="text-lg font-semibold mb-3">Position Monitoring</h3>
+                {/* Pass currentEpos directly as currentPosition with adjusted height */}
+                <div className="flex-grow">
+                  <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
+                </div>
               </div>
-              <div className="space-y-6">
-                <AdvancedControls
-                  station={station}
-                  enabled={isMySession}
-                  isConnected={wsConnection.connected}
-                  onCommand={handleCommand}
-                />
-                {station.sessionStart && isMySession && (
-                  <div>
-                    <SessionTimer
-                      startTime={station.sessionStart}
-                      onTimeout={() => {
+              <div className="flex flex-col h-full justify-between">
+                <div className="space-y-4">
+                  <AdvancedControls
+                    station={station}
+                    enabled={isMySession}
+                    isConnected={wsConnection.connected}
+                    onCommand={handleCommand}
+                  />
+                  {station.sessionStart && isMySession && (
+                    <div className="mt-4">
+                      <SessionTimer
+                        startTime={station.sessionStart}
+                        onTimeout={() => {
+                          endSession.mutate();
+                          setShowThankYouDialog(true);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Button moved to bottom for better vertical alignment */}
+                <div className="mt-auto pt-4">
+                  {station.status === "available" ? (
+                    <Button
+                      className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                      onClick={() => startSession.mutate()}
+                      disabled={startSession.isPending}
+                    >
+                      Start Session
+                    </Button>
+                  ) : isMySession ? (
+                    <Button
+                      className="w-full hover:bg-destructive/90 transition-colors"
+                      variant="destructive"
+                      onClick={() => {
                         endSession.mutate();
                         setShowThankYouDialog(true);
                       }}
-                    />
-                  </div>
-                )}
-                {station.status === "available" ? (
-                  <Button
-                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                    onClick={() => startSession.mutate()}
-                    disabled={startSession.isPending}
-                  >
-                    Start Session
-                  </Button>
-                ) : isMySession ? (
-                  <Button
-                    className="w-full hover:bg-destructive/90 transition-colors"
-                    variant="destructive"
-                    onClick={() => {
-                      endSession.mutate();
-                      setShowThankYouDialog(true);
-                    }}
-                    disabled={endSession.isPending}
-                  >
-                    End Session
-                  </Button>
-                ) : (
-                  <Button className="w-full" disabled>
-                    Station Occupied
-                  </Button>
-                )}
+                      disabled={endSession.isPending}
+                    >
+                      End Session
+                    </Button>
+                  ) : (
+                    <Button className="w-full" disabled>
+                      Station Occupied
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (

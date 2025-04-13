@@ -59,17 +59,17 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
 
   return (
     <div className="space-y-6">
-      {/* Step Controls */}
+      {/* Step Controls with improved sizing and spacing */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Label htmlFor="stepSize" className="text-xs whitespace-nowrap">Step Size:</Label>
+          <Label htmlFor="stepSize" className="text-sm font-medium whitespace-nowrap">Step Size:</Label>
           <div className="flex items-center gap-2">
             <Input
               id="stepSize"
               type="text"
               value={stepSize}
               onChange={handleStepSizeChange}
-              className="w-20 h-8"
+              className="w-24 h-9"
               disabled={!enabled || !isConnected}
             />
             <Select 
@@ -77,7 +77,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
               onValueChange={setStepUnit}
               disabled={!enabled || !isConnected}
             >
-              <SelectTrigger className="h-8 w-16 text-xs">
+              <SelectTrigger className="h-9 w-20 text-sm">
                 <SelectValue placeholder="Unit" />
               </SelectTrigger>
               <SelectContent>
@@ -88,79 +88,75 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 mx-auto w-full max-w-xs">
+        
+        {/* Control buttons with consistent height */}
+        <div className="grid grid-cols-3 gap-3 mx-auto w-full">
           <Button
             variant="outline"
-            size="sm"
-            className="w-full h-9"
+            className="w-full h-10"
             disabled={!enabled || !isConnected}
             onClick={() => handleCommand("move", "left")}
           >
-            <MinusCircle className="h-4 w-4 mr-1" />
+            <MinusCircle className="h-5 w-5 mr-1" />
             Step
           </Button>
           <Button
             variant="default"
-            size="sm"
-            className="w-full h-9 bg-white text-primary hover:bg-slate-100 border border-primary shadow-none"
+            className="w-full h-10 bg-white text-primary hover:bg-slate-100 border border-primary shadow-none"
             disabled={!enabled || !isConnected}
             onClick={() => handleCommand("home")}
           >
-            <Home className="h-4 w-4 mr-1" />
+            <Home className="h-5 w-5 mr-1" />
             Home
           </Button>
           <Button
             variant="outline"
-            size="sm"
-            className="w-full h-9"
+            className="w-full h-10"
             disabled={!enabled || !isConnected}
             onClick={() => handleCommand("move", "right")}
           >
-            <PlusCircle className="h-4 w-4 mr-1" />
+            <PlusCircle className="h-5 w-5 mr-1" />
             Step
           </Button>
         </div>
       </div>
 
-      {/* Scan Controls */}
-      <div className="grid grid-cols-3 gap-2 mx-auto w-full max-w-xs">
+      {/* Scan Controls with consistent height */}
+      <div className="grid grid-cols-3 gap-3 mx-auto w-full">
         <Button
           variant="outline"
-          size="sm"
-          className="w-full h-9"
+          className="w-full h-10"
           disabled={!enabled || !isConnected}
           onClick={() => handleCommand("scan", "left")}
         >
-          <MinusCircle className="h-4 w-4 mr-1" />
+          <MinusCircle className="h-5 w-5 mr-1" />
           Scan
         </Button>
         <Button
           variant="destructive"
-          size="sm"
-          className="w-full h-9"
+          className="w-full h-10"
           disabled={!enabled || !isConnected}
           onClick={() => handleCommand("stop")}
         >
-          <Square className="h-4 w-4 mr-1" />
+          <Square className="h-5 w-5 mr-1" />
           Stop
         </Button>
         <Button
           variant="outline"
-          size="sm"
-          className="w-full h-9"
+          className="w-full h-10"
           disabled={!enabled || !isConnected}
           onClick={() => handleCommand("scan", "right")}
         >
-          <PlusCircle className="h-4 w-4 mr-1" />
+          <PlusCircle className="h-5 w-5 mr-1" />
           Scan
         </Button>
       </div>
 
-      {/* Speed Slider */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <label className="font-medium">Speed (mm/s)</label>
-          <span>{speed[0]}</span>
+      {/* Speed Slider with improved spacing */}
+      <div className="space-y-3 pt-1">
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-medium">Speed (mm/s)</label>
+          <span className="text-sm font-semibold">{speed[0]}</span>
         </div>
         <Slider
           value={speed}
@@ -168,13 +164,14 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           max={1000}
           step={1}
           disabled={!enabled || !isConnected}
+          className="py-1"
         />
       </div>
 
-      {/* Demo Controls */}
-      <div className="grid grid-cols-2 gap-2 mx-auto w-full max-w-xs">
+      {/* Demo Controls with consistent height */}
+      <div className="grid grid-cols-2 gap-3 mx-auto w-full pt-1">
         <Button
-          className="w-full h-9"
+          className="w-full h-10"
           variant={isDemoRunning ? "outline" : "default"}
           disabled={!enabled || !isConnected || isDemoRunning}
           onClick={() => {
@@ -182,11 +179,11 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
             handleCommand("demo_start");
           }}
         >
-          <Play className="h-4 w-4 mr-1" />
+          <Play className="h-5 w-5 mr-1" />
           Start Demo
         </Button>
         <Button
-          className="w-full h-9"
+          className="w-full h-10"
           variant="outline"
           disabled={!enabled || !isConnected || !isDemoRunning}
           onClick={() => {
@@ -194,7 +191,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
             handleCommand("demo_stop");
           }}
         >
-          <StopCircle className="h-4 w-4 mr-1" />
+          <StopCircle className="h-5 w-5 mr-1" />
           Stop Demo
         </Button>
       </div>
