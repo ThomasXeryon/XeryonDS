@@ -396,14 +396,7 @@ export function StationCard({ station }: { station: Station }) {
                       <span className={`inline-block w-2 h-2 rounded-full mr-2 ${wsConnection.connected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                       Connection Status
                     </h4>
-                    
-                    {/* Animated Connection Visualizer */}
-                    <ConnectionVisualizer 
-                      totalLatency={networkMetrics.totalLatency || 225} 
-                      isConnected={wsConnection.connected} 
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs mt-2">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Command: User → Server → Xeryon:</span>
                         <span className="font-medium">100.00ms</span>
