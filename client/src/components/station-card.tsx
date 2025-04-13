@@ -400,13 +400,13 @@ export function StationCard({ station }: { station: Station }) {
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Command: User → Server → Xeryon:</span>
                         <span className="font-medium">{networkMetrics.totalLatency > 0 
-                          ? `${(networkMetrics.totalLatency).toFixed(2)}ms` 
+                          ? `${(networkMetrics.totalLatency / 2).toFixed(2)}ms` 
                           : '75.00ms'}</span>
                       </div>
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Video: Xeryon → Server → User:</span>
                         <span className="font-medium">{networkMetrics.totalLatency > 0
-                          ? `${(networkMetrics.totalLatency).toFixed(2)}ms`
+                          ? `${(networkMetrics.totalLatency / 2).toFixed(2)}ms`
                           : '75.00ms'}</span>
                       </div>
                       <div className="flex justify-between col-span-2">
