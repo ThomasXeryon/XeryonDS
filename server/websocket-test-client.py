@@ -3,40 +3,99 @@ import websockets
 import json
 from datetime import datetime
 import sys
+import random
+import time
 
-# Function to create a new camera connection
-async def rpi_camera_connection(rpi_id, url):
-    print(f"[{datetime.now()}] Starting CAMERA connection to: {url}")
-    camera_ws = await websockets.connect(url)
-    print(f"[{datetime.now()}] Camera connection established to {url}")
-    
-    # Send registration message with camera type
-    register_msg = {
-        "type": "register",
-        "connectionType": "camera",
-        "status": "ready",
-        "message": f"RPi {rpi_id} camera connection initialized"
-    }
-    await camera_ws.send(json.dumps(register_msg))
-    print(f"[{datetime.now()}] Sent camera registration message")
-    return camera_ws
+# Connection retry settings
+MAX_RECONNECT_ATTEMPTS = 10
+RECONNECT_DELAY_BASE = 1.0  # Base delay in seconds
+JITTER_MAX = 0.5  # Maximum random jitter in seconds
 
-# Function to create a new control connection
-async def rpi_control_connection(rpi_id, url):
-    print(f"[{datetime.now()}] Starting CONTROL connection to: {url}")
-    control_ws = await websockets.connect(url)
-    print(f"[{datetime.now()}] Control connection established to {url}")
+# Function to create a new camera connection with retry logic
+async def rpi_camera_connection(rpi_id, url, max_attempts=MAX_RECONNECT_ATTEMPTS):
+    attempt = 0
     
-    # Send registration message with control type
-    register_msg = {
-        "type": "register",
-        "connectionType": "control",
-        "status": "ready",
-        "message": f"RPi {rpi_id} control connection initialized"
-    }
-    await control_ws.send(json.dumps(register_msg))
-    print(f"[{datetime.now()}] Sent control registration message")
-    return control_ws
+    while attempt < max_attempts:
+        try:
+            print(f"[{datetime.now()}] Starting CAMERA connection to: {url} (attempt {attempt+1}/{max_attempts})")
+            
+            # Add connection options to make reconnection more reliable
+            camera_ws = await websockets.connect(
+                url,
+                ping_interval=10,  # Send ping every 10 seconds
+                ping_timeout=5,    # Expect pong within 5 seconds
+                close_timeout=2    # Wait 2 seconds to close connection 
+            )
+            
+            print(f"[{datetime.now()}] Camera connection established to {url}")
+            
+            # Send registration message with camera type
+            register_msg = {
+                "type": "register",
+                "rpiId": rpi_id, 
+                "connectionType": "camera",
+                "status": "ready",
+                "message": f"RPi {rpi_id} camera connection initialized"
+            }
+            await camera_ws.send(json.dumps(register_msg))
+            print(f"[{datetime.now()}] Sent camera registration message")
+            return camera_ws
+            
+        except Exception as e:
+            attempt += 1
+            print(f"[{datetime.now()}] Camera connection attempt {attempt} failed: {str(e)}")
+            
+            if attempt >= max_attempts:
+                print(f"[{datetime.now()}] Maximum camera connection attempts reached. Giving up.")
+                raise
+            
+            # Calculate backoff delay with jitter for more resilient reconnection
+            delay = RECONNECT_DELAY_BASE * (1.5 ** attempt) + random.uniform(0, JITTER_MAX)
+            print(f"[{datetime.now()}] Retrying camera connection in {delay:.2f} seconds...")
+            await asyncio.sleep(delay)
+
+# Function to create a new control connection with retry logic
+async def rpi_control_connection(rpi_id, url, max_attempts=MAX_RECONNECT_ATTEMPTS):
+    attempt = 0
+    
+    while attempt < max_attempts:
+        try:
+            print(f"[{datetime.now()}] Starting CONTROL connection to: {url} (attempt {attempt+1}/{max_attempts})")
+            
+            # Add connection options to make reconnection more reliable
+            control_ws = await websockets.connect(
+                url,
+                ping_interval=5,   # Send ping more frequently on control connection
+                ping_timeout=3,    # Expect pong within 3 seconds
+                close_timeout=2    # Wait 2 seconds to close connection 
+            )
+            
+            print(f"[{datetime.now()}] Control connection established to {url}")
+            
+            # Send registration message with control type
+            register_msg = {
+                "type": "register",
+                "rpiId": rpi_id,
+                "connectionType": "control",
+                "status": "ready",
+                "message": f"RPi {rpi_id} control connection initialized"
+            }
+            await control_ws.send(json.dumps(register_msg))
+            print(f"[{datetime.now()}] Sent control registration message")
+            return control_ws
+            
+        except Exception as e:
+            attempt += 1
+            print(f"[{datetime.now()}] Control connection attempt {attempt} failed: {str(e)}")
+            
+            if attempt >= max_attempts:
+                print(f"[{datetime.now()}] Maximum control connection attempts reached. Giving up.")
+                raise
+            
+            # Calculate backoff delay with jitter for more resilient reconnection
+            delay = RECONNECT_DELAY_BASE * (1.5 ** attempt) + random.uniform(0, JITTER_MAX)
+            print(f"[{datetime.now()}] Retrying control connection in {delay:.2f} seconds...")
+            await asyncio.sleep(delay)
 
 async def rpi_client(rpi_id='RPI1', server_url=None):
     if not server_url:
@@ -56,8 +115,13 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
         
         try:
             # Start both camera and control connections in parallel
-            camera_ws = await rpi_camera_connection(rpi_id, url)
-            control_ws = await rpi_control_connection(rpi_id, url)
+            connection_tasks = [
+                rpi_camera_connection(rpi_id, url),
+                rpi_control_connection(rpi_id, url)
+            ]
+            
+            # Wait for both connections to be established
+            camera_ws, control_ws = await asyncio.gather(*connection_tasks)
             
             print(f"[{datetime.now()}] Both camera and control connections established")
 

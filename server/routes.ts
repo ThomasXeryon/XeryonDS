@@ -13,6 +13,15 @@ import { URL } from "url";
 
 // Define uploadsPath at the top level to use a persistent storage location
 const uploadsPath = path.join('/home/runner/workspace/persistent_uploads');
+const publicUploadsPath = path.join(process.cwd(), 'public/uploads');
+
+// Ensure upload directories exist
+try {
+  fs.mkdir(uploadsPath, { recursive: true }).catch(err => console.error('Failed to create persistent uploads dir:', err));
+  fs.mkdir(publicUploadsPath, { recursive: true }).catch(err => console.error('Failed to create public uploads dir:', err));
+} catch (err) {
+  console.error('Error ensuring upload directories exist:', err);
+}
 
 // Configure multer for image uploads
 const upload = multer({
@@ -768,16 +777,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stationId = parseInt(req.params.id);
 
       try {
-        // Ensure uploads directory exists
+        // Ensure uploads directories exist
         await fs.mkdir(uploadsPath, { recursive: true });
+        await fs.mkdir(publicUploadsPath, { recursive: true });
 
         // Generate unique filename with timestamp and original extension
         const filename = `station-${stationId}-${Date.now()}${path.extname(req.file.originalname)}`;
-        const filePath = path.join(uploadsPath, filename);
+        const persistentFilePath = path.join(uploadsPath, filename);
+        const publicFilePath = path.join(publicUploadsPath, filename);
 
-        // Move uploaded file to final location
-        await fs.rename(req.file.path, filePath);
-        console.log(`[Image Upload] Saved image to: ${filePath}`);
+        // Move uploaded file to persistent storage
+        await fs.rename(req.file.path, persistentFilePath);
+        
+        // Copy the file to public directory for serving
+        await fs.copyFile(persistentFilePath, publicFilePath);
+        
+        console.log(`[Image Upload] Saved image to: ${persistentFilePath}`);
+        console.log(`[Image Upload] Copied to public: ${publicFilePath}`);
 
         // Generate public URL path
         const imageUrl = `/uploads/${filename}`;
