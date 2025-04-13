@@ -210,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (client.ws.readyState === WebSocket.OPEN && client.rpiId === rpiId) {
               client.ws.send(JSON.stringify({
                 type: 'position_update',
-                rpi_id: rpiId,
+                rpiId: rpiId,
                 epos: response.epos
               }));
             }

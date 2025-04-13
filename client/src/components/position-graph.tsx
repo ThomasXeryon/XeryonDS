@@ -165,7 +165,7 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
               contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '4px' }}
             />
             <Line 
-              type="stepAfter" // Using stepAfter to clearly show the discrete nature of the data
+              type="monotone" // Using monotone for scanning-friendly smoother diagonal lines
               dataKey="position" 
               stroke="#0373fc" 
               dot={false} // No dots, just the line
