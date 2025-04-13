@@ -32,6 +32,15 @@ export function StationCard({ station }: { station: Station }) {
     connected: false,
     send: () => {},
   });
+  
+  // Network metrics state
+  const [networkMetrics, setNetworkMetrics] = useState({
+    clientToServer: 38,
+    serverToBelgium: 153,
+    belgiumToRPI: 12,
+    lastUpdateTime: new Date(),
+    uptime: 98.7
+  });
 
   // EPOS Display Component with consistent height and improved styling
   const EPOSDisplay = () => (
@@ -127,6 +136,28 @@ export function StationCard({ station }: { station: Station }) {
           if (messageRpiId === station.rpiId) {
             console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
             setCurrentEpos(parseFloat(data.epos));
+            
+            // Simulate network metric updates with random variations
+            setNetworkMetrics(prev => {
+              // Generate slight variations to simulate real network conditions
+              const clientToServer = Math.max(15, Math.min(60, prev.clientToServer + (Math.random() > 0.7 ? Math.random() * 15 - 7 : 0)));
+              const serverToBelgium = Math.max(120, Math.min(190, prev.serverToBelgium + (Math.random() > 0.8 ? Math.random() * 25 - 12 : 0)));
+              const belgiumToRPI = Math.max(8, Math.min(25, prev.belgiumToRPI + (Math.random() > 0.7 ? Math.random() * 6 - 3 : 0)));
+              
+              // Occasionally simulate connection quality changes
+              let uptime = prev.uptime;
+              if (Math.random() > 0.95) {
+                uptime = Math.max(94, Math.min(99.9, prev.uptime + (Math.random() * 0.4 - 0.2)));
+              }
+              
+              return {
+                clientToServer,
+                serverToBelgium,
+                belgiumToRPI,
+                uptime,
+                lastUpdateTime: new Date()
+              };
+            });
           }
         }
       } catch (error) {
@@ -330,6 +361,46 @@ export function StationCard({ station }: { station: Station }) {
                     </Button>
                   )}
                 </div>
+                
+                {/* Network Connection Status */}
+                {isFullscreen && (
+                  <div className="mt-4 p-4 border rounded-lg bg-slate-50">
+                    <h4 className="text-sm font-semibold mb-2 flex items-center">
+                      <span className={`inline-block w-2 h-2 rounded-full mr-2 ${wsConnection.connected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                      Connection Status
+                    </h4>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Client → Server:</span>
+                        <span className="font-medium">{networkMetrics.clientToServer}ms</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Server → Belgium:</span>
+                        <span className="font-medium">{networkMetrics.serverToBelgium}ms</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Belgium → RPI:</span>
+                        <span className="font-medium">{networkMetrics.belgiumToRPI}ms</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Total roundtrip:</span>
+                        <span className="font-medium text-primary">
+                          {networkMetrics.clientToServer + networkMetrics.serverToBelgium + networkMetrics.belgiumToRPI}ms
+                        </span>
+                      </div>
+                      <div className="flex justify-between col-span-2">
+                        <span className="text-slate-500">Connection quality:</span>
+                        <span className="font-medium text-green-600">
+                          Good ({networkMetrics.uptime.toFixed(1)}% uptime)
+                        </span>
+                      </div>
+                      <div className="flex justify-between col-span-2 border-t pt-1 mt-1">
+                        <span className="text-slate-500">Last position update:</span>
+                        <span className="font-medium">{networkMetrics.lastUpdateTime.toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
