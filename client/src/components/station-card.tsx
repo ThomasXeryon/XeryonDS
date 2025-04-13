@@ -35,11 +35,11 @@ export function StationCard({ station }: { station: Station }) {
   
   // Network metrics state
   const [networkMetrics, setNetworkMetrics] = useState({
-    clientToServer: 38,
-    serverToBelgium: 153,
-    belgiumToRPI: 12,
+    clientToServer: 55, // Higher value for Belgium to US connection
+    serverToBelgium: 175, // Higher latency across Atlantic
+    belgiumToRPI: 8, // Lower value for local connection in Belgium
     lastUpdateTime: new Date(),
-    uptime: 98.7
+    uptime: 98.2
   });
 
   // EPOS Display Component with consistent height and improved styling
@@ -139,15 +139,15 @@ export function StationCard({ station }: { station: Station }) {
             
             // Simulate network metric updates with random variations
             setNetworkMetrics(prev => {
-              // Generate slight variations to simulate real network conditions
-              const clientToServer = Math.max(15, Math.min(60, prev.clientToServer + (Math.random() > 0.7 ? Math.random() * 15 - 7 : 0)));
-              const serverToBelgium = Math.max(120, Math.min(190, prev.serverToBelgium + (Math.random() > 0.8 ? Math.random() * 25 - 12 : 0)));
-              const belgiumToRPI = Math.max(8, Math.min(25, prev.belgiumToRPI + (Math.random() > 0.7 ? Math.random() * 6 - 3 : 0)));
+              // Generate realistic variations to simulate US to Belgium network conditions
+              const clientToServer = Math.max(42, Math.min(80, prev.clientToServer + (Math.random() > 0.7 ? Math.random() * 20 - 8 : 0)));
+              const serverToBelgium = Math.max(150, Math.min(220, prev.serverToBelgium + (Math.random() > 0.8 ? Math.random() * 30 - 15 : 0)));
+              const belgiumToRPI = Math.max(5, Math.min(15, prev.belgiumToRPI + (Math.random() > 0.7 ? Math.random() * 4 - 2 : 0)));
               
               // Occasionally simulate connection quality changes
               let uptime = prev.uptime;
               if (Math.random() > 0.95) {
-                uptime = Math.max(94, Math.min(99.9, prev.uptime + (Math.random() * 0.4 - 0.2)));
+                uptime = Math.max(97.5, Math.min(99.5, prev.uptime + (Math.random() * 0.3 - 0.15)));
               }
               
               return {
