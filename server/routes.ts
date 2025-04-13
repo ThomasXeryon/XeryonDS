@@ -198,13 +198,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
-    ws.on("message", (data) => {
+    ws.on("message", async function(data) {
       try {
         const response = JSON.parse(data.toString());
 
         // Log position updates
         if (response.type === 'position_update') {
           console.log(`[RPi ${rpiId}] Position update:`, response.epos);
+          
+          // Record position in database if there's an active session
+          try {
+            // Check if there's an active session for this RPi ID
+            const stations = await storage.getStations();
+            const station = stations.find(s => s.rpiId === rpiId && s.status === "in_use");
+            
+            if (station && station.currentSessionLogId) {
+              // Record the position data
+              await storage.recordPosition(station.currentSessionLogId, response.epos);
+            }
+          } catch (error) {
+            console.error(`[RPi ${rpiId}] Error recording position:`, error);
+          }
+          
           // Forward position updates to relevant UI clients
           for (const client of uiConnections.values()) {
             if (client.ws.readyState === WebSocket.OPEN && client.rpiId === rpiId) {
@@ -456,6 +471,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting session logs:", error);
       res.status(500).json({ message: "Failed to fetch session logs" });
+    }
+  });
+  
+  // NEW: Session replay data endpoint
+  app.get("/api/session-replay/:sessionId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/session-replay/:sessionId GET");
+      return res.sendStatus(401);
+    }
+    
+    try {
+      const sessionId = parseInt(req.params.sessionId);
+      if (isNaN(sessionId)) {
+        return res.status(400).json({ message: "Invalid session ID" });
+      }
+      
+      const replayData = await storage.getSessionReplayData(sessionId);
+      res.json(replayData);
+    } catch (error) {
+      console.error("Error getting session replay data:", error);
+      res.status(500).json({ message: "Failed to fetch session replay data" });
+    }
+  });
+  
+  // NEW: Session analytics endpoint
+  app.get("/api/session-analytics", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/session-analytics GET");
+      return res.sendStatus(401);
+    }
+    
+    try {
+      let timeRange;
+      const { startDate, endDate } = req.query;
+      
+      if (startDate) {
+        timeRange = {
+          start: new Date(startDate as string),
+          end: endDate ? new Date(endDate as string) : new Date()
+        };
+      }
+      
+      const analytics = await storage.getSessionAnalytics(timeRange);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error getting session analytics:", error);
+      res.status(500).json({ message: "Failed to fetch session analytics" });
+    }
+  });
+  
+  // NEW: System health endpoints
+  app.get("/api/system-health/:stationId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/system-health/:stationId GET");
+      return res.sendStatus(401);
+    }
+    
+    try {
+      const stationId = parseInt(req.params.stationId);
+      if (isNaN(stationId)) {
+        return res.status(400).json({ message: "Invalid station ID" });
+      }
+      
+      const { limit } = req.query;
+      const healthData = await storage.getSystemHealth(
+        stationId, 
+        limit ? parseInt(limit as string) : 100
+      );
+      
+      res.json(healthData);
+    } catch (error) {
+      console.error("Error getting system health data:", error);
+      res.status(500).json({ message: "Failed to fetch system health data" });
+    }
+  });
+  
+  app.get("/api/system-health/:stationId/latest", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/system-health/:stationId/latest GET");
+      return res.sendStatus(401);
+    }
+    
+    try {
+      const stationId = parseInt(req.params.stationId);
+      if (isNaN(stationId)) {
+        return res.status(400).json({ message: "Invalid station ID" });
+      }
+      
+      const healthData = await storage.getLatestSystemHealth(stationId);
+      if (!healthData) {
+        return res.status(404).json({ message: "No health data found for this station" });
+      }
+      
+      res.json(healthData);
+    } catch (error) {
+      console.error("Error getting latest system health data:", error);
+      res.status(500).json({ message: "Failed to fetch latest system health data" });
+    }
+  });
+  
+  // NEW: Technical specifications endpoint
+  app.get("/api/technical-specs/:stationId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/technical-specs/:stationId GET");
+      return res.sendStatus(401);
+    }
+    
+    try {
+      const stationId = parseInt(req.params.stationId);
+      if (isNaN(stationId)) {
+        return res.status(400).json({ message: "Invalid station ID" });
+      }
+      
+      const specs = await storage.getTechnicalSpecs(stationId);
+      if (!specs) {
+        return res.status(404).json({ message: "No technical specifications found for this station" });
+      }
+      
+      res.json(specs);
+    } catch (error) {
+      console.error("Error getting technical specifications:", error);
+      res.status(500).json({ message: "Failed to fetch technical specifications" });
+    }
+  });
+  
+  // NEW: Record position data endpoint (for WebSocket integration)
+  app.post("/api/record-position", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Unauthorized access to /api/record-position POST");
+      return res.sendStatus(401);
+    }
+    
+    try {
+      const { sessionLogId, position, commandInfo } = req.body;
+      
+      if (!sessionLogId || position === undefined) {
+        return res.status(400).json({ message: "Session log ID and position are required" });
+      }
+      
+      const positionRecord = await storage.recordPosition(sessionLogId, position, commandInfo);
+      res.status(201).json(positionRecord);
+    } catch (error) {
+      console.error("Error recording position data:", error);
+      res.status(500).json({ message: "Failed to record position data" });
     }
   });
 

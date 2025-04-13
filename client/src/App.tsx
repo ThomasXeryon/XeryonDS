@@ -16,6 +16,10 @@ import { SiteTour } from "@/components/site-tour";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import FeedbackPage from "@/pages/admin/feedback-page";
+import { SessionReplayPage } from "./pages/session-replay-page";
+import { SessionAnalyticsPage } from "./pages/session-analytics-page";
+import { SystemHealthPage } from "./pages/system-health-page";
+import { TechSpecsPage } from "./pages/tech-specs-page";
 
 function AuthenticatedComponents() {
   const { user } = useAuth();
@@ -41,6 +45,13 @@ function Router() {
       <ProtectedRoute path="/admin/analytics" component={AnalyticsPage} />
       <ProtectedRoute path="/admin/feedback" component={FeedbackPage} />
       <ProtectedRoute path="/admin/settings" component={SettingsPage} />
+      
+      {/* New feature routes */}
+      <ProtectedRoute path="/session-replay/:sessionId" component={SessionReplayPage} />
+      <ProtectedRoute path="/session-analytics" component={SessionAnalyticsPage} />
+      <ProtectedRoute path="/system-health" component={SystemHealthPage} />
+      <ProtectedRoute path="/tech-specs" component={TechSpecsPage} />
+      
       <Route component={NotFound} />
     </Switch>
   );
