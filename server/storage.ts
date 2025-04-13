@@ -8,7 +8,7 @@ import {
   type InsertTechSpecs
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, desc, and, or, between, lte, gte } from "drizzle-orm";
+import { eq, sql, desc, and, or, between, lte, gte, isNull } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -127,7 +127,7 @@ export class DatabaseStorage implements IStorage {
         timestamp: new Date()
       }).returning();
       return positionPoint;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error recording position:", error);
       throw error;
     }
@@ -153,10 +153,14 @@ export class DatabaseStorage implements IStorage {
     try {
       return await db.select()
         .from(positionData)
-        .where(eq(positionData.sessionLogId, sessionLogId))
-        .where(between(positionData.timestamp, startTime, endTime))
+        .where(
+          and(
+            eq(positionData.sessionLogId, sessionLogId),
+            between(positionData.timestamp, startTime, endTime)
+          )
+        )
         .orderBy(positionData.timestamp);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error getting position data by time range:", error);
       return [];
     }
@@ -392,13 +396,14 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Get active stations
-      const stationCounts: Record<number, number> = {};
+      const stationCounts: Record<string, number> = {};
       
       for (const session of sessions) {
-        if (!stationCounts[session.stationId]) {
-          stationCounts[session.stationId] = 0;
+        const stationIdStr = session.stationId.toString();
+        if (!stationCounts[stationIdStr]) {
+          stationCounts[stationIdStr] = 0;
         }
-        stationCounts[session.stationId]++;
+        stationCounts[stationIdStr]++;
       }
       
       const activeStations = Object.entries(stationCounts).map(([stationId, count]) => ({
@@ -481,31 +486,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateStationSession(id: number, userId: number | null): Promise<Station> {
-    const [station] = await db
-      .update(stations)
-      .set({
-        status: userId ? "in_use" : "available",
-        currentUserId: userId,
-        sessionStart: userId ? new Date() : null,
-      })
-      .where(eq(stations.id, id))
-      .returning();
+    try {
+      const [station] = await db
+        .update(stations)
+        .set({
+          status: userId ? "in_use" : "available",
+          currentUserId: userId,
+          sessionStart: userId ? new Date() : null,
+        })
+        .where(eq(stations.id, id))
+        .returning();
 
-    if (userId) {
-      await this.createSessionLog(id, userId);
-    } else {
-      const [log] = await db
-        .select()
-        .from(sessionLogs)
-        .where(eq(sessionLogs.stationId, id))
-        .where(sql`${sessionLogs.endTime} IS NULL`);
+      if (userId) {
+        await this.createSessionLog(id, userId);
+      } else {
+        // Find active session logs for this station
+        const activeLogs = await db
+          .select()
+          .from(sessionLogs)
+          .where(eq(sessionLogs.stationId, id))
+          .where(sql`${sessionLogs.endTime} IS NULL`);
 
-      if (log) {
-        await this.updateSessionLog(log.id, new Date());
+        // Close any active sessions
+        for (const log of activeLogs) {
+          await this.updateSessionLog(log.id, new Date());
+        }
       }
-    }
 
-    return station;
+      return station;
+    } catch (error: any) {
+      console.error("Error updating station session:", error);
+      throw error;
+    }
   }
 
   async deleteStation(id: number): Promise<void> {
@@ -533,9 +545,9 @@ export class DatabaseStorage implements IStorage {
         .where(eq(stations.id, id))
         .returning();
       return station;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating station:", error);
-      throw new Error(`Failed to update station: ${error.message}`);
+      throw new Error(`Failed to update station: ${error?.message || 'Unknown error'}`);
     }
   }
 
@@ -557,21 +569,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSessionLog(id: number, endTime: Date): Promise<SessionLog> {
-    const [log] = await db
-      .update(sessionLogs)
-      .set({ endTime })
-      .where(eq(sessionLogs.id, id))
-      .returning();
-    return log;
+    try {
+      const [log] = await db
+        .update(sessionLogs)
+        .set({ endTime })
+        .where(eq(sessionLogs.id, id))
+        .returning();
+      return log;
+    } catch (error: any) {
+      console.error("Error updating session log:", error);
+      throw error;
+    }
   }
 
   async incrementCommandCount(sessionLogId: number): Promise<void> {
-    await db
-      .update(sessionLogs)
-      .set({
-        commandCount: sql`${sessionLogs.commandCount} + 1`
-      })
-      .where(eq(sessionLogs.id, sessionLogId));
+    try {
+      await db
+        .update(sessionLogs)
+        .set({
+          commandCount: sql`${sessionLogs.commandCount} + 1`
+        })
+        .where(eq(sessionLogs.id, sessionLogId));
+    } catch (error: any) {
+      console.error("Error incrementing command count:", error);
+      throw error;
+    }
   }
 
   async getFeedback(): Promise<Feedback[]> {
