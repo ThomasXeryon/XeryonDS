@@ -38,16 +38,12 @@ export const pool = new Pool({
   },
   connectionTimeoutMillis: 5000, // 5 second timeout
   max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  retryStrategy: (err, retriesLeft) => {
-    console.log(`Database connection error: ${err.message}. Retries left: ${retriesLeft}`);
-    return true; // Always retry
-  }
+  idleTimeoutMillis: 30000 // Close idle clients after 30 seconds
 });
 
 // Handle pool errors to prevent crashes
-pool.on('error', (err) => {
-  console.error('Unexpected database pool error:', err.message);
+pool.on('error', (err: any) => {
+  console.error('Unexpected database pool error:', err?.message);
   // Don't crash the server on connection errors
 });
 
@@ -58,12 +54,12 @@ async function validateConnection() {
     client = await pool.connect();
     console.log('Successfully connected to database');
     return true;
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error connecting to database:', {
-      code: err.code,
-      message: err.message,
-      detail: err.detail,
-      hint: err.hint
+      code: err?.code,
+      message: err?.message,
+      detail: err?.detail,
+      hint: err?.hint
     });
     
     // Don't throw an error, but let the application continue
