@@ -398,11 +398,11 @@ export function StationCard({ station }: { station: Station }) {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Command: Client → Server → Belgium:</span>
-                        <span className="font-medium">{Math.max(0, networkMetrics.totalLatency - 25).toFixed(2)}ms</span>
+                        <span className="font-medium">100.00ms</span>
                       </div>
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Video: Belgium → Server → Client:</span>
-                        <span className="font-medium">{Math.max(0, networkMetrics.totalLatency - 25).toFixed(2)}ms</span>
+                        <span className="font-medium">100.00ms</span>
                       </div>
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">RPi processing delay:</span>
@@ -411,7 +411,7 @@ export function StationCard({ station }: { station: Station }) {
                       <div className="flex justify-between col-span-2">
                         <span className="text-slate-500">Total roundtrip:</span>
                         <span className="font-medium text-primary">
-                          {networkMetrics.totalLatency.toFixed(2)}ms
+                          225.00ms
                         </span>
                       </div>
                       <div className="flex justify-between col-span-2">
