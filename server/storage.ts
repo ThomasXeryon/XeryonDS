@@ -1,7 +1,14 @@
 import session from 'express-session';
-import { users, stations, sessionLogs, feedback, type User, type InsertUser, type Station, type SessionLog, type Feedback, type InsertFeedback } from "@shared/schema";
+import { 
+  users, stations, sessionLogs, feedback, 
+  positionData, commandLogs, systemHealth, technicalSpecs,
+  type User, type InsertUser, type Station, type SessionLog, 
+  type Feedback, type InsertFeedback, type PositionDataPoint,
+  type CommandLog, type SystemHealthStatus, type TechnicalSpec,
+  type InsertTechSpecs
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc, and, or, between, lte, gte } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -15,12 +22,14 @@ interface StationUpdate {
 }
 
 interface IStorage {
+  // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserAdmin(id: number, isAdmin: boolean): Promise<User>;
 
+  // Station management
   getStations(): Promise<Station[]>;
   getStation(id: number): Promise<Station | undefined>;
   createStation(name: string, rpiId: string): Promise<Station>;
@@ -28,15 +37,61 @@ interface IStorage {
   deleteStation(id: number): Promise<void>;
   updateStation(id: number, update: Partial<StationUpdate>): Promise<Station>;
 
+  // Session management
   getSessionLogs(): Promise<SessionLog[]>;
   createSessionLog(stationId: number, userId: number): Promise<SessionLog>;
   updateSessionLog(id: number, endTime: Date): Promise<SessionLog>;
   incrementCommandCount(sessionLogId: number): Promise<void>;
 
+  // Feedback management
   getFeedback(): Promise<Feedback[]>;
   createFeedback(userId: number, feedback: InsertFeedback): Promise<Feedback>;
   updateFeedbackStatus(id: number, status: "pending" | "reviewed" | "resolved"): Promise<Feedback>;
 
+  // NEW: Position data management
+  recordPosition(sessionLogId: number, position: number, commandInfo?: {
+    type: string;
+    direction?: string;
+    stepSize?: number;
+    stepUnit?: string;
+  }): Promise<PositionDataPoint>;
+  getPositionData(sessionLogId: number): Promise<PositionDataPoint[]>;
+  getPositionDataByTimeRange(sessionLogId: number, startTime: Date, endTime: Date): Promise<PositionDataPoint[]>;
+
+  // NEW: Command logging
+  recordCommand(sessionLogId: number, command: string, direction?: string, 
+    stepSize?: number, stepUnit?: string, parameters?: any): Promise<CommandLog>;
+  getCommandLogs(sessionLogId: number): Promise<CommandLog[]>;
+
+  // NEW: System health monitoring
+  recordSystemHealth(stationId: number, status: string, metrics: {
+    connectionLatency?: number;
+    cpuUsage?: number;
+    memoryUsage?: number;
+    uptimeSeconds?: number;
+    details?: any;
+  }): Promise<SystemHealthStatus>;
+  getSystemHealth(stationId: number, limit?: number): Promise<SystemHealthStatus[]>;
+  getLatestSystemHealth(stationId: number): Promise<SystemHealthStatus | undefined>;
+
+  // NEW: Technical specifications
+  getTechnicalSpecs(stationId: number): Promise<TechnicalSpec | undefined>;
+  createOrUpdateTechnicalSpecs(specs: InsertTechSpecs): Promise<TechnicalSpec>;
+
+  // NEW: Session replay and analytics
+  getSessionReplayData(sessionId: number): Promise<{
+    session: SessionLog;
+    positions: PositionDataPoint[];
+    commands: CommandLog[];
+  }>;
+  getSessionAnalytics(timeRange?: { start: Date; end: Date }): Promise<{
+    totalSessions: number;
+    averageDuration: number;
+    commandFrequency: Record<string, number>;
+    activeStations: { stationId: number; sessionCount: number }[];
+  }>;
+
+  // Session store for authentication
   sessionStore: session.Store;
 }
 
@@ -48,6 +103,319 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true,
     });
+  }
+  
+  // NEW: Position data management
+  async recordPosition(
+    sessionLogId: number, 
+    position: number, 
+    commandInfo?: {
+      type: string;
+      direction?: string;
+      stepSize?: number;
+      stepUnit?: string;
+    }
+  ): Promise<PositionDataPoint> {
+    try {
+      const [positionPoint] = await db.insert(positionData).values({
+        sessionLogId,
+        position,
+        commandType: commandInfo?.type,
+        commandDirection: commandInfo?.direction,
+        commandStepSize: commandInfo?.stepSize,
+        commandStepUnit: commandInfo?.stepUnit,
+        timestamp: new Date()
+      }).returning();
+      return positionPoint;
+    } catch (error) {
+      console.error("Error recording position:", error);
+      throw error;
+    }
+  }
+
+  async getPositionData(sessionLogId: number): Promise<PositionDataPoint[]> {
+    try {
+      return await db.select()
+        .from(positionData)
+        .where(eq(positionData.sessionLogId, sessionLogId))
+        .orderBy(positionData.timestamp);
+    } catch (error) {
+      console.error("Error getting position data:", error);
+      return [];
+    }
+  }
+
+  async getPositionDataByTimeRange(
+    sessionLogId: number, 
+    startTime: Date, 
+    endTime: Date
+  ): Promise<PositionDataPoint[]> {
+    try {
+      return await db.select()
+        .from(positionData)
+        .where(eq(positionData.sessionLogId, sessionLogId))
+        .where(between(positionData.timestamp, startTime, endTime))
+        .orderBy(positionData.timestamp);
+    } catch (error) {
+      console.error("Error getting position data by time range:", error);
+      return [];
+    }
+  }
+
+  // NEW: Command logging
+  async recordCommand(
+    sessionLogId: number, 
+    command: string, 
+    direction?: string, 
+    stepSize?: number, 
+    stepUnit?: string, 
+    parameters?: any
+  ): Promise<CommandLog> {
+    try {
+      const [commandLog] = await db.insert(commandLogs).values({
+        sessionLogId,
+        command,
+        direction,
+        stepSize,
+        stepUnit,
+        parameters,
+        timestamp: new Date()
+      }).returning();
+      return commandLog;
+    } catch (error) {
+      console.error("Error recording command:", error);
+      throw error;
+    }
+  }
+
+  async getCommandLogs(sessionLogId: number): Promise<CommandLog[]> {
+    try {
+      return await db.select()
+        .from(commandLogs)
+        .where(eq(commandLogs.sessionLogId, sessionLogId))
+        .orderBy(commandLogs.timestamp);
+    } catch (error) {
+      console.error("Error getting command logs:", error);
+      return [];
+    }
+  }
+
+  // NEW: System health monitoring
+  async recordSystemHealth(
+    stationId: number, 
+    status: string, 
+    metrics: {
+      connectionLatency?: number;
+      cpuUsage?: number;
+      memoryUsage?: number;
+      uptimeSeconds?: number;
+      details?: any;
+    }
+  ): Promise<SystemHealthStatus> {
+    try {
+      const [healthStatus] = await db.insert(systemHealth).values({
+        stationId,
+        status,
+        connectionLatency: metrics.connectionLatency,
+        cpuUsage: metrics.cpuUsage,
+        memoryUsage: metrics.memoryUsage,
+        uptimeSeconds: metrics.uptimeSeconds,
+        details: metrics.details,
+        timestamp: new Date()
+      }).returning();
+      return healthStatus;
+    } catch (error) {
+      console.error("Error recording system health:", error);
+      throw error;
+    }
+  }
+
+  async getSystemHealth(stationId: number, limit: number = 100): Promise<SystemHealthStatus[]> {
+    try {
+      return await db.select()
+        .from(systemHealth)
+        .where(eq(systemHealth.stationId, stationId))
+        .orderBy(desc(systemHealth.timestamp))
+        .limit(limit);
+    } catch (error) {
+      console.error("Error getting system health:", error);
+      return [];
+    }
+  }
+
+  async getLatestSystemHealth(stationId: number): Promise<SystemHealthStatus | undefined> {
+    try {
+      const [healthStatus] = await db.select()
+        .from(systemHealth)
+        .where(eq(systemHealth.stationId, stationId))
+        .orderBy(desc(systemHealth.timestamp))
+        .limit(1);
+      return healthStatus;
+    } catch (error) {
+      console.error("Error getting latest system health:", error);
+      return undefined;
+    }
+  }
+
+  // NEW: Technical specifications
+  async getTechnicalSpecs(stationId: number): Promise<TechnicalSpec | undefined> {
+    try {
+      const [specs] = await db.select()
+        .from(technicalSpecs)
+        .where(eq(technicalSpecs.stationId, stationId));
+      return specs;
+    } catch (error) {
+      console.error("Error getting technical specs:", error);
+      return undefined;
+    }
+  }
+
+  async createOrUpdateTechnicalSpecs(specs: InsertTechSpecs): Promise<TechnicalSpec> {
+    try {
+      // Check if specs exist for this station
+      const existingSpecs = await this.getTechnicalSpecs(specs.stationId);
+      
+      if (existingSpecs) {
+        // Update existing specs
+        const [updatedSpecs] = await db.update(technicalSpecs)
+          .set(specs)
+          .where(eq(technicalSpecs.stationId, specs.stationId))
+          .returning();
+        return updatedSpecs;
+      } else {
+        // Create new specs
+        const [newSpecs] = await db.insert(technicalSpecs)
+          .values(specs)
+          .returning();
+        return newSpecs;
+      }
+    } catch (error) {
+      console.error("Error creating/updating technical specs:", error);
+      throw error;
+    }
+  }
+
+  // NEW: Session replay and analytics
+  async getSessionReplayData(sessionId: number): Promise<{
+    session: SessionLog;
+    positions: PositionDataPoint[];
+    commands: CommandLog[];
+  }> {
+    try {
+      // Get session details
+      const [session] = await db.select()
+        .from(sessionLogs)
+        .where(eq(sessionLogs.id, sessionId));
+      
+      if (!session) {
+        throw new Error(`Session with ID ${sessionId} not found`);
+      }
+      
+      // Get position data
+      const positions = await this.getPositionData(sessionId);
+      
+      // Get command logs
+      const commands = await this.getCommandLogs(sessionId);
+      
+      return {
+        session,
+        positions,
+        commands
+      };
+    } catch (error) {
+      console.error("Error getting session replay data:", error);
+      throw error;
+    }
+  }
+
+  async getSessionAnalytics(timeRange?: { start: Date; end: Date }): Promise<{
+    totalSessions: number;
+    averageDuration: number;
+    commandFrequency: Record<string, number>;
+    activeStations: { stationId: number; sessionCount: number }[];
+  }> {
+    try {
+      // Query to get sessions in the time range
+      let query = db.select().from(sessionLogs);
+      
+      if (timeRange) {
+        query = query.where(
+          and(
+            gte(sessionLogs.startTime, timeRange.start),
+            timeRange.end ? lte(sessionLogs.startTime, timeRange.end) : undefined
+          )
+        );
+      }
+      
+      const sessions = await query;
+      
+      // Calculate total sessions
+      const totalSessions = sessions.length;
+      
+      // Calculate average duration
+      let totalDuration = 0;
+      let completedSessions = 0;
+      
+      for (const session of sessions) {
+        if (session.startTime && session.endTime) {
+          const duration = session.endTime.getTime() - session.startTime.getTime();
+          totalDuration += duration;
+          completedSessions++;
+        }
+      }
+      
+      const averageDuration = completedSessions ? totalDuration / completedSessions : 0;
+      
+      // Get command frequency
+      const commandFrequency: Record<string, number> = {};
+      
+      // Get session IDs for the time range
+      const sessionIds = sessions.map(s => s.id);
+      
+      // Get commands for these sessions
+      if (sessionIds.length > 0) {
+        const commands = await db.select()
+          .from(commandLogs)
+          .where(
+            or(
+              ...sessionIds.map(id => eq(commandLogs.sessionLogId, id))
+            )
+          );
+        
+        // Count command frequency
+        for (const cmd of commands) {
+          if (!commandFrequency[cmd.command]) {
+            commandFrequency[cmd.command] = 0;
+          }
+          commandFrequency[cmd.command]++;
+        }
+      }
+      
+      // Get active stations
+      const stationCounts: Record<number, number> = {};
+      
+      for (const session of sessions) {
+        if (!stationCounts[session.stationId]) {
+          stationCounts[session.stationId] = 0;
+        }
+        stationCounts[session.stationId]++;
+      }
+      
+      const activeStations = Object.entries(stationCounts).map(([stationId, count]) => ({
+        stationId: parseInt(stationId),
+        sessionCount: count
+      })).sort((a, b) => b.sessionCount - a.sessionCount);
+      
+      return {
+        totalSessions,
+        averageDuration,
+        commandFrequency,
+        activeStations
+      };
+    } catch (error) {
+      console.error("Error getting session analytics:", error);
+      throw error;
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
