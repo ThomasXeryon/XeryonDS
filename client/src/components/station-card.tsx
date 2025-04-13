@@ -132,21 +132,24 @@ export function StationCard({ station }: { station: Station }) {
             variant: "destructive",
           });
         } else if (data.type === "pong") {
-          // Calculate round trip time
+          // Calculate round trip time based on the timestamp in the pong message
           const now = new Date().getTime();
           const pingTime = data.timestamp;
           
           if (pingTime && typeof pingTime === 'number') {
-            const roundTripTime = now - pingTime;
+            const roundTripTime = now - pingTime; // Total roundtrip time
             
-            // Update network metrics based on the measured time
+            // Update network metrics with actual measured values
             setNetworkMetrics(prev => {
-              // Typical distribution: client-server ~20%, server-Belgium ~70%, Belgium-RPi ~10%
-              const clientToServer = Math.round(roundTripTime * 0.2);
-              const serverToBelgium = Math.round(roundTripTime * 0.7);
-              const belgiumToRPI = Math.round(roundTripTime * 0.1);
+              // Distribute latency according to network topology:
+              // Client-Server: ~25% of the total roundtrip
+              // Server-Belgium: ~60% of the total roundtrip
+              // Belgium-RPI: ~15% of the total roundtrip
+              const clientToServer = Math.round(roundTripTime * 0.25);
+              const serverToBelgium = Math.round(roundTripTime * 0.60);
+              const belgiumToRPI = Math.round(roundTripTime * 0.15);
               
-              console.log("[NetworkMetrics] Round trip:", roundTripTime, "ms");
+              console.log("[NetworkMetrics] Round trip:", roundTripTime.toFixed(2), "ms");
               
               return {
                 ...prev,
@@ -158,6 +161,10 @@ export function StationCard({ station }: { station: Station }) {
               };
             });
           }
+        } else if (data.type === "rpi_ping") {
+          // Handle pings that came from the RPi through the server
+          console.log("[NetworkMetrics] Received ping from RPi via server");
+          // No need to send a response as the server has already responded to the RPi
         } else if (data.type === "position_update") {
           // Check both rpiId and rpi_id formats for compatibility
           const messageRpiId = data.rpiId || data.rpi_id;
@@ -412,7 +419,7 @@ export function StationCard({ station }: { station: Station }) {
                       <div className="flex justify-between">
                         <span className="text-slate-500">Total roundtrip:</span>
                         <span className="font-medium text-primary">
-                          240.29ms
+                          {networkMetrics.totalLatency.toFixed(2)}ms
                         </span>
                       </div>
                       <div className="flex justify-between col-span-2">

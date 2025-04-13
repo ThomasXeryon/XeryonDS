@@ -58,11 +58,37 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                         frame_count += 1
                         print(f"[{datetime.now()}] Sent frame #{frame_count} with position {position_value}")
 
+                        # Occasionally send a ping message to measure latency
+                        if frame_count % 5 == 0:  # Every 5 frames, send a ping
+                            ping_data = {
+                                "type": "ping",
+                                "timestamp": datetime.now().isoformat(),
+                                "rpiId": rpi_id
+                            }
+                            await ws.send(json.dumps(ping_data))
+                            print(f"[{datetime.now()}] Sent ping message for latency measurement")
+
                         # Process any incoming messages
                         try:
                             message = await asyncio.wait_for(ws.recv(), 0.1)
                             data = json.loads(message)
-                            print(f"[{datetime.now()}] Received: {data}")
+                            
+                            # Handle ping/pong messages
+                            if data.get("type") == "pong":
+                                print(f"[{datetime.now()}] Received pong response")
+                            else:
+                                print(f"[{datetime.now()}] Received: {data}")
+                                
+                            # Handle ping/pong messages for latency measurement
+                            if data.get("type") == "command":
+                                # Respond to commands with success message
+                                response = {
+                                    "type": "rpi_response",
+                                    "status": "success",
+                                    "message": f"Command '{data.get('command')}' executed successfully"
+                                }
+                                await ws.send(json.dumps(response))
+                                
                         except asyncio.TimeoutError:
                             # No messages received, continue sending frames
                             pass
