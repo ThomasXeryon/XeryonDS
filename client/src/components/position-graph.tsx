@@ -36,61 +36,52 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
     console.log(`[PositionGraph] Current position received: ${currentPosition}`);
   }, [currentPosition]);
 
-  // Direct effect for updating position data whenever currentPosition changes
-  // No interpolation, no smoothing, just raw data plotting
+  // Store the most recent position value received
   useEffect(() => {
-    // Only proceed if there's a valid position value
     if (currentPosition !== null) {
-      console.log(`[PositionGraph] Adding position to graph: ${currentPosition}`);
-      
-      // Update the reference to the latest position value
+      console.log(`[PositionGraph] Current position updated: ${currentPosition}`);
       lastPositionRef.current = currentPosition;
-      
-      // Add a new data point immediately when position changes
-      const now = Date.now();
-      
-      setPositionData(prevData => {
-        // Create a new data point with the current timestamp and position
-        const newDataPoint = {
-          time: now,
-          position: currentPosition
-        };
-        
-        // Add the new point
-        const updatedData = [...prevData, newDataPoint];
-        
-        // Filter out points older than our window size
-        const cutoffTime = now - windowSize;
-        const filtered = updatedData.filter(point => point.time >= cutoffTime);
-        
-        console.log(`[PositionGraph] Data points in chart: ${filtered.length}`);
-        return filtered;
-      });
     }
-  }, [currentPosition, windowSize]);
-  
-  // Continuous data movement effect - ensures the graph keeps scrolling even without new data
+  }, [currentPosition]);
+
+  // Main effect for continuous plotting - always runs to maintain data flow
   useEffect(() => {
-    // Set up an interval to keep the graph moving
+    // Set up an interval to keep the graph moving and add new points
     const intervalId = setInterval(() => {
       const now = Date.now();
       
       setPositionData(prevData => {
-        if (prevData.length === 0) return prevData;
+        let updatedData = [...prevData];
         
-        // We don't add any new points if there's no change,
-        // but we do filter the data to simulate movement by removing old points
+        // If we have a position value, add it to the graph with the current timestamp
+        if (lastPositionRef.current !== null) {
+          // Add a new data point with current timestamp and latest position
+          const newDataPoint = {
+            time: now,
+            position: lastPositionRef.current
+          };
+          
+          // Add the new point - this ensures we're always plotting the current value
+          // even if it hasn't changed
+          updatedData.push(newDataPoint);
+        }
+        
+        // Filter out points older than our window size to maintain the scrolling effect
         const cutoffTime = now - windowSize;
-        const filteredData = prevData.filter(point => point.time >= cutoffTime);
+        const filteredData = updatedData.filter(point => point.time >= cutoffTime);
         
-        // If we've filtered out all data points, keep at least the most recent one
-        if (filteredData.length === 0 && prevData.length > 0) {
-          return [{ ...prevData[prevData.length - 1], time: now - windowSize + 100 }];
+        // If we've filtered out all data points but we have a current position,
+        // keep at least one point at the left edge of the visible area
+        if (filteredData.length === 0 && lastPositionRef.current !== null) {
+          return [{
+            time: now - windowSize + 100,
+            position: lastPositionRef.current
+          }];
         }
         
         return filteredData;
       });
-    }, 50); // Update every 50ms for smooth scrolling
+    }, 100); // Update every 100ms - frequent enough for smooth animation but not too resource-intensive
     
     return () => {
       clearInterval(intervalId);
