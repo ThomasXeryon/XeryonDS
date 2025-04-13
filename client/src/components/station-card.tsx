@@ -213,6 +213,36 @@ export function StationCard({ station }: { station: Station }) {
         title: "Session started",
         description: "You now have control of the station",
       });
+      
+      // Send default values for motion controls when session starts
+      if (wsConnection.connected) {
+        // Default acceleration value (middle of range)
+        wsConnection.send({
+          type: "command",
+          command: "acce",
+          direction: "none",
+          rpiId: station.rpiId,
+          acce: 32750
+        });
+        
+        // Default deceleration value (middle of range)
+        wsConnection.send({
+          type: "command",
+          command: "dece",
+          direction: "none",
+          rpiId: station.rpiId,
+          dece: 32750
+        });
+        
+        // Default speed value (middle of range)
+        wsConnection.send({
+          type: "command",
+          command: "speed",
+          direction: "none",
+          rpiId: station.rpiId,
+          value: 500
+        });
+      }
     },
   });
 
@@ -225,6 +255,44 @@ export function StationCard({ station }: { station: Station }) {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
       setIsFullscreen(false);
       setShowThankYouDialog(true);
+      
+      // Send reset values for motion controls when session ends
+      if (wsConnection.connected) {
+        // Reset acceleration value (middle of range)
+        wsConnection.send({
+          type: "command",
+          command: "acce",
+          direction: "none",
+          rpiId: station.rpiId,
+          acce: 32750
+        });
+        
+        // Reset deceleration value (middle of range)
+        wsConnection.send({
+          type: "command",
+          command: "dece",
+          direction: "none",
+          rpiId: station.rpiId,
+          dece: 32750
+        });
+        
+        // Reset speed value (middle of range)
+        wsConnection.send({
+          type: "command",
+          command: "speed",
+          direction: "none",
+          rpiId: station.rpiId,
+          value: 500
+        });
+        
+        // Send stop command to ensure motion is stopped
+        wsConnection.send({
+          type: "command",
+          command: "stop",
+          direction: "none",
+          rpiId: station.rpiId
+        });
+      }
     },
   });
 
