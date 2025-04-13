@@ -5,6 +5,7 @@ import { CameraFeed } from "./camera-feed";
 import { AdvancedControls } from "./advanced-controls";
 import { ActuatorControls } from "./actuator-controls"; 
 import { SessionTimer } from "./session-timer";
+import { PositionGraph } from "./position-graph";
 import { Station } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
@@ -45,9 +46,6 @@ export function StationCard({ station }: { station: Station }) {
       </p>
     </div>
   );
-  
-  // Import the position graph component
-  const { PositionGraph } = require('./position-graph');
 
   useEffect(() => {
     // Always connect to the WebSocket to get position updates, regardless of session status
