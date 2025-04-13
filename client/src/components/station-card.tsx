@@ -49,107 +49,93 @@ export function StationCard({ station }: { station: Station }) {
 
   // Initialize and manage WebSocket connection for real-time data
   useEffect(() => {
-    // Create a robust WebSocket connection handler
-    const connectWebSocket = () => {
-      // Always connect to the WebSocket to get position updates, regardless of session status
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/appws`;
-      console.log("[StationCard] Connecting to WebSocket:", wsUrl);
-      
-      // Close existing connection if it exists
-      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-        wsRef.current.close();
-      }
+    // Always connect to the WebSocket to get position updates, regardless of session status
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/appws`;
+    console.log("[StationCard] Connecting to WebSocket:", wsUrl);
 
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
 
-      // Connection successfully opened
-      ws.onopen = () => {
-        console.log("[StationCard] WebSocket connected, registering for RPI:", station.rpiId);
-        setWsConnection({
-          connected: true,
-          send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
+    // Connection successfully opened
+    ws.onopen = () => {
+      console.log("[StationCard] WebSocket connected, registering for RPI:", station.rpiId);
+      setWsConnection({
+        connected: true,
+        send: (msg: any) => wsRef.current?.send(JSON.stringify(msg)),
+      });
+
+      // Register interest in this specific RPi right away
+      const registerMsg = {
+        type: "register",
+        rpiId: station.rpiId
+      };
+      ws.send(JSON.stringify(registerMsg));
+
+      // Only show connection toast if user has an active session
+      if (isMySession) {
+        toast({
+          title: "Connected to control system",
+          description: "You can now control the actuator",
         });
-
-        // Register interest in this specific RPi right away
-        const registerMsg = {
-          type: "register",
-          rpiId: station.rpiId
-        };
-        ws.send(JSON.stringify(registerMsg));
-
-        // Only show connection toast if user has an active session
-        if (isMySession) {
-          toast({
-            title: "Connected to control system",
-            description: "You can now control the actuator",
-          });
-        }
-      };
-
-      // Handle connection close with automatic reconnection
-      ws.onclose = () => {
-        console.log("[StationCard] WebSocket connection closed");
-        setWsConnection({ connected: false, send: () => {} });
-
-        // Attempt to reconnect after a short delay
-        setTimeout(connectWebSocket, 2000);
-      };
-
-      // Handle WebSocket errors
-      ws.onerror = (error) => {
-        console.error("[StationCard] WebSocket error:", error);
-        // Only show toast for connection errors if this is the user's active session
-        if (isMySession) {
-          toast({
-            title: "Connection error",
-            description: "Failed to connect to control system",
-            variant: "destructive",
-          });
-        }
-      };
-
-      // Handle incoming WebSocket messages
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("[StationCard] Received message:", data);
-
-          if (data.type === "error") {
-            toast({
-              title: "Control system error",
-              description: data.message,
-              variant: "destructive",
-            });
-          } else if (data.type === "position_update") {
-            // Check both rpiId and rpi_id formats for compatibility
-            const messageRpiId = data.rpiId || data.rpi_id;
-            if (messageRpiId === station.rpiId) {
-              console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
-              setCurrentEpos(parseFloat(data.epos));
-            }
-          }
-        } catch (error) {
-          console.error("[StationCard] Failed to parse message:", error);
-        }
-      };
+      }
     };
 
-    // Initial connection
-    connectWebSocket();
+    // Handle connection close with automatic reconnection
+    ws.onclose = () => {
+      console.log("[StationCard] WebSocket connection closed");
+      setWsConnection({ connected: false, send: () => {} });
+      setCurrentEpos(null);
+    };
 
-    // Heartbeat to verify connection status
-    const heartbeatInterval = setInterval(() => {
-      if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
-        console.log("[StationCard] Detected broken connection, reconnecting...");
-        connectWebSocket();
+    // Handle WebSocket errors
+    ws.onerror = (error) => {
+      console.error("[StationCard] WebSocket error:", error);
+      // Only show toast for connection errors if this is the user's active session
+      if (isMySession) {
+        toast({
+          title: "Connection error",
+          description: "Failed to connect to control system",
+          variant: "destructive",
+        });
       }
-    }, 10000);
+    };
+
+    // Handle incoming WebSocket messages
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Log only essential info to avoid console flooding
+        if (data.type === 'position_update') {
+          console.log("[StationCard] Received message:", {
+            type: data.type,
+            rpiId: data.rpiId || data.rpi_id,
+            epos: data.epos
+          });
+        }
+
+        if (data.type === "error") {
+          toast({
+            title: "Control system error",
+            description: data.message,
+            variant: "destructive",
+          });
+        } else if (data.type === "position_update") {
+          // Check both rpiId and rpi_id formats for compatibility
+          const messageRpiId = data.rpiId || data.rpi_id;
+          if (messageRpiId === station.rpiId) {
+            console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
+            setCurrentEpos(parseFloat(data.epos));
+          }
+        }
+      } catch (error) {
+        console.error("[StationCard] Failed to parse message:", error);
+      }
+    };
 
     // Cleanup function
     return () => {
-      clearInterval(heartbeatInterval);
       if (wsRef.current) {
         console.log("[StationCard] Cleaning up WebSocket connection");
         wsRef.current.close();
