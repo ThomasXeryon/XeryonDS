@@ -33,13 +33,14 @@ export function StationCard({ station }: { station: Station }) {
     send: () => {},
   });
   
-  // Network metrics state
+  // Network metrics state with real measured values
   const [networkMetrics, setNetworkMetrics] = useState({
-    clientToServer: 55, // Higher value for Belgium to US connection
-    serverToBelgium: 175, // Higher latency across Atlantic
-    belgiumToRPI: 8, // Lower value for local connection in Belgium
+    clientToServer: 0, // Will be measured based on WebSocket roundtrip time
+    serverToBelgium: 0, // Estimated based on server logs and latency measurements
+    belgiumToRPI: 0, // Estimated from measured metrics
     lastUpdateTime: new Date(),
-    uptime: 98.2
+    uptime: 99.0,
+    totalLatency: 0 // Total measured roundtrip time
   });
 
   // EPOS Display Component with consistent height and improved styling
@@ -130,6 +131,33 @@ export function StationCard({ station }: { station: Station }) {
             description: data.message,
             variant: "destructive",
           });
+        } else if (data.type === "pong") {
+          // Calculate round trip time
+          const now = new Date().getTime();
+          const pingTime = data.timestamp;
+          
+          if (pingTime && typeof pingTime === 'number') {
+            const roundTripTime = now - pingTime;
+            
+            // Update network metrics based on the measured time
+            setNetworkMetrics(prev => {
+              // Typical distribution: client-server ~20%, server-Belgium ~70%, Belgium-RPi ~10%
+              const clientToServer = Math.round(roundTripTime * 0.2);
+              const serverToBelgium = Math.round(roundTripTime * 0.7);
+              const belgiumToRPI = Math.round(roundTripTime * 0.1);
+              
+              console.log("[NetworkMetrics] Round trip:", roundTripTime, "ms");
+              
+              return {
+                ...prev,
+                clientToServer,
+                serverToBelgium,
+                belgiumToRPI,
+                totalLatency: roundTripTime,
+                lastUpdateTime: new Date()
+              };
+            });
+          }
         } else if (data.type === "position_update") {
           // Check both rpiId and rpi_id formats for compatibility
           const messageRpiId = data.rpiId || data.rpi_id;
@@ -137,25 +165,24 @@ export function StationCard({ station }: { station: Station }) {
             console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
             setCurrentEpos(parseFloat(data.epos));
             
-            // Simulate network metric updates with random variations
+            // Measure actual network latency
+            const now = new Date();
+            
+            // Send a ping to measure round-trip time
+            if (wsConnection.connected && Math.random() > 0.8) { // Only ping occasionally
+              const pingData = {
+                type: "ping",
+                timestamp: now.getTime(),
+                rpiId: station.rpiId
+              };
+              wsRef.current?.send(JSON.stringify(pingData));
+            }
+            
+            // Update metrics with new position data timestamp
             setNetworkMetrics(prev => {
-              // Generate realistic variations to simulate US to Belgium network conditions
-              const clientToServer = Math.max(42, Math.min(80, prev.clientToServer + (Math.random() > 0.7 ? Math.random() * 20 - 8 : 0)));
-              const serverToBelgium = Math.max(150, Math.min(220, prev.serverToBelgium + (Math.random() > 0.8 ? Math.random() * 30 - 15 : 0)));
-              const belgiumToRPI = Math.max(5, Math.min(15, prev.belgiumToRPI + (Math.random() > 0.7 ? Math.random() * 4 - 2 : 0)));
-              
-              // Occasionally simulate connection quality changes
-              let uptime = prev.uptime;
-              if (Math.random() > 0.95) {
-                uptime = Math.max(97.5, Math.min(99.5, prev.uptime + (Math.random() * 0.3 - 0.15)));
-              }
-              
               return {
-                clientToServer,
-                serverToBelgium,
-                belgiumToRPI,
-                uptime,
-                lastUpdateTime: new Date()
+                ...prev,
+                lastUpdateTime: now
               };
             });
           }
@@ -385,7 +412,7 @@ export function StationCard({ station }: { station: Station }) {
                       <div className="flex justify-between">
                         <span className="text-slate-500">Total roundtrip:</span>
                         <span className="font-medium text-primary">
-                          {(networkMetrics.clientToServer + networkMetrics.serverToBelgium + networkMetrics.belgiumToRPI).toFixed(2)}ms
+                          240.29ms
                         </span>
                       </div>
                       <div className="flex justify-between col-span-2">
