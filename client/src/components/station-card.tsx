@@ -45,6 +45,9 @@ export function StationCard({ station }: { station: Station }) {
       </p>
     </div>
   );
+  
+  // Import the position graph component
+  const { PositionGraph } = require('./position-graph');
 
   useEffect(() => {
     // Always connect to the WebSocket to get position updates, regardless of session status
@@ -130,7 +133,7 @@ export function StationCard({ station }: { station: Station }) {
         const data = JSON.parse(event.data);
         console.log("[StationCard] Received message:", {
           type: data.type,
-          rpiId: data.rpi_id,
+          rpiId: data.rpiId || data.rpi_id,
           epos: data.type === 'position_update' ? data.epos : undefined
         });
 
@@ -140,9 +143,13 @@ export function StationCard({ station }: { station: Station }) {
             description: data.message,
             variant: "destructive",
           });
-        } else if (data.type === "position_update" && data.rpi_id === station.rpiId) {
-          console.log(`[StationCard] Position update for ${data.rpi_id}:`, data.epos);
-          setCurrentEpos(parseFloat(data.epos));
+        } else if (data.type === "position_update") {
+          // Check both rpiId and rpi_id formats for compatibility
+          const messageRpiId = data.rpiId || data.rpi_id;
+          if (messageRpiId === station.rpiId) {
+            console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
+            setCurrentEpos(parseFloat(data.epos));
+          }
         }
       } catch (error) {
         console.error("[StationCard] Failed to parse message:", error);
@@ -277,14 +284,20 @@ export function StationCard({ station }: { station: Station }) {
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
-            <div className="grid grid-cols-[1fr,300px] gap-8">
+            <div className="grid grid-cols-[400px,1fr,350px] gap-6">
               <div>
                 <EPOSDisplay />
-                <div className="mt-4 h-[600px]">
+                <div className="mt-2 h-[500px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
-              <div className="space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Position Monitoring</h3>
+                <div className="h-[500px] bg-slate-50 rounded-lg p-4">
+                  <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
+                </div>
+              </div>
+              <div className="space-y-6">
                 <AdvancedControls
                   station={station}
                   enabled={isMySession}
