@@ -143,7 +143,7 @@ export const insertTechSpecsSchema = createInsertSchema(technicalSpecs)
 export type InsertTechSpecs = z.infer<typeof insertTechSpecsSchema>;
 
 export type WebSocketMessage = {
-  type: "move" | "stop" | "step" | "scan" | "speed" | "demo_start" | "demo_stop" | "home";
+  type: "move" | "stop" | "step" | "scan" | "speed" | "acce" | "dece" | "demo_start" | "demo_stop" | "home";
   direction?: "up" | "down" | "left" | "right";
   value?: number;
   stationId: number;
@@ -151,6 +151,8 @@ export type WebSocketMessage = {
   command: string;
   stepSize?: number;
   stepUnit?: string;
+  acce?: number;  // Acceleration 0-65500
+  dece?: number;  // Deceleration 0-65500
 };
 
 export type RPiResponse = {

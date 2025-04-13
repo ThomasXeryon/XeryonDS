@@ -147,8 +147,17 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                             direction = data.get('direction', 'none')
                             stepSize = data.get('stepSize', 0)
                             stepUnit = data.get('stepUnit', 'mm')
+                            acce = data.get('acce', None)  # Acceleration parameter
+                            dece = data.get('dece', None)  # Deceleration parameter
                             
-                            print(f"[{datetime.now()}] Received command: {command} {direction} {stepSize}{stepUnit}")
+                            # Build command display string with acceleration/deceleration if present
+                            cmd_str = f"{command} {direction} {stepSize}{stepUnit}"
+                            if acce is not None:
+                                cmd_str += f" ACCE:{acce}"
+                            if dece is not None:
+                                cmd_str += f" DECE:{dece}"
+                                
+                            print(f"[{datetime.now()}] Received command: {cmd_str}")
                             
                             # Respond to commands with success message
                             response = {

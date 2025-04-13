@@ -252,7 +252,12 @@ export function StationCard({ station }: { station: Station }) {
     },
   });
 
-  const handleCommand = (command: string, direction?: string, options?: { stepSize?: number; stepUnit?: string }) => {
+  const handleCommand = (command: string, direction?: string, options?: { 
+    stepSize?: number; 
+    stepUnit?: string;
+    acce?: number;
+    dece?: number;
+  }) => {
     if (wsConnection.connected) {
       console.log("[StationCard] Sending command:", { command, direction, rpiId: station.rpiId, ...options });
       wsConnection.send({
@@ -261,7 +266,9 @@ export function StationCard({ station }: { station: Station }) {
         direction: direction || "none",
         rpiId: station.rpiId,
         stepSize: options?.stepSize,
-        stepUnit: options?.stepUnit
+        stepUnit: options?.stepUnit,
+        acce: options?.acce,      // Acceleration parameter
+        dece: options?.dece       // Deceleration parameter
       });
     }
   };

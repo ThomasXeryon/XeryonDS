@@ -20,6 +20,8 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
   const { toast } = useToast();
   const [stepSize, setStepSize] = useState<string>("1.0");
   const [stepUnit, setStepUnit] = useState<string>("mm");
+  const [acce, setAcce] = useState<number | undefined>(undefined); // Acceleration parameter from advanced controls
+  const [dece, setDece] = useState<number | undefined>(undefined); // Deceleration parameter from advanced controls
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
   let reconnectTimer: number | null = null;
@@ -153,7 +155,9 @@ export function ActuatorControls({ stationId, rpiId, enabled, onConnectionChange
       rpiId,
       command: commandStr,
       stepSize: parseFloat(stepSize),
-      stepUnit
+      stepUnit,
+      acce, // Include acceleration parameter if available
+      dece  // Include deceleration parameter if available
     };
 
     try {

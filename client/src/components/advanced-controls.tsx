@@ -6,24 +6,51 @@ import { MinusCircle, PlusCircle, Square, Play, StopCircle, Home } from "lucide-
 import { Station } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface AdvancedControlsProps {
   station: Station;
   enabled: boolean;
   isConnected: boolean;
-  onCommand: (command: string, direction?: string, options?: { stepSize?: number; stepUnit?: string }) => void;
+  onCommand: (command: string, direction?: string, options?: { 
+    stepSize?: number; 
+    stepUnit?: string;
+    acce?: number;
+    dece?: number;
+  }) => void;
 }
 
 export function AdvancedControls({ station, enabled, isConnected, onCommand }: AdvancedControlsProps) {
   const [stepSize, setStepSize] = useState("1.0");
   const [stepUnit, setStepUnit] = useState("mm");
   const [speed, setSpeed] = useState([500]); // Default to middle of range
+  const [acceleration, setAcceleration] = useState([32750]); // Default to middle of ACCE range (0-65500)
+  const [deceleration, setDeceleration] = useState([32750]); // Default to middle of DECE range (0-65500)
   const [isDemoRunning, setIsDemoRunning] = useState(false);
+  
+  // Store initial values to avoid sending unnecessary commands
+  const initialAcceleration = 32750;
+  const initialDeceleration = 32750;
 
+  // Handle speed changes
   const handleSpeedChange = (value: number[]) => {
     setSpeed(value);
     if (!enabled || !isConnected) return;
     onCommand("speed", value[0].toString());
+  };
+  
+  // Handle acceleration changes
+  const handleAccelerationChange = (value: number[]) => {
+    setAcceleration(value);
+    if (!enabled || !isConnected) return;
+    onCommand("acce", value[0].toString());
+  };
+  
+  // Handle deceleration changes
+  const handleDecelerationChange = (value: number[]) => {
+    setDeceleration(value);
+    if (!enabled || !isConnected) return;
+    onCommand("dece", value[0].toString());
   };
   
   // Handle step size input change
@@ -35,7 +62,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
     }
   };
   
-  // Enhanced command handling with step size and unit
+  // Enhanced command handling with step size, unit, and motion parameters
   const handleCommand = (command: string, direction?: string) => {
     if (!enabled || !isConnected) return;
     
@@ -43,7 +70,14 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
     if (command === "move" || command === "step") {
       onCommand(command, direction, {
         stepSize: parseFloat(stepSize) || 1.0,
-        stepUnit
+        stepUnit,
+        acce: acceleration[0],
+        dece: deceleration[0]
+      });
+    } else if (command === "scan") {
+      onCommand(command, direction, {
+        acce: acceleration[0],
+        dece: deceleration[0]
       });
     } else {
       onCommand(command, direction);
@@ -168,8 +202,50 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
         />
       </div>
 
+      {/* Advanced Motion Control Section */}
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="motion-control">
+          <AccordionTrigger className="text-sm font-medium">Advanced Motion Control</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-4 pt-2">
+              {/* Acceleration Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Acceleration (ACCE)</label>
+                  <span className="text-sm font-semibold">{acceleration[0]}</span>
+                </div>
+                <Slider
+                  value={acceleration}
+                  onValueChange={handleAccelerationChange}
+                  max={65500}
+                  step={100}
+                  disabled={!enabled || !isConnected}
+                  className="py-1"
+                />
+              </div>
+              
+              {/* Deceleration Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Deceleration (DECE)</label>
+                  <span className="text-sm font-semibold">{deceleration[0]}</span>
+                </div>
+                <Slider
+                  value={deceleration}
+                  onValueChange={handleDecelerationChange}
+                  max={65500}
+                  step={100}
+                  disabled={!enabled || !isConnected}
+                  className="py-1"
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      
       {/* Demo Controls with consistent height */}
-      <div className="grid grid-cols-2 gap-3 mx-auto w-full pt-1">
+      <div className="grid grid-cols-2 gap-3 mx-auto w-full pt-3">
         <Button
           className="w-full h-10"
           variant={isDemoRunning ? "outline" : "default"}
