@@ -43,14 +43,14 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
   const handleAccelerationChange = (value: number[]) => {
     setAcceleration(value);
     if (!enabled || !isConnected) return;
-    onCommand("acce", value[0].toString());
+    onCommand("acceleration", value[0].toString());
   };
   
   // Handle deceleration changes
   const handleDecelerationChange = (value: number[]) => {
     setDeceleration(value);
     if (!enabled || !isConnected) return;
-    onCommand("dece", value[0].toString());
+    onCommand("deceleration", value[0].toString());
   };
   
   // Handle step size input change
@@ -211,7 +211,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
               {/* Acceleration Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium">Acceleration (ACCE)</label>
+                  <label className="text-sm font-medium">Acceleration</label>
                   <span className="text-sm font-semibold">{acceleration[0]}</span>
                 </div>
                 <Slider
@@ -227,7 +227,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
               {/* Deceleration Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium">Deceleration (DECE)</label>
+                  <label className="text-sm font-medium">Deceleration</label>
                   <span className="text-sm font-semibold">{deceleration[0]}</span>
                 </div>
                 <Slider

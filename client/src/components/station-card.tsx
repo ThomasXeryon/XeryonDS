@@ -219,7 +219,7 @@ export function StationCard({ station }: { station: Station }) {
         // Default acceleration value (middle of range)
         wsConnection.send({
           type: "command",
-          command: "acce",
+          command: "acceleration", // Changed from 'acce' to 'acceleration'
           direction: "none",
           rpiId: station.rpiId,
           acce: 32750
@@ -261,7 +261,7 @@ export function StationCard({ station }: { station: Station }) {
         // Reset acceleration value (middle of range)
         wsConnection.send({
           type: "command",
-          command: "acce",
+          command: "acceleration", // Changed from 'acce' to 'acceleration'
           direction: "none",
           rpiId: station.rpiId,
           acce: 32750
@@ -270,7 +270,7 @@ export function StationCard({ station }: { station: Station }) {
         // Reset deceleration value (middle of range)
         wsConnection.send({
           type: "command",
-          command: "dece",
+          command: "deceleration", // Changed from 'dece' to 'deceleration'
           direction: "none",
           rpiId: station.rpiId,
           dece: 32750

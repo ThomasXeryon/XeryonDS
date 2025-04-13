@@ -150,6 +150,13 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                             acce = data.get('acce', None)  # Acceleration parameter
                             dece = data.get('dece', None)  # Deceleration parameter
                             
+                            # Handle both old and new command names
+                            display_command = command
+                            if command == 'acceleration' or command == 'acce':
+                                display_command = 'acceleration'
+                            elif command == 'deceleration' or command == 'dece':
+                                display_command = 'deceleration'
+                            
                             # Create cleaner command display string without duplication or parameter names
                             cmd_display = f"{direction} {stepSize}{stepUnit}"
                             if acce is not None:
@@ -157,13 +164,13 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                             if dece is not None:
                                 cmd_display += f" {dece}"  # Deceleration value without parameter name
                                 
-                            print(f"[{datetime.now()}] Received command: {command} ({cmd_display})")
+                            print(f"[{datetime.now()}] Received command: {display_command} ({cmd_display})")
                             
                             # Respond to commands with success message
                             response = {
                                 "type": "rpi_response",
                                 "status": "success",
-                                "message": f"Command '{command}' executed successfully"
+                                "message": f"Command '{display_command}' executed successfully"
                             }
                             await control_ws.send(json.dumps(response))
                         else:
