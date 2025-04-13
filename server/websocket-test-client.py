@@ -150,12 +150,12 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                             acce = data.get('acce', None)  # Acceleration parameter
                             dece = data.get('dece', None)  # Deceleration parameter
                             
-                            # Create cleaner command display string without duplication
+                            # Create cleaner command display string without duplication or parameter names
                             cmd_display = f"{direction} {stepSize}{stepUnit}"
                             if acce is not None:
-                                cmd_display += f" ACCE:{acce}"
+                                cmd_display += f" {acce}"  # Acceleration value without parameter name
                             if dece is not None:
-                                cmd_display += f" DECE:{dece}"
+                                cmd_display += f" {dece}"  # Deceleration value without parameter name
                                 
                             print(f"[{datetime.now()}] Received command: {command} ({cmd_display})")
                             
