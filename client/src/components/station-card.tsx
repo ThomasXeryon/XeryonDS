@@ -397,11 +397,11 @@ export function StationCard({ station }: { station: Station }) {
                     </h4>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                       <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">Command: Client → Server → Belgium:</span>
+                        <span className="text-slate-500">Command: User → Server → Xeryon:</span>
                         <span className="font-medium">100.00ms</span>
                       </div>
                       <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">Video: Belgium → Server → Client:</span>
+                        <span className="text-slate-500">Video: Xeryon → Server → User:</span>
                         <span className="font-medium">100.00ms</span>
                       </div>
                       <div className="flex justify-between col-span-2">
