@@ -184,8 +184,37 @@ def stop_controller(ctrl):
 
 
 async def run_demo():
-    """Run an exciting, highly dynamic Xeryon demo with random patterns."""
+    """Import and run the new no-bullshit demo."""
     global demo_running, axis
+    
+    # First set demo_running flag
+    demo_running = True
+    
+    # Try to use the import helper to make our module available
+    try:
+        import import_helper
+        import_helper.install_new_demo()
+    except ImportError:
+        logger.info("Could not find import_helper module")
+    
+    # Try to import and run the new demo program
+    try:
+        # Add current directory to path if needed
+        import sys, os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if current_dir not in sys.path:
+            sys.path.append(current_dir)
+            
+        # Import directly with a fixed name
+        import new_demo_program
+        logger.info("STARTING NEW BULLET-PROOF DEMO PROGRAM")
+        await new_demo_program.run_demo(axis)
+        return
+    except ImportError as e:
+        logger.info(f"New demo program not found: {str(e)}, falling back to built-in demo")
+        # Continue with the built-in demo below if import fails
+    except Exception as e:
+        logger.error(f"Error running new demo: {str(e)}, falling back to built-in demo")
     demo_running = True
     demo_start_time = time.time()
     MAX_DEMO_DURATION = 300  # 5 minutes in seconds
