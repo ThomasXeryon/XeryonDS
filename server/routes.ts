@@ -286,6 +286,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           connectionType = response.connectionType || 'camera';
           console.log(`[RPi ${rpiId}] Registered as ${connectionType} connection`);
           
+          // If this is a simulator connection without explicit type, register it as both camera and control
+          if (rpiId.includes('RPI') && !response.connectionType) {
+            console.log(`[RPi ${rpiId}] Auto-registering as combined connection for simulator`);
+            connectionType = 'combined';
+          }
+          
           // Store the connection with its type
           rpiConnections.set(rpiId, { 
             ws, 
