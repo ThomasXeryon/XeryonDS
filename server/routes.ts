@@ -463,6 +463,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Log the connection type being used to handle the command
+        console.log(`[WebSocket] Using ${rpiConnection.connectionType} connection to handle control command for RPi ${message.rpiId}`);
+        
         if (rpiConnection.ws.readyState !== WebSocket.OPEN) {
           console.log(`[WebSocket] RPi ${message.rpiId} control connection not ready`);
           ws.send(JSON.stringify({

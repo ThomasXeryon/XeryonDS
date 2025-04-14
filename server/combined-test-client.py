@@ -2,211 +2,238 @@ import asyncio
 import websockets
 import json
 import base64
-import cv2
 import time
 import sys
 import random
 import math
 from datetime import datetime
 
-# Configuration
-STATION_ID = "RPI1"
-TARGET_FPS = 15
+# Connection settings
 MAX_RECONNECT_ATTEMPTS = 10
-CONNECTION_TIMEOUT = 10  # seconds
-
-# Use hostname for websocket connection
-SERVER_URL = f"ws://localhost:5000/rpi/{STATION_ID}"
+RECONNECT_DELAY_BASE = 1.0
+JITTER_MAX = 0.5
+SERVER_URL = "ws://localhost:5000/rpi/"
 
 async def rpi_combined_connection(rpi_id, url, max_attempts=MAX_RECONNECT_ATTEMPTS):
     """Establish a COMBINED connection for both camera and control"""
-    attempt = 1
-    connection_id = f"combined_{int(time.time())}"
+    attempt = 0
     
-    while attempt <= max_attempts:
+    while attempt < max_attempts:
         try:
-            print(f"Starting COMBINED connection to: {url} (attempt {attempt}/{max_attempts})")
+            print(f"[{datetime.now()}] Starting COMBINED connection to: {url} (attempt {attempt+1}/{max_attempts})")
             
-            # Add a unique identifier to prevent caching issues
-            combined_url = f"{url}?type=combined&id={connection_id}"
+            # Add connection options for reliability
+            websocket = await websockets.connect(
+                url,
+                ping_interval=5,
+                ping_timeout=3,
+                close_timeout=2
+            )
             
-            async with websockets.connect(combined_url, ping_interval=None) as websocket:
-                # Register as combined connection
-                await websocket.send(json.dumps({
-                    "type": "register",
-                    "rpiId": rpi_id,
-                    "connectionType": "combined",
-                    "status": "ready",
-                    "message": f"RPi {rpi_id} combined connection established"
-                }))
-                
-                print(f"Combined connection established to {url}")
-                
-                # Start tasks for sending frames and handling commands
-                frame_task = asyncio.create_task(send_frames(websocket, rpi_id))
-                command_task = asyncio.create_task(handle_commands(websocket, rpi_id))
-                
-                # Keep the connection alive until it's closed
-                try:
-                    await asyncio.gather(frame_task, command_task)
-                except asyncio.CancelledError:
-                    # Cancel tasks if the connection is closed
-                    if not frame_task.done():
-                        frame_task.cancel()
-                    if not command_task.done():
-                        command_task.cancel()
-                    raise
-                
-                print("Connection closed, attempting reconnect...")
-                return  # Exit on clean close
-        
+            print(f"[{datetime.now()}] Combined connection established to {url}")
+            
+            # Send registration message with combined type
+            register_msg = {
+                "type": "register",
+                "rpiId": rpi_id,
+                "connectionType": "combined",
+                "status": "ready",
+                "message": f"RPi {rpi_id} combined connection initialized"
+            }
+            await websocket.send(json.dumps(register_msg))
+            
+            return websocket
+            
         except Exception as e:
-            print(f"Connection error (attempt {attempt}/{max_attempts}): {str(e)}")
             attempt += 1
-            # Exponential backoff for reconnection attempts
-            await asyncio.sleep(min(30, 2 ** (attempt - 1)))
-    
-    print("Max reconnection attempts reached, giving up")
+            print(f"[{datetime.now()}] Combined connection attempt {attempt} failed: {str(e)}")
+            
+            if attempt >= max_attempts:
+                print(f"[{datetime.now()}] Maximum connection attempts reached. Giving up.")
+                raise
+            
+            # Calculate backoff delay with jitter
+            delay = RECONNECT_DELAY_BASE * (1.5 ** attempt) + random.uniform(0, JITTER_MAX)
+            print(f"[{datetime.now()}] Retrying connection in {delay:.2f} seconds...")
+            await asyncio.sleep(delay)
 
 async def send_frames(websocket, rpi_id):
     """Send simulated camera frames"""
-    frame_count = 0
-    position = 10.0  # Start position
-    amplitude = 5.0  # Amplitude of the sine wave
-    period = 30.0    # Period of the sine wave in seconds
-    last_frame_time = time.time()
+    frame_number = 0
     
-    while True:
-        try:
-            # Generate a simulated position based on a sine wave
-            current_time = time.time()
-            elapsed = current_time - last_frame_time
-            
-            # Rate limit frame sending to target FPS
-            frame_interval = 1.0 / TARGET_FPS
-            if elapsed < frame_interval:
-                await asyncio.sleep(frame_interval - elapsed)
-            
-            # Update position with sine wave
-            last_frame_time = time.time()
-            position = 10.0 + amplitude * math.sin((last_frame_time % period) / period * 2 * math.pi)
-            
-            # Generate simulated video frame
-            frame = create_test_frame(frame_count, position)
-            
-            # Send position update
-            position_message = {
-                "type": "position_update",
-                "rpiId": rpi_id,
-                "epos": round(position, 3),
-                "timestamp": datetime.now().isoformat()
-            }
-            await websocket.send(json.dumps(position_message))
-            
-            # Encode and send frame
-            _, buffer = cv2.imencode('.jpg', frame)
-            jpg_as_text = base64.b64encode(buffer).decode('utf-8')
-            
-            frame_message = {
-                "type": "camera_frame",
-                "rpiId": rpi_id,
-                "frame": jpg_as_text,
-                "timestamp": datetime.now().isoformat()
-            }
-            await websocket.send(json.dumps(frame_message))
-            frame_count += 1
-            
-            # Send ping message every 5 seconds for latency measurement
-            if frame_count % (TARGET_FPS * 5) == 0:
-                print(f"Sent ping message for latency measurement")
-                ping_message = {
-                    "type": "ping",
+    try:
+        # Sine wave oscillation for position
+        import math
+        while True:
+            try:
+                frame_number += 1
+                
+                # Calculate position using sine wave (oscillates between 5-15)
+                t = frame_number / 10.0  # Time variable
+                position = 10 + 5 * math.sin(t / 3.0)  # Sine wave centered at 10 with amplitude 5
+                
+                # Create a test frame
+                frame_data = create_test_frame(frame_number, position)
+                
+                # Send frame as camera_frame message
+                camera_msg = {
+                    "type": "camera_frame",
                     "rpiId": rpi_id,
-                    "timestamp": datetime.now().isoformat()
+                    "frame": frame_data
                 }
-                await websocket.send(json.dumps(ping_message))
-            
-            # Small delay between frames
-            await asyncio.sleep(0.1)
-            
-        except Exception as e:
-            print(f"Error in send_frames: {str(e)}")
-            break
+                await websocket.send(json.dumps(camera_msg))
+                
+                # Send position update
+                position_msg = {
+                    "type": "position_update",
+                    "rpiId": rpi_id,
+                    "epos": position
+                }
+                await websocket.send(json.dumps(position_msg))
+                
+                print(f"[{datetime.now()}] Sent frame #{frame_number} with position {position:.3f}")
+                
+                # Send a ping every 25 frames (about 5 seconds)
+                if frame_number % 5 == 0:
+                    ping_msg = {
+                        "type": "ping",
+                        "timestamp": time.time() * 1000,  # Milliseconds timestamp
+                        "rpiId": rpi_id
+                    }
+                    await websocket.send(json.dumps(ping_msg))
+                    print(f"[{datetime.now()}] Sent ping message for latency measurement")
+                    
+                    # Instead of actively waiting for pong, just continue
+                    # The handle_commands coroutine will handle the pong when it arrives
+                    print(f"[{datetime.now()}] Ping sent, pong will be handled by command processor")
+                
+                # Wait before sending next frame
+                await asyncio.sleep(1.0)
+                
+            except websockets.exceptions.ConnectionClosed:
+                print(f"[{datetime.now()}] Connection closed")
+                break
+                
+    except Exception as e:
+        print(f"[{datetime.now()}] Error in send_frames: {str(e)}")
 
 async def handle_commands(websocket, rpi_id):
     """Handle received command messages"""
-    while True:
-        try:
-            message = await websocket.recv()
-            data = json.loads(message)
+    try:
+        while True:
+            try:
+                # Wait for incoming commands
+                message = await websocket.recv()
+                message_data = json.loads(message)
+                
+                if message_data.get("type") == "command":
+                    # Extract command information
+                    command = message_data.get("command", "unknown")
+                    direction = message_data.get("direction", "none")
+                    step_size = message_data.get("stepSize", 0)
+                    step_unit = message_data.get("stepUnit", "mm")
+                    
+                    # Process the command
+                    print(f"[{datetime.now()}] Received command: {command} {direction} {step_size}{step_unit}")
+                    
+                    # Simulate processing time
+                    await asyncio.sleep(0.05)
+                    
+                    # Send acknowledgment response
+                    response = {
+                        "type": "command_processed",
+                        "rpiId": rpi_id,
+                        "command": command,
+                        "result": "success",
+                        "message": f"Executed {command} {direction} {step_size}{step_unit}"
+                    }
+                    await websocket.send(json.dumps(response))
+                    
+                # Handle ping messages (from UI or server)
+                elif message_data.get("type") == "ping":
+                    # Respond with pong
+                    pong_msg = {
+                        "type": "pong",
+                        "timestamp": message_data.get("timestamp"),
+                        "rpiId": rpi_id
+                    }
+                    await websocket.send(json.dumps(pong_msg))
             
-            if data.get("type") == "pong":
-                print(f"Received pong response on combined connection")
+            except json.JSONDecodeError:
+                print(f"[{datetime.now()}] Received invalid JSON: {message}")
                 continue
-            
-            if data.get("type") == "command":
-                command = data.get("command", "unknown")
-                direction = data.get("direction", "none")
-                step_size = data.get("stepSize")
                 
-                print(f"Received command: {command}, direction: {direction}, stepSize: {step_size}")
-                
-                # Send a response back confirming command receipt
-                response = {
-                    "type": "rpi_response",
-                    "rpiId": rpi_id,
-                    "status": "success",
-                    "message": f"Executed command '{command}' with direction '{direction}'",
-                    "command": command,
-                    "direction": direction
-                }
-                await websocket.send(json.dumps(response))
-            
-        except Exception as e:
-            print(f"Error in handle_commands: {str(e)}")
-            break
+    except websockets.exceptions.ConnectionClosed:
+        print(f"[{datetime.now()}] Connection closed while handling commands")
+    except Exception as e:
+        print(f"[{datetime.now()}] Error in handle_commands: {str(e)}")
 
 def create_test_frame(frame_number, position):
-    """Create a simulated video frame with position information"""
-    # Create a black frame
-    frame = np.zeros((480, 640, 3), np.uint8)
+    """Create a simulated test pattern as a base64 string"""
+    # Simple text-based representation with frame data
+    frame_data = f"""
+    ==========================================
+    |  XERYON TEST PATTERN - FRAME {frame_number:05d}  |
+    ==========================================
+    |                                        |
+    |  Current Position: {position:.3f} mm         |
+    |                                        |
+    |  {datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]}  |
+    |                                        |
+    ==========================================
+    """
     
-    # Add frame number and position
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-    cv2.putText(frame, f"Frame: {frame_number}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(frame, f"Position: {position:.3f} mm", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(frame, timestamp, (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    # Convert to base64
+    frame_bytes = frame_data.encode('utf-8')
+    base64_data = base64.b64encode(frame_bytes).decode('utf-8')
     
-    # Add a moving element to simulate motion
-    center_x = int(320 + 200 * math.sin((position - 10) / 5 * math.pi))
-    cv2.circle(frame, (center_x, 240), 30, (0, 0, 255), -1)
-    
-    # Draw a grid
-    for x in range(0, 641, 80):
-        cv2.line(frame, (x, 0), (x, 480), (50, 50, 50), 1)
-    for y in range(0, 481, 80):
-        cv2.line(frame, (0, y), (640, y), (50, 50, 50), 1)
-    
-    return frame
+    return base64_data
 
 async def main():
     """Main entry point"""
-    # Use command line argument for RPi ID if provided
-    rpi_id = STATION_ID
-    if len(sys.argv) > 1:
-        rpi_id = sys.argv[1]
+    # Get RPi ID from command line argument or use default
+    rpi_id = sys.argv[1] if len(sys.argv) > 1 else 'RPI1'
     
-    server_url = SERVER_URL
-    if len(sys.argv) > 2:
-        server_url = sys.argv[2]
+    # Construct WebSocket URL
+    url = f"{SERVER_URL}{rpi_id}"
     
-    print(f"Starting RPi client simulation for {rpi_id}")
+    print(f"[{datetime.now()}] Starting RPi client simulation for {rpi_id}")
     
-    try:
-        await rpi_combined_connection(rpi_id, server_url)
-    except KeyboardInterrupt:
-        print("Shutting down...")
+    # Retry loop for connection stability
+    while True:
+        try:
+            # Establish the combined WebSocket connection
+            websocket = await rpi_combined_connection(rpi_id, url)
+            
+            # Start tasks for sending frames and handling commands concurrently
+            frame_task = asyncio.create_task(send_frames(websocket, rpi_id))
+            command_task = asyncio.create_task(handle_commands(websocket, rpi_id))
+            
+            # Wait for either task to complete
+            done, pending = await asyncio.wait(
+                [frame_task, command_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            # Cancel remaining tasks
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            
+            print(f"[{datetime.now()}] One of the tasks completed or failed, retrying connection...")
+            await asyncio.sleep(1)  # Brief pause before reconnecting
+            
+        except Exception as e:
+            print(f"[{datetime.now()}] Error in main loop: {str(e)}")
+            await asyncio.sleep(2)  # Wait before retrying
 
 if __name__ == "__main__":
-    import numpy as np
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print(f"[{datetime.now()}] Simulator stopped by user")
+    except Exception as e:
+        print(f"[{datetime.now()}] Fatal error: {str(e)}")
