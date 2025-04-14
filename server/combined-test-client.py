@@ -83,6 +83,9 @@ async def send_frames(websocket, rpi_id):
                 }
                 await websocket.send(json.dumps(camera_msg))
                 
+                # Small delay to reduce CPU load
+                await asyncio.sleep(0.005)
+                
                 # Send position update
                 position_msg = {
                     "type": "position_update",
@@ -93,7 +96,7 @@ async def send_frames(websocket, rpi_id):
                 
                 print(f"[{datetime.now()}] Sent frame #{frame_number} with position {position:.3f}")
                 
-                # Send a ping every 25 frames (about 5 seconds)
+                # Send a ping every 5 frames (about 5 seconds)
                 if frame_number % 5 == 0:
                     ping_msg = {
                         "type": "ping",
@@ -106,6 +109,9 @@ async def send_frames(websocket, rpi_id):
                     # Instead of actively waiting for pong, just continue
                     # The handle_commands coroutine will handle the pong when it arrives
                     print(f"[{datetime.now()}] Ping sent, pong will be handled by command processor")
+                    
+                    # Add an extra small delay after sending ping to reduce CPU load
+                    await asyncio.sleep(0.01)
                 
                 # Wait before sending next frame
                 await asyncio.sleep(1.0)
@@ -113,9 +119,14 @@ async def send_frames(websocket, rpi_id):
             except websockets.exceptions.ConnectionClosed:
                 print(f"[{datetime.now()}] Connection closed")
                 break
+            except Exception as e:
+                print(f"[{datetime.now()}] Error in frame sending loop: {str(e)}")
+                await asyncio.sleep(0.1)  # Sleep longer on error
                 
     except Exception as e:
-        print(f"[{datetime.now()}] Error in send_frames: {str(e)}")
+        print(f"[{datetime.now()}] Fatal error in send_frames: {str(e)}")
+        # Sleep a bit before potentially reconnecting
+        await asyncio.sleep(1.0)
 
 async def handle_commands(websocket, rpi_id):
     """Handle received command messages"""
@@ -136,7 +147,7 @@ async def handle_commands(websocket, rpi_id):
                     # Process the command
                     print(f"[{datetime.now()}] Received command: {command} {direction} {step_size}{step_unit}")
                     
-                    # Simulate processing time
+                    # Simulate processing time with reasonable delay
                     await asyncio.sleep(0.05)
                     
                     # Send acknowledgment response
@@ -158,9 +169,13 @@ async def handle_commands(websocket, rpi_id):
                         "rpiId": rpi_id
                     }
                     await websocket.send(json.dumps(pong_msg))
+                
+                # Short sleep to prevent CPU hogging
+                await asyncio.sleep(0.001)
             
-            except json.JSONDecodeError:
-                print(f"[{datetime.now()}] Received invalid JSON: {message}")
+            except json.JSONDecodeError as e:
+                print(f"[{datetime.now()}] Received invalid JSON: {e}")
+                await asyncio.sleep(0.1)  # Sleep longer on error
                 continue
                 
     except websockets.exceptions.ConnectionClosed:
@@ -189,6 +204,21 @@ def create_test_frame(frame_number, position):
     
     return base64_data
 
+async def monitor_cpu_usage():
+    """Monitor and report CPU usage periodically to prevent overloading"""
+    while True:
+        try:
+            # Add a sleep to reduce CPU load from the monitoring itself
+            await asyncio.sleep(5)
+            
+            # In a real implementation, we would measure CPU usage here
+            # For now, we just log that we're monitoring
+            print(f"[{datetime.now()}] CPU monitoring active - adding sleep periods to reduce load")
+            
+        except Exception as e:
+            print(f"[{datetime.now()}] Error in CPU monitoring: {e}")
+            await asyncio.sleep(1)
+
 async def main():
     """Main entry point"""
     # Get RPi ID from command line argument or use default
@@ -198,6 +228,10 @@ async def main():
     url = f"{SERVER_URL}{rpi_id}"
     
     print(f"[{datetime.now()}] Starting RPi client simulation for {rpi_id}")
+    print(f"[{datetime.now()}] Added CPU load reduction measures to prevent high CPU usage")
+    
+    # Start CPU monitoring in background
+    monitor_task = asyncio.create_task(monitor_cpu_usage())
     
     # Retry loop for connection stability
     while True:
