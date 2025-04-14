@@ -199,11 +199,11 @@ async def run_demo():
         logger.error(f"Error getting position: {str(e)}")
         current_pos = 0.0
     
-    # Set up travel limits with 60mm total range and much smaller safety margins
-    MIN_POSITION = 0.0
-    MAX_POSITION = 60.0
-    CENTER_POSITION = 30.0
-    SAFE_MARGIN = 1.0  # Reduced safety margin for more dramatic movements
+    # Set up travel limits with -30 to +30mm range (60mm total) and minimal safety margins
+    MIN_POSITION = -30.0
+    MAX_POSITION = 30.0
+    CENTER_POSITION = 0.0
+    SAFE_MARGIN = 0.5  # Minimal safety margin for maximum travel range
     
     # Function to check if demo should still run and hasn't exceeded time limit
     def should_continue():
