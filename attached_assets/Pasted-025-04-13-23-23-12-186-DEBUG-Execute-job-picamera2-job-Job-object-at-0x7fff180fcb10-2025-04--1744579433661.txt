@@ -1,0 +1,703 @@
+025-04-13 23:23:12,186 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fcb10>
+2025-04-13 23:23:12,194 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41674 bytes]
+2025-04-13 23:23:12,194 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:12.194771"}' [103 bytes]
+2025-04-13 23:23:12,253 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd610>
+2025-04-13 23:23:12,261 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41658 bytes]
+2025-04-13 23:23:12,321 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe950>
+2025-04-13 23:23:12,328 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:12,388 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff0d0>
+2025-04-13 23:23:12,396 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:12,456 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff0d0>
+2025-04-13 23:23:12,464 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41662 bytes]
+2025-04-13 23:23:12,523 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ffb50>
+2025-04-13 23:23:12,531 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41690 bytes]
+2025-04-13 23:23:12,590 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff150>
+2025-04-13 23:23:12,597 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41610 bytes]
+2025-04-13 23:23:12,598 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:12.598770"}' [103 bytes]
+2025-04-13 23:23:12,657 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fca10>
+2025-04-13 23:23:12,665 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41722 bytes]
+2025-04-13 23:23:12,724 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1c2d8090>
+2025-04-13 23:23:12,732 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41770 bytes]
+2025-04-13 23:23:12,792 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd810>
+2025-04-13 23:23:12,799 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41658 bytes]
+2025-04-13 23:23:12,859 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd810>
+2025-04-13 23:23:12,867 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41598 bytes]
+2025-04-13 23:23:12,927 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd810>
+2025-04-13 23:23:12,935 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41722 bytes]
+2025-04-13 23:23:12,994 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fca10>
+2025-04-13 23:23:13,002 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:13,003 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:13.003542"}' [103 bytes]
+2025-04-13 23:23:13,062 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fca10>
+2025-04-13 23:23:13,069 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41762 bytes]
+2025-04-13 23:23:13,129 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd650>
+2025-04-13 23:23:13,137 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41490 bytes]
+2025-04-13 23:23:13,197 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe050>
+2025-04-13 23:23:13,205 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:13,264 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180feed0>
+2025-04-13 23:23:13,272 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:13,332 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe050>
+2025-04-13 23:23:13,340 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:13,400 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe050>
+2025-04-13 23:23:13,407 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41614 bytes]
+2025-04-13 23:23:13,408 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:13.408311"}' [103 bytes]
+2025-04-13 23:23:13,467 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe3d0>
+2025-04-13 23:23:13,475 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41718 bytes]
+2025-04-13 23:23:13,535 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff0d0>
+2025-04-13 23:23:13,543 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41770 bytes]
+2025-04-13 23:23:13,602 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc310>
+2025-04-13 23:23:13,611 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41706 bytes]
+2025-04-13 23:23:13,670 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc790>
+2025-04-13 23:23:13,677 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41726 bytes]
+2025-04-13 23:23:13,732 - DEBUG - CONNECTION STATUS: control_healthy=False, control_silence=1.9s, global_inactivity=0.1s
+2025-04-13 23:23:13,737 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc790>
+2025-04-13 23:23:13,744 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41674 bytes]
+2025-04-13 23:23:13,804 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd810>
+2025-04-13 23:23:13,812 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:13,813 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:13.813285"}' [103 bytes]
+2025-04-13 23:23:13,871 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc310>
+2025-04-13 23:23:13,879 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41674 bytes]
+2025-04-13 23:23:13,938 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc790>
+2025-04-13 23:23:13,946 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41626 bytes]
+2025-04-13 23:23:13,963 - INFO - Establishing control connection to wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579393
+2025-04-13 23:23:14,007 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180df790>
+2025-04-13 23:23:14,015 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41702 bytes]
+2025-04-13 23:23:14,029 - DEBUG - = connection is CONNECTING
+2025-04-13 23:23:14,074 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dc350>
+2025-04-13 23:23:14,083 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41646 bytes]
+2025-04-13 23:23:14,110 - DEBUG - > GET /rpi/RPI1?type=control&id=control_1744579393 HTTP/1.1
+2025-04-13 23:23:14,111 - DEBUG - > Host: xeryonremotedemostation.replit.app
+2025-04-13 23:23:14,111 - DEBUG - > Upgrade: websocket
+2025-04-13 23:23:14,111 - DEBUG - > Connection: Upgrade
+2025-04-13 23:23:14,111 - DEBUG - > Sec-WebSocket-Key: kLsSr2CWfT/4aXj3v0NLYA==
+2025-04-13 23:23:14,111 - DEBUG - > Sec-WebSocket-Version: 13
+2025-04-13 23:23:14,111 - DEBUG - > Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+2025-04-13 23:23:14,111 - DEBUG - > User-Agent: Python/3.11 websockets/15.0.1
+2025-04-13 23:23:14,141 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dfb10>
+2025-04-13 23:23:14,150 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41558 bytes]
+2025-04-13 23:23:14,208 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc950>
+2025-04-13 23:23:14,217 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41530 bytes]
+2025-04-13 23:23:14,217 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:14.217687"}' [103 bytes]
+2025-04-13 23:23:14,276 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1c2d8090>
+2025-04-13 23:23:14,284 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41702 bytes]
+2025-04-13 23:23:14,319 - DEBUG - < HTTP/1.1 101 Switching Protocols
+2025-04-13 23:23:14,319 - DEBUG - < Date: Sun, 13 Apr 2025 21:23:14 GMT
+2025-04-13 23:23:14,320 - DEBUG - < Sec-Websocket-Accept: 2Z1bCATcQWBr6qnt+Dlg9PwNIR0=
+2025-04-13 23:23:14,320 - DEBUG - < Server: Google Frontend
+2025-04-13 23:23:14,320 - DEBUG - < Strict-Transport-Security: max-age=63072000; includeSubDomains
+2025-04-13 23:23:14,320 - DEBUG - < Traceparent: 00-8002c1e80e14969f48de0c51a7a0f981-bd7a1860778de6b1-01
+2025-04-13 23:23:14,320 - DEBUG - < X-Cloud-Trace-Context: 8002c1e80e14969f48de0c51a7a0f981/13653252022928795313;o=1
+2025-04-13 23:23:14,320 - DEBUG - < Via: 1.1 google
+2025-04-13 23:23:14,320 - DEBUG - < Upgrade: websocket
+2025-04-13 23:23:14,320 - DEBUG - < Connection: Upgrade
+2025-04-13 23:23:14,320 - DEBUG - < Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+2025-04-13 23:23:14,320 - DEBUG - = connection is OPEN
+2025-04-13 23:23:14,320 - DEBUG - > TEXT '{"type": "register", "connectionType": "control...eady", "rpiId": "RPI1"}' [103 bytes]
+2025-04-13 23:23:14,320 - INFO - Control WebSocket connected: wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579393
+2025-04-13 23:23:14,320 - DEBUG - Activity timestamps updated
+2025-04-13 23:23:14,321 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-274' coro=<control_connection_manager.<locals>.heartbeat_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:832> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 835, in heartbeat_loop
+    while not shutdown_requested and websocket.open:
+                                     ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:14,321 - DEBUG - > CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:14,321 - DEBUG - = connection is CLOSING
+2025-04-13 23:23:14,343 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1350>
+2025-04-13 23:23:14,352 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41706 bytes]
+2025-04-13 23:23:14,410 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d3ed0>
+2025-04-13 23:23:14,418 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41598 bytes]
+2025-04-13 23:23:14,477 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2350>
+2025-04-13 23:23:14,486 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:14,492 - DEBUG - < CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:14,494 - DEBUG - < EOF
+2025-04-13 23:23:14,494 - DEBUG - > EOF
+2025-04-13 23:23:14,494 - DEBUG - = connection is CLOSED
+2025-04-13 23:23:14,494 - DEBUG - x closing TCP connection
+2025-04-13 23:23:14,494 - ERROR - Control connection error: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:14,494 - INFO - Control connection disconnected, reconnecting in 2s...
+2025-04-13 23:23:14,545 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dd750>
+2025-04-13 23:23:14,552 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41706 bytes]
+2025-04-13 23:23:14,612 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dfed0>
+2025-04-13 23:23:14,620 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41570 bytes]
+2025-04-13 23:23:14,620 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:14.620805"}' [103 bytes]
+2025-04-13 23:23:14,680 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd490>
+2025-04-13 23:23:14,687 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41706 bytes]
+2025-04-13 23:23:14,747 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fca10>
+2025-04-13 23:23:14,755 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41662 bytes]
+2025-04-13 23:23:14,814 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1350>
+2025-04-13 23:23:14,822 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41602 bytes]
+2025-04-13 23:23:14,882 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2350>
+2025-04-13 23:23:14,889 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41690 bytes]
+2025-04-13 23:23:14,949 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d29d0>
+2025-04-13 23:23:14,957 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41590 bytes]
+2025-04-13 23:23:15,017 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff6d0>
+2025-04-13 23:23:15,024 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:15,025 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:15.025317"}' [103 bytes]
+2025-04-13 23:23:15,084 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc050>
+2025-04-13 23:23:15,092 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41746 bytes]
+2025-04-13 23:23:15,152 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d22d0>
+2025-04-13 23:23:15,160 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:15,219 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180feed0>
+2025-04-13 23:23:15,227 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41650 bytes]
+2025-04-13 23:23:15,287 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff490>
+2025-04-13 23:23:15,294 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41646 bytes]
+2025-04-13 23:23:15,354 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd490>
+2025-04-13 23:23:15,361 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41758 bytes]
+2025-04-13 23:23:15,421 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d29d0>
+2025-04-13 23:23:15,429 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41702 bytes]
+2025-04-13 23:23:15,429 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:15.429937"}' [103 bytes]
+2025-04-13 23:23:15,489 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d22d0>
+2025-04-13 23:23:15,496 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41486 bytes]
+2025-04-13 23:23:15,556 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe050>
+2025-04-13 23:23:15,564 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41758 bytes]
+2025-04-13 23:23:15,623 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd490>
+2025-04-13 23:23:15,631 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41650 bytes]
+2025-04-13 23:23:15,690 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc050>
+2025-04-13 23:23:15,698 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:15,758 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff6d0>
+2025-04-13 23:23:15,766 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:15,826 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2010>
+2025-04-13 23:23:15,833 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41718 bytes]
+2025-04-13 23:23:15,834 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:15.834222"}' [103 bytes]
+2025-04-13 23:23:15,893 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180feed0>
+2025-04-13 23:23:15,901 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41746 bytes]
+2025-04-13 23:23:15,961 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc790>
+2025-04-13 23:23:15,968 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:16,028 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc950>
+2025-04-13 23:23:16,036 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:16,096 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180feed0>
+2025-04-13 23:23:16,103 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41710 bytes]
+2025-04-13 23:23:16,163 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2010>
+2025-04-13 23:23:16,171 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41722 bytes]
+2025-04-13 23:23:16,231 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180ff150>
+2025-04-13 23:23:16,238 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:16,239 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:16.239443"}' [103 bytes]
+2025-04-13 23:23:16,299 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d35d0>
+2025-04-13 23:23:16,306 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41586 bytes]
+2025-04-13 23:23:16,366 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1350>
+2025-04-13 23:23:16,374 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41762 bytes]
+2025-04-13 23:23:16,434 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d3010>
+2025-04-13 23:23:16,442 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41674 bytes]
+2025-04-13 23:23:16,494 - INFO - Establishing control connection to wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579396
+2025-04-13 23:23:16,501 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff181091d0>
+2025-04-13 23:23:16,509 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41738 bytes]
+2025-04-13 23:23:16,569 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcb10>
+2025-04-13 23:23:16,577 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41674 bytes]
+2025-04-13 23:23:16,579 - DEBUG - = connection is CONNECTING
+2025-04-13 23:23:16,637 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810a9d0>
+2025-04-13 23:23:16,646 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41726 bytes]
+2025-04-13 23:23:16,647 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:16.647585"}' [103 bytes]
+2025-04-13 23:23:16,670 - DEBUG - > GET /rpi/RPI1?type=control&id=control_1744579396 HTTP/1.1
+2025-04-13 23:23:16,670 - DEBUG - > Host: xeryonremotedemostation.replit.app
+2025-04-13 23:23:16,670 - DEBUG - > Upgrade: websocket
+2025-04-13 23:23:16,670 - DEBUG - > Connection: Upgrade
+2025-04-13 23:23:16,670 - DEBUG - > Sec-WebSocket-Key: eRZiLEtrNrVdqbvh6SZ+Vw==
+2025-04-13 23:23:16,670 - DEBUG - > Sec-WebSocket-Version: 13
+2025-04-13 23:23:16,670 - DEBUG - > Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+2025-04-13 23:23:16,670 - DEBUG - > User-Agent: Python/3.11 websockets/15.0.1
+2025-04-13 23:23:16,704 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dc410>
+2025-04-13 23:23:16,715 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41706 bytes]
+2025-04-13 23:23:16,771 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b110>
+2025-04-13 23:23:16,781 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41742 bytes]
+2025-04-13 23:23:16,839 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d22d0>
+2025-04-13 23:23:16,849 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41578 bytes]
+2025-04-13 23:23:16,859 - DEBUG - < HTTP/1.1 101 Switching Protocols
+2025-04-13 23:23:16,860 - DEBUG - < Date: Sun, 13 Apr 2025 21:23:16 GMT
+2025-04-13 23:23:16,860 - DEBUG - < Sec-Websocket-Accept: 8u9/ug4HEuOcMnclhFpDhNFMoPs=
+2025-04-13 23:23:16,860 - DEBUG - < Server: Google Frontend
+2025-04-13 23:23:16,860 - DEBUG - < Strict-Transport-Security: max-age=63072000; includeSubDomains
+2025-04-13 23:23:16,860 - DEBUG - < Traceparent: 00-b43a82d0e57e2b03acf60ab6af9be362-c962568bcd8ce4f2-00
+2025-04-13 23:23:16,860 - DEBUG - < X-Cloud-Trace-Context: b43a82d0e57e2b03acf60ab6af9be362/14511256107790165234
+2025-04-13 23:23:16,860 - DEBUG - < Via: 1.1 google
+2025-04-13 23:23:16,860 - DEBUG - < Upgrade: websocket
+2025-04-13 23:23:16,860 - DEBUG - < Connection: Upgrade
+2025-04-13 23:23:16,860 - DEBUG - < Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+2025-04-13 23:23:16,860 - DEBUG - = connection is OPEN
+2025-04-13 23:23:16,860 - DEBUG - > TEXT '{"type": "register", "connectionType": "control...eady", "rpiId": "RPI1"}' [103 bytes]
+2025-04-13 23:23:16,860 - INFO - Control WebSocket connected: wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579396
+2025-04-13 23:23:16,860 - DEBUG - Activity timestamps updated
+2025-04-13 23:23:16,861 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-312' coro=<control_connection_manager.<locals>.heartbeat_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:832> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 835, in heartbeat_loop
+    while not shutdown_requested and websocket.open:
+                                     ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:16,861 - DEBUG - > CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:16,861 - DEBUG - = connection is CLOSING
+2025-04-13 23:23:16,907 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd7d0>
+2025-04-13 23:23:16,917 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41690 bytes]
+2025-04-13 23:23:16,974 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcf10>
+2025-04-13 23:23:16,984 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:16,985 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:16.985155"}' [103 bytes]
+2025-04-13 23:23:17,010 - DEBUG - < CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:17,012 - DEBUG - < EOF
+2025-04-13 23:23:17,012 - DEBUG - > EOF
+2025-04-13 23:23:17,012 - DEBUG - = connection is CLOSED
+2025-04-13 23:23:17,012 - DEBUG - x closing TCP connection
+2025-04-13 23:23:17,013 - ERROR - Control connection error: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:17,013 - INFO - Control connection disconnected, reconnecting in 2s...
+2025-04-13 23:23:17,041 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dfed0>
+2025-04-13 23:23:17,053 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41686 bytes]
+2025-04-13 23:23:17,109 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dd310>
+2025-04-13 23:23:17,120 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:17,176 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dd310>
+2025-04-13 23:23:17,187 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41718 bytes]
+2025-04-13 23:23:17,243 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dfed0>
+2025-04-13 23:23:17,254 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41686 bytes]
+2025-04-13 23:23:17,310 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d13d0>
+2025-04-13 23:23:17,322 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41574 bytes]
+2025-04-13 23:23:17,323 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:17.322977"}' [103 bytes]
+2025-04-13 23:23:17,377 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bb90>
+2025-04-13 23:23:17,389 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41602 bytes]
+2025-04-13 23:23:17,445 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b790>
+2025-04-13 23:23:17,455 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41586 bytes]
+2025-04-13 23:23:17,513 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bc10>
+2025-04-13 23:23:17,523 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41510 bytes]
+2025-04-13 23:23:17,580 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d13d0>
+2025-04-13 23:23:17,590 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41638 bytes]
+2025-04-13 23:23:17,647 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcf10>
+2025-04-13 23:23:17,656 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:17,657 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:17.657671"}' [103 bytes]
+2025-04-13 23:23:17,714 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcc50>
+2025-04-13 23:23:17,724 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41638 bytes]
+2025-04-13 23:23:17,782 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d3ed0>
+2025-04-13 23:23:17,791 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41582 bytes]
+2025-04-13 23:23:17,849 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcf10>
+2025-04-13 23:23:17,858 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41610 bytes]
+2025-04-13 23:23:17,916 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff18108c90>
+2025-04-13 23:23:17,926 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41654 bytes]
+2025-04-13 23:23:17,983 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe950>
+2025-04-13 23:23:17,993 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41754 bytes]
+2025-04-13 23:23:17,994 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:17.994603"}' [103 bytes]
+2025-04-13 23:23:18,051 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc790>
+2025-04-13 23:23:18,060 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41770 bytes]
+2025-04-13 23:23:18,118 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d22d0>
+2025-04-13 23:23:18,128 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41678 bytes]
+2025-04-13 23:23:18,185 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1090>
+2025-04-13 23:23:18,195 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41646 bytes]
+2025-04-13 23:23:18,252 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d22d0>
+2025-04-13 23:23:18,262 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41714 bytes]
+2025-04-13 23:23:18,319 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd7d0>
+2025-04-13 23:23:18,329 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41662 bytes]
+2025-04-13 23:23:18,330 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:18.329945"}' [103 bytes]
+2025-04-13 23:23:18,386 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fe950>
+2025-04-13 23:23:18,396 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41774 bytes]
+2025-04-13 23:23:18,453 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcf10>
+2025-04-13 23:23:18,463 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41738 bytes]
+2025-04-13 23:23:18,520 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1090>
+2025-04-13 23:23:18,530 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41758 bytes]
+2025-04-13 23:23:18,587 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd7d0>
+2025-04-13 23:23:18,597 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41722 bytes]
+2025-04-13 23:23:18,655 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d3010>
+2025-04-13 23:23:18,664 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41646 bytes]
+2025-04-13 23:23:18,666 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:18.666106"}' [103 bytes]
+2025-04-13 23:23:18,722 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dfed0>
+2025-04-13 23:23:18,731 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41762 bytes]
+2025-04-13 23:23:18,733 - DEBUG - CONNECTION STATUS: control_healthy=False, control_silence=1.9s, global_inactivity=0.0s
+2025-04-13 23:23:18,789 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1090>
+2025-04-13 23:23:18,798 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41578 bytes]
+2025-04-13 23:23:18,856 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fd7d0>
+2025-04-13 23:23:18,866 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41622 bytes]
+2025-04-13 23:23:18,923 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180dcf10>
+2025-04-13 23:23:18,933 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41734 bytes]
+2025-04-13 23:23:18,991 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180df710>
+2025-04-13 23:23:19,002 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41754 bytes]
+2025-04-13 23:23:19,003 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:19.003255"}' [103 bytes]
+2025-04-13 23:23:19,014 - INFO - Establishing control connection to wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579399
+2025-04-13 23:23:19,059 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff18108d10>
+2025-04-13 23:23:19,068 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41626 bytes]
+2025-04-13 23:23:19,080 - DEBUG - = connection is CONNECTING
+2025-04-13 23:23:19,135 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bdd0>
+2025-04-13 23:23:19,146 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41642 bytes]
+2025-04-13 23:23:19,180 - DEBUG - > GET /rpi/RPI1?type=control&id=control_1744579399 HTTP/1.1
+2025-04-13 23:23:19,181 - DEBUG - > Host: xeryonremotedemostation.replit.app
+2025-04-13 23:23:19,181 - DEBUG - > Upgrade: websocket
+2025-04-13 23:23:19,181 - DEBUG - > Connection: Upgrade
+2025-04-13 23:23:19,181 - DEBUG - > Sec-WebSocket-Key: FESDs3JhUP3NWOYBIfqvSA==
+2025-04-13 23:23:19,181 - DEBUG - > Sec-WebSocket-Version: 13
+2025-04-13 23:23:19,181 - DEBUG - > Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+2025-04-13 23:23:19,181 - DEBUG - > User-Agent: Python/3.11 websockets/15.0.1
+2025-04-13 23:23:19,203 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811c9d0>
+2025-04-13 23:23:19,213 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:19,271 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810ba10>
+2025-04-13 23:23:19,280 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41690 bytes]
+2025-04-13 23:23:19,338 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d3ed0>
+2025-04-13 23:23:19,348 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41494 bytes]
+2025-04-13 23:23:19,349 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:19.349202"}' [103 bytes]
+2025-04-13 23:23:19,385 - DEBUG - < HTTP/1.1 101 Switching Protocols
+2025-04-13 23:23:19,385 - DEBUG - < Date: Sun, 13 Apr 2025 21:23:19 GMT
+2025-04-13 23:23:19,385 - DEBUG - < Sec-Websocket-Accept: Db3T+vJi0BbNAWX32Hcoo7KYSxE=
+2025-04-13 23:23:19,385 - DEBUG - < Server: Google Frontend
+2025-04-13 23:23:19,385 - DEBUG - < Strict-Transport-Security: max-age=63072000; includeSubDomains
+2025-04-13 23:23:19,385 - DEBUG - < Traceparent: 00-c922337b5177a26439e548cfd2c29eae-6121ee4bb8f0b2ce-00
+2025-04-13 23:23:19,385 - DEBUG - < X-Cloud-Trace-Context: c922337b5177a26439e548cfd2c29eae/6999137304903201486
+2025-04-13 23:23:19,385 - DEBUG - < Via: 1.1 google
+2025-04-13 23:23:19,385 - DEBUG - < Upgrade: websocket
+2025-04-13 23:23:19,385 - DEBUG - < Connection: Upgrade
+2025-04-13 23:23:19,385 - DEBUG - < Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+2025-04-13 23:23:19,385 - DEBUG - = connection is OPEN
+2025-04-13 23:23:19,385 - DEBUG - > TEXT '{"type": "register", "connectionType": "control...eady", "rpiId": "RPI1"}' [103 bytes]
+2025-04-13 23:23:19,385 - INFO - Control WebSocket connected: wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579399
+2025-04-13 23:23:19,385 - DEBUG - Activity timestamps updated
+2025-04-13 23:23:19,386 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-351' coro=<control_connection_manager.<locals>.heartbeat_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:832> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 835, in heartbeat_loop
+    while not shutdown_requested and websocket.open:
+                                     ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:19,386 - DEBUG - > CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:19,386 - DEBUG - = connection is CLOSING
+2025-04-13 23:23:19,406 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d610>
+2025-04-13 23:23:19,418 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41634 bytes]
+2025-04-13 23:23:19,473 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d950>
+2025-04-13 23:23:19,484 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41650 bytes]
+2025-04-13 23:23:19,529 - DEBUG - < CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:19,531 - DEBUG - < EOF
+2025-04-13 23:23:19,531 - DEBUG - > EOF
+2025-04-13 23:23:19,531 - DEBUG - = connection is CLOSED
+2025-04-13 23:23:19,531 - DEBUG - x closing TCP connection
+2025-04-13 23:23:19,532 - ERROR - Control connection error: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:19,532 - INFO - Control connection disconnected, reconnecting in 2s...
+2025-04-13 23:23:19,540 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b890>
+2025-04-13 23:23:19,551 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:19,608 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bc90>
+2025-04-13 23:23:19,618 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41638 bytes]
+2025-04-13 23:23:19,675 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b890>
+2025-04-13 23:23:19,687 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41710 bytes]
+2025-04-13 23:23:19,688 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:19.688149"}' [103 bytes]
+2025-04-13 23:23:19,742 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff181097d0>
+2025-04-13 23:23:19,754 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41582 bytes]
+2025-04-13 23:23:19,810 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810afd0>
+2025-04-13 23:23:19,821 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41674 bytes]
+2025-04-13 23:23:19,877 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2010>
+2025-04-13 23:23:19,887 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41626 bytes]
+2025-04-13 23:23:19,945 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811ccd0>
+2025-04-13 23:23:19,955 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41642 bytes]
+2025-04-13 23:23:20,012 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bf50>
+2025-04-13 23:23:20,022 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41534 bytes]
+2025-04-13 23:23:20,023 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:20.022989"}' [103 bytes]
+2025-04-13 23:23:20,079 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810ba10>
+2025-04-13 23:23:20,089 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41602 bytes]
+2025-04-13 23:23:20,146 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811c110>
+2025-04-13 23:23:20,156 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:20,214 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2010>
+2025-04-13 23:23:20,223 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41678 bytes]
+2025-04-13 23:23:20,280 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1090>
+2025-04-13 23:23:20,290 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41754 bytes]
+2025-04-13 23:23:20,347 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bc50>
+2025-04-13 23:23:20,358 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41818 bytes]
+2025-04-13 23:23:20,359 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:20.358947"}' [103 bytes]
+2025-04-13 23:23:20,415 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bcd0>
+2025-04-13 23:23:20,425 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41594 bytes]
+2025-04-13 23:23:20,482 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810a650>
+2025-04-13 23:23:20,492 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:20,549 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2010>
+2025-04-13 23:23:20,559 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41686 bytes]
+2025-04-13 23:23:20,616 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d0d0>
+2025-04-13 23:23:20,625 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41758 bytes]
+2025-04-13 23:23:20,683 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff181097d0>
+2025-04-13 23:23:20,693 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41710 bytes]
+2025-04-13 23:23:20,694 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:20.694324"}' [103 bytes]
+2025-04-13 23:23:20,751 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bc50>
+2025-04-13 23:23:20,761 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41858 bytes]
+2025-04-13 23:23:20,819 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d1090>
+2025-04-13 23:23:20,828 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41826 bytes]
+2025-04-13 23:23:20,886 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bf50>
+2025-04-13 23:23:20,896 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41826 bytes]
+2025-04-13 23:23:20,953 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff181097d0>
+2025-04-13 23:23:20,963 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41830 bytes]
+2025-04-13 23:23:21,020 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d7d0>
+2025-04-13 23:23:21,030 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41750 bytes]
+2025-04-13 23:23:21,031 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:21.031631"}' [103 bytes]
+2025-04-13 23:23:21,087 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180d2010>
+2025-04-13 23:23:21,100 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41730 bytes]
+2025-04-13 23:23:21,155 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bc90>
+2025-04-13 23:23:21,165 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41650 bytes]
+2025-04-13 23:23:21,222 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d750>
+2025-04-13 23:23:21,233 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41750 bytes]
+2025-04-13 23:23:21,290 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b350>
+2025-04-13 23:23:21,299 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41722 bytes]
+2025-04-13 23:23:21,358 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b890>
+2025-04-13 23:23:21,370 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41634 bytes]
+2025-04-13 23:23:21,371 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:21.371297"}' [103 bytes]
+2025-04-13 23:23:21,425 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b890>
+2025-04-13 23:23:21,435 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41658 bytes]
+2025-04-13 23:23:21,492 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff18108290>
+2025-04-13 23:23:21,502 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41682 bytes]
+2025-04-13 23:23:21,533 - INFO - Establishing control connection to wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579401
+2025-04-13 23:23:21,559 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bc50>
+2025-04-13 23:23:21,570 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41714 bytes]
+2025-04-13 23:23:21,609 - DEBUG - = connection is CONNECTING
+2025-04-13 23:23:21,660 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811de90>
+2025-04-13 23:23:21,671 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41690 bytes]
+2025-04-13 23:23:21,698 - DEBUG - > GET /rpi/RPI1?type=control&id=control_1744579401 HTTP/1.1
+2025-04-13 23:23:21,698 - DEBUG - > Host: xeryonremotedemostation.replit.app
+2025-04-13 23:23:21,699 - DEBUG - > Upgrade: websocket
+2025-04-13 23:23:21,699 - DEBUG - > Connection: Upgrade
+2025-04-13 23:23:21,699 - DEBUG - > Sec-WebSocket-Key: ov+mQdoWctvqI8sETQFbnw==
+2025-04-13 23:23:21,699 - DEBUG - > Sec-WebSocket-Version: 13
+2025-04-13 23:23:21,699 - DEBUG - > Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+2025-04-13 23:23:21,699 - DEBUG - > User-Agent: Python/3.11 websockets/15.0.1
+2025-04-13 23:23:21,727 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d950>
+2025-04-13 23:23:21,737 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41642 bytes]
+2025-04-13 23:23:21,738 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:21.738744"}' [103 bytes]
+2025-04-13 23:23:21,794 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e010>
+2025-04-13 23:23:21,803 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:21,862 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811ebd0>
+2025-04-13 23:23:21,871 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41718 bytes]
+2025-04-13 23:23:21,899 - DEBUG - < HTTP/1.1 101 Switching Protocols
+2025-04-13 23:23:21,899 - DEBUG - < Date: Sun, 13 Apr 2025 21:23:21 GMT
+2025-04-13 23:23:21,899 - DEBUG - < Sec-Websocket-Accept: bT3CM7SrzuZTthp9vf2TJLbL3A0=
+2025-04-13 23:23:21,899 - DEBUG - < Server: Google Frontend
+2025-04-13 23:23:21,899 - DEBUG - < Strict-Transport-Security: max-age=63072000; includeSubDomains
+2025-04-13 23:23:21,899 - DEBUG - < Traceparent: 00-25efbeb7a95ffb893f8b83936644d722-5071a4773adc1a5d-00
+2025-04-13 23:23:21,899 - DEBUG - < X-Cloud-Trace-Context: 25efbeb7a95ffb893f8b83936644d722/5796595027398105693
+2025-04-13 23:23:21,899 - DEBUG - < Via: 1.1 google
+2025-04-13 23:23:21,899 - DEBUG - < Upgrade: websocket
+2025-04-13 23:23:21,899 - DEBUG - < Connection: Upgrade
+2025-04-13 23:23:21,899 - DEBUG - < Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+2025-04-13 23:23:21,899 - DEBUG - = connection is OPEN
+2025-04-13 23:23:21,900 - DEBUG - > TEXT '{"type": "register", "connectionType": "control...eady", "rpiId": "RPI1"}' [103 bytes]
+2025-04-13 23:23:21,900 - INFO - Control WebSocket connected: wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579401
+2025-04-13 23:23:21,900 - DEBUG - Activity timestamps updated
+2025-04-13 23:23:21,900 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-389' coro=<control_connection_manager.<locals>.heartbeat_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:832> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 835, in heartbeat_loop
+    while not shutdown_requested and websocket.open:
+                                     ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:21,900 - DEBUG - > CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:21,900 - DEBUG - = connection is CLOSING
+2025-04-13 23:23:21,929 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811df50>
+2025-04-13 23:23:21,940 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41626 bytes]
+2025-04-13 23:23:21,996 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811dd10>
+2025-04-13 23:23:22,007 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41622 bytes]
+2025-04-13 23:23:22,041 - DEBUG - < CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:22,042 - DEBUG - < EOF
+2025-04-13 23:23:22,042 - DEBUG - > EOF
+2025-04-13 23:23:22,042 - DEBUG - = connection is CLOSED
+2025-04-13 23:23:22,042 - DEBUG - x closing TCP connection
+2025-04-13 23:23:22,042 - ERROR - Control connection error: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:22,042 - INFO - Control connection disconnected, reconnecting in 2s...
+2025-04-13 23:23:22,064 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e090>
+2025-04-13 23:23:22,075 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41630 bytes]
+2025-04-13 23:23:22,076 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:22.076471"}' [103 bytes]
+2025-04-13 23:23:22,131 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f690>
+2025-04-13 23:23:22,141 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41578 bytes]
+2025-04-13 23:23:22,198 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d350>
+2025-04-13 23:23:22,209 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:22,266 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e150>
+2025-04-13 23:23:22,277 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41598 bytes]
+2025-04-13 23:23:22,334 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811ded0>
+2025-04-13 23:23:22,344 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41738 bytes]
+2025-04-13 23:23:22,402 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811da50>
+2025-04-13 23:23:22,412 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41610 bytes]
+2025-04-13 23:23:22,415 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:22.415205"}' [103 bytes]
+2025-04-13 23:23:22,469 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e090>
+2025-04-13 23:23:22,480 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41482 bytes]
+2025-04-13 23:23:22,537 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d350>
+2025-04-13 23:23:22,547 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:22,604 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f790>
+2025-04-13 23:23:22,614 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:22,671 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e810>
+2025-04-13 23:23:22,681 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41730 bytes]
+2025-04-13 23:23:22,738 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d790>
+2025-04-13 23:23:22,749 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41546 bytes]
+2025-04-13 23:23:22,750 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:22.749963"}' [103 bytes]
+2025-04-13 23:23:22,806 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811da50>
+2025-04-13 23:23:22,818 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41762 bytes]
+2025-04-13 23:23:22,873 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f510>
+2025-04-13 23:23:22,884 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41806 bytes]
+2025-04-13 23:23:22,940 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f650>
+2025-04-13 23:23:22,952 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41566 bytes]
+2025-04-13 23:23:23,008 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811df50>
+2025-04-13 23:23:23,020 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41702 bytes]
+2025-04-13 23:23:23,075 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f750>
+2025-04-13 23:23:23,088 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41794 bytes]
+2025-04-13 23:23:23,090 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:23.090465"}' [103 bytes]
+2025-04-13 23:23:23,142 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d790>
+2025-04-13 23:23:23,154 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41582 bytes]
+2025-04-13 23:23:23,209 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811ded0>
+2025-04-13 23:23:23,223 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41666 bytes]
+2025-04-13 23:23:23,276 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811c0d0>
+2025-04-13 23:23:23,288 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41594 bytes]
+2025-04-13 23:23:23,344 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d790>
+2025-04-13 23:23:23,355 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41678 bytes]
+2025-04-13 23:23:23,411 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811df50>
+2025-04-13 23:23:23,419 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41598 bytes]
+2025-04-13 23:23:23,420 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:23.420642"}' [103 bytes]
+2025-04-13 23:23:23,478 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e090>
+2025-04-13 23:23:23,486 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41734 bytes]
+2025-04-13 23:23:23,545 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d790>
+2025-04-13 23:23:23,554 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41770 bytes]
+2025-04-13 23:23:23,612 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f710>
+2025-04-13 23:23:23,619 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41678 bytes]
+2025-04-13 23:23:23,679 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811dd10>
+2025-04-13 23:23:23,689 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41790 bytes]
+2025-04-13 23:23:23,734 - DEBUG - CONNECTION STATUS: control_healthy=False, control_silence=1.8s, global_inactivity=0.0s
+2025-04-13 23:23:23,747 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bf50>
+2025-04-13 23:23:23,756 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41718 bytes]
+2025-04-13 23:23:23,814 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810bf50>
+2025-04-13 23:23:23,821 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41634 bytes]
+2025-04-13 23:23:23,822 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:23.822404"}' [103 bytes]
+2025-04-13 23:23:23,881 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811da50>
+2025-04-13 23:23:23,889 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41742 bytes]
+2025-04-13 23:23:23,947 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f3d0>
+2025-04-13 23:23:23,956 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41726 bytes]
+2025-04-13 23:23:24,015 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f3d0>
+2025-04-13 23:23:24,023 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41594 bytes]
+2025-04-13 23:23:24,044 - INFO - Establishing control connection to wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579404
+2025-04-13 23:23:24,082 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811ec50>
+2025-04-13 23:23:24,091 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41582 bytes]
+2025-04-13 23:23:24,150 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811fad0>
+2025-04-13 23:23:24,159 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41634 bytes]
+2025-04-13 23:23:24,169 - DEBUG - = connection is CONNECTING
+2025-04-13 23:23:24,217 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d8d0>
+2025-04-13 23:23:24,226 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:24,227 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:24.227222"}' [103 bytes]
+2025-04-13 23:23:24,247 - DEBUG - > GET /rpi/RPI1?type=control&id=control_1744579404 HTTP/1.1
+2025-04-13 23:23:24,247 - DEBUG - > Host: xeryonremotedemostation.replit.app
+2025-04-13 23:23:24,247 - DEBUG - > Upgrade: websocket
+2025-04-13 23:23:24,247 - DEBUG - > Connection: Upgrade
+2025-04-13 23:23:24,248 - DEBUG - > Sec-WebSocket-Key: PnvMxiOQ+jpHY1COYaOZBA==
+2025-04-13 23:23:24,248 - DEBUG - > Sec-WebSocket-Version: 13
+2025-04-13 23:23:24,248 - DEBUG - > Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+2025-04-13 23:23:24,248 - DEBUG - > User-Agent: Python/3.11 websockets/15.0.1
+2025-04-13 23:23:24,285 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f650>
+2025-04-13 23:23:24,293 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41630 bytes]
+2025-04-13 23:23:24,352 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811fd90>
+2025-04-13 23:23:24,361 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41694 bytes]
+2025-04-13 23:23:24,419 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811e810>
+2025-04-13 23:23:24,430 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41658 bytes]
+2025-04-13 23:23:24,444 - DEBUG - < HTTP/1.1 101 Switching Protocols
+2025-04-13 23:23:24,444 - DEBUG - < Date: Sun, 13 Apr 2025 21:23:24 GMT
+2025-04-13 23:23:24,444 - DEBUG - < Sec-Websocket-Accept: Xg2PtDruK2H360nZuZqqLJ6SgAM=
+2025-04-13 23:23:24,444 - DEBUG - < Server: Google Frontend
+2025-04-13 23:23:24,444 - DEBUG - < Strict-Transport-Security: max-age=63072000; includeSubDomains
+2025-04-13 23:23:24,444 - DEBUG - < Traceparent: 00-64421dfdc211b67b6ee71ec73e367f57-6c9bcd45a93d626b-01
+2025-04-13 23:23:24,444 - DEBUG - < X-Cloud-Trace-Context: 64421dfdc211b67b6ee71ec73e367f57/7826074476562178667;o=1
+2025-04-13 23:23:24,444 - DEBUG - < Via: 1.1 google
+2025-04-13 23:23:24,444 - DEBUG - < Upgrade: websocket
+2025-04-13 23:23:24,444 - DEBUG - < Connection: Upgrade
+2025-04-13 23:23:24,444 - DEBUG - < Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+2025-04-13 23:23:24,444 - DEBUG - = connection is OPEN
+2025-04-13 23:23:24,444 - DEBUG - > TEXT '{"type": "register", "connectionType": "control...eady", "rpiId": "RPI1"}' [103 bytes]
+2025-04-13 23:23:24,444 - INFO - Control WebSocket connected: wss://xeryonremotedemostation.replit.app/rpi/RPI1?type=control&id=control_1744579404
+2025-04-13 23:23:24,444 - DEBUG - Activity timestamps updated
+2025-04-13 23:23:24,444 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-427' coro=<control_connection_manager.<locals>.heartbeat_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:832> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 835, in heartbeat_loop
+    while not shutdown_requested and websocket.open:
+                                     ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:24,445 - DEBUG - > CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:24,445 - DEBUG - = connection is CLOSING
+2025-04-13 23:23:24,486 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f950>
+2025-04-13 23:23:24,497 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41670 bytes]
+2025-04-13 23:23:24,554 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff18121390>
+2025-04-13 23:23:24,563 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41718 bytes]
+2025-04-13 23:23:24,564 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:24.564348"}' [103 bytes]
+2025-04-13 23:23:24,586 - DEBUG - < CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:24,586 - DEBUG - < EOF
+2025-04-13 23:23:24,586 - DEBUG - > EOF
+2025-04-13 23:23:24,586 - DEBUG - = connection is CLOSED
+2025-04-13 23:23:24,587 - DEBUG - x closing TCP connection
+2025-04-13 23:23:24,587 - ERROR - Control connection error: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:24,587 - INFO - Control connection disconnected, reconnecting in 2s...
+2025-04-13 23:23:24,621 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811fa50>
+2025-04-13 23:23:24,629 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41702 bytes]
+2025-04-13 23:23:24,689 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811df50>
+2025-04-13 23:23:24,697 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41578 bytes]
+2025-04-13 23:23:24,756 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc990>
+2025-04-13 23:23:24,764 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41594 bytes]
+2025-04-13 23:23:24,823 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811fb50>
+2025-04-13 23:23:24,831 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41706 bytes]
+2025-04-13 23:23:24,890 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811fb50>
+2025-04-13 23:23:24,898 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41618 bytes]
+2025-04-13 23:23:24,958 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811fa50>
+2025-04-13 23:23:24,967 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41514 bytes]
+2025-04-13 23:23:24,968 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:24.968103"}' [103 bytes]
+2025-04-13 23:23:25,025 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811f410>
+2025-04-13 23:23:25,035 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41758 bytes]
+2025-04-13 23:23:25,092 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811da50>
+2025-04-13 23:23:25,102 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41806 bytes]
+2025-04-13 23:23:25,160 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc990>
+2025-04-13 23:23:25,168 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41686 bytes]
+2025-04-13 23:23:25,227 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff18121710>
+2025-04-13 23:23:25,236 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41790 bytes]
+2025-04-13 23:23:25,294 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff181216d0>
+2025-04-13 23:23:25,302 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41778 bytes]
+2025-04-13 23:23:25,303 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-13T23:23:25.303762"}' [103 bytes]
+2025-04-13 23:23:25,361 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1810b750>
+2025-04-13 23:23:25,369 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41734 bytes]
+2025-04-13 23:23:25,428 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811d390>
+2025-04-13 23:23:25,436 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41618 bytes]
+2025-04-13 23:23:25,495 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff180fc990>
+2025-04-13 23:23:25,504 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41730 bytes]
+2025-04-13 23:23:25,562 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff3e856c90>
+2025-04-13 23:23:25,570 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41662 bytes]
+2025-04-13 23:23:25,630 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1811da50>
+2025-04-13 23:23:25,638 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [41610 bytes]
+^C2025-04-13 23:23:25,639 - INFO - Shutting down...
+2025-04-13 23:23:25,639 - INFO - Motor stopped
+Program stopped running.
+2025-04-13 23:23:25,639 - INFO - Controller stopped
+2025-04-13 23:23:25,640 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1c2c3f50>
+2025-04-13 23:23:25,643 - INFO - Camera stopped
+2025-04-13 23:23:25,644 - INFO - Camera stopped
+Communication has stopped. 
+2025-04-13 23:23:25,844 - DEBUG - Camera was not started
+2025-04-13 23:23:26,046 - INFO - Camera closed successfully.
+2025-04-13 23:23:26,046 - INFO - Camera closed
+2025-04-13 23:23:26,078 - INFO - Shutdown complete
+2025-04-13 23:23:26,079 - DEBUG - > CLOSE 1000 (OK) [2 bytes]
+2025-04-13 23:23:26,079 - DEBUG - = connection is CLOSING
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 959, in main
+    await asyncio.gather(camera_task, control_task, watchdog_task, cleanup_task)
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 925, in control_connection_manager
+    await asyncio.sleep(RETRY_DELAY)
+  File "/usr/lib/python3.11/asyncio/tasks.py", line 639, in sleep
+    return await future
+           ^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 989, in <module>
+    asyncio.run(main())
+  File "/usr/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+2025-04-13 23:23:26,108 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-466' coro=<control_connection_manager.<locals>.heartbeat_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:832> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 835, in heartbeat_loop
+    while not shutdown_requested and websocket.open:
+                                     ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:26,109 - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-6' coro=<camera_feed.<locals>.ping_loop() done, defined at /home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py:576> exception=AttributeError("'ClientConnection' object has no attribute 'open'")>
+Traceback (most recent call last):
+  File "/home/pi/Desktop/RemoteDemoStation/BasicServer/TotalStation.py", line 579, in ping_loop
+    while websocket.open and not shutdown_requested:
+          ^^^^^^^^^^^^^^
+AttributeError: 'ClientConnection' object has no attribute 'open'
+2025-04-13 23:23:26,139 - DEBUG - Resources now free: <picamera2.picamera2.Picamera2 object at 0x7fff1c2dc250>
+
+(venv) pi@raspberrypi:~/Desktop/RemoteDemoStation/BasicServer $ 

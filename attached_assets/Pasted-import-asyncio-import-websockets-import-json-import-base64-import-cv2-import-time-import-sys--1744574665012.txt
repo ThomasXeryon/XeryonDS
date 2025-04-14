@@ -1,0 +1,700 @@
+import asyncio
+import websockets
+import json
+import base64
+import cv2
+import time
+import sys
+import os
+import random
+import logging
+import gc
+import subprocess
+from picamera2 import Picamera2
+from websockets.exceptions import ConnectionClosed
+import serial
+from datetime import datetime
+from collections import deque
+
+# Add Xeryon library path
+sys.path.append('/home/pi/Desktop/RemoteDemoStation/BasicServer/Python')
+from Xeryon import Xeryon, Stage, Units
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Configuration
+STATION_ID = "RPI1"
+SERVER_URL = f"wss://xeryonremotedemostation.replit.app/rpi/{STATION_ID}"
+RETRY_DELAY = 2
+MAX_RETRIES = 5
+SESSION_RETRIES = 3
+RESOLUTION_WIDTH = 960  # Reduced from 1280
+RESOLUTION_HEIGHT = 540  # Reduced from 720
+JPEG_QUALITY = 40  # Reduced from 50
+TARGET_FPS = 20
+STALL_TIMEOUT = 300
+COM_PORT = "/dev/ttyACM0"
+SPEED_MULTIPLIER = 1
+EPOS_UPDATE_INTERVAL = 0.2
+FRAME_QUEUE_LIMIT = 5  # Max frames to buffer
+
+# Globals
+picam2 = None
+controller = None
+axis = None
+demo_running = False
+frame_queue = deque(maxlen=FRAME_QUEUE_LIMIT)
+
+# Camera Functions
+def initialize_camera():
+    """Initialize camera with retry logic."""
+    global picam2
+    retries = 0
+    while retries < MAX_RETRIES:
+        try:
+            logger.info("Initializing camera")
+            picam2 = Picamera2()
+            config = picam2.create_video_configuration(main={"size": (RESOLUTION_WIDTH, RESOLUTION_HEIGHT), "format": "RGB888"})
+            picam2.configure(config)
+            picam2.start()
+            logger.info(f"Camera initialized: {RESOLUTION_WIDTH}x{RESOLUTION_HEIGHT}")
+            time.sleep(1)
+            return True
+        except Exception as e:
+            retries += 1
+            logger.error(f"Camera init failed ({retries}/{MAX_RETRIES}): {str(e)}")
+            stop_camera(picam2)
+            picam2 = None
+            gc.collect()
+            time.sleep(RETRY_DELAY)
+    logger.error(f"Camera init failed after {MAX_RETRIES} retries")
+    return False
+
+def stop_camera(cam):
+    """Safely stop and close camera."""
+    try:
+        if cam:
+            if cam.started:
+                cam.stop()
+                logger.info("Camera stopped")
+            for _ in range(3):
+                try:
+                    cam.close()
+                    logger.info("Camera closed")
+                    break
+                except Exception as e:
+                    logger.warning(f"Camera close retry failed: {str(e)}")
+                    time.sleep(0.1)
+    except Exception as e:
+        logger.error(f"Error stopping camera: {str(e)}")
+    finally:
+        gc.collect()
+
+def reset_camera_stack():
+    """Soft reset camera."""
+    try:
+        logger.info("Soft resetting camera")
+        stop_camera(picam2)
+        time.sleep(1)
+        logger.info("Camera reset complete")
+    except Exception as e:
+        logger.error(f"Reset failed: {str(e)}")
+
+# Xeryon Functions
+def initialize_xeryon_controller():
+    """Initialize Xeryon with robust serial retry."""
+    global controller, axis
+    retries = 0
+    while retries < MAX_RETRIES:
+        try:
+            if not os.path.exists(COM_PORT):
+                logger.warning(f"{COM_PORT} not foundâattempting USB reset")
+                subprocess.run(["usbreset", COM_PORT], check=False)
+                time.sleep(1)
+                if not os.path.exists(COM_PORT):
+                    raise serial.SerialException(f"{COM_PORT} still missing")
+            logger.info(f"Initializing Xeryon on {COM_PORT}")
+            with serial.Serial(COM_PORT, 115200, timeout=1) as ser:
+                ser.reset_input_buffer()
+                ser.reset_output_buffer()
+            controller = Xeryon(COM_port=COM_PORT, baudrate=115200)
+            axis = controller.addAxis(Stage.XLA_312_3N, "X")
+            controller.start()
+            axis.setUnits(Units.mm)
+            axis.sendCommand("POLI=50")
+            axis.findIndex()
+            base_speed = 500
+            multiplied_speed = base_speed * SPEED_MULTIPLIER
+            axis.setSpeed(multiplied_speed)
+            logger.info(f"Xeryon speed set to {multiplied_speed} mm/s")
+            return True
+        except Exception as e:
+            retries += 1
+            logger.error(f"Xeryon init failed ({retries}/{MAX_RETRIES}): {str(e)}")
+            if controller:
+                stop_controller(controller)
+                controller = None
+                axis = None
+            time.sleep(RETRY_DELAY)
+    logger.error(f"Xeryon init failed after {MAX_RETRIES} retries")
+    return False
+
+def stop_controller(ctrl):
+    """Safely stop Xeryon."""
+    try:
+        if ctrl:
+            ctrl.stop()
+            logger.info("Controller stopped")
+    except Exception as e:
+        logger.error(f"Error stopping controller: {str(e)}")
+
+async def run_demo():
+    """Run Xeryon demo."""
+    global demo_running, axis
+    demo_running = True
+    logger.info("Demo started")
+    for _ in range(100):
+        if not demo_running or not axis:
+            break
+        try:
+            speed = random.uniform(10, 500)
+            await asyncio.to_thread(axis.setSpeed, speed)
+            logger.info(f"Demo: Speed {speed} mm/s")
+            action = random.choice(["step", "scan"])
+            if action == "step":
+                direction = random.choice([1, -1])
+                await asyncio.to_thread(axis.step, direction)
+                logger.info(f"Demo: Step {direction} mm")
+                await asyncio.sleep(0.5)
+            else:
+                direction = random.choice([1, -1])
+                await asyncio.to_thread(axis.startScan, direction)
+                logger.info(f"Demo: Scan {'right' if direction == 1 else 'left'}")
+                await asyncio.sleep(random.uniform(0.5, 2))
+                await asyncio.to_thread(axis.stopScan)
+                logger.info("Demo: Scan stopped")
+        except Exception as e:
+            logger.error(f"Demo error: {str(e)}")
+            demo_running = False
+            break
+    if demo_running:
+        logger.info("Demo completed")
+        try:
+            await asyncio.to_thread(axis.setDPOS, 0)
+            logger.info("Demo: DPOS 0 mm")
+        except Exception as e:
+            logger.error(f"DPOS reset error: {str(e)}")
+    demo_running = False
+
+async def process_command(data):
+    """Handle Xeryon commands and pings."""
+    global demo_running, axis
+    message_type = data.get("type")
+    command = data.get("command", "unknown")
+    direction = data.get("direction", "none")
+    step_size = data.get("stepSize")
+    step_unit = data.get("stepUnit")
+    timestamp = data.get("timestamp")
+    response = {"status": "success", "rpiId": STATION_ID}
+
+    try:
+        if message_type == "ping":
+            response.update({
+                "type": "pong",
+                "timestamp": timestamp,
+                "rpiId": STATION_ID
+            })
+            logger.info(f"Replied to ping with pong, timestamp: {timestamp}")
+            return response
+        elif message_type == "pong":
+            logger.info(f"Received pong, timestamp: {timestamp}")
+            return None
+
+        if not axis:
+            raise Exception("Axis not initializedâcannot process command")
+        
+        response["message"] = f"Executing command '{command}'"
+        logger.info(f"Processing command: {command}, direction: {direction}, stepSize: {step_size}, stepUnit: {step_unit}")
+        
+        if command in ["move", "step"]:
+            if direction not in ["right", "left"]:
+                raise ValueError(f"Invalid direction: {direction}")
+            if step_size is None or not isinstance(step_size, (int, float)) or step_size < 0:
+                raise ValueError(f"Invalid stepSize: {step_size}")
+            if step_unit not in ["mm", "Âµm", "nm"]:
+                raise ValueError(f"Invalid stepUnit: {step_unit}")
+            step_value = float(step_size)
+            if step_unit == "Âµm":
+                step_value /= 1000
+            elif step_unit == "nm":
+                step_value /= 1_000_000
+            final_step = step_value if direction == "right" else -step_value
+            await asyncio.to_thread(axis.step, final_step)
+            response["message"] = f"Stepped {final_step:.6f} mm {'right' if direction == 'right' else 'left'}"
+            response["step_executed_mm"] = final_step
+            logger.info(f"Move executed: {final_step:.6f} mm")
+        
+        elif command == "home":
+            await asyncio.to_thread(axis.findIndex)
+            epos = await asyncio.to_thread(axis.getEPOS)
+            response["message"] = f"Homed to index, EPOS {epos:.6f} mm"
+            response["epos_mm"] = epos
+            logger.info(f"Homed, EPOS: {epos:.6f} mm")
+        
+        elif command == "speed":
+            speed_value = float(direction)
+            multiplied_speed = speed_value * SPEED_MULTIPLIER
+            await asyncio.to_thread(axis.setSpeed, multiplied_speed)
+            response["message"] = f"Speed set to {multiplied_speed:.2f} mm/s"
+            logger.info(f"Speed set: {multiplied_speed:.2f} mm/s")
+        
+        elif command == "scan":
+            if direction == "right":
+                await asyncio.to_thread(axis.startScan, 1)
+                response["message"] = "Scanning right"
+            elif direction == "left":
+                await asyncio.to_thread(axis.startScan, -1)
+                response["message"] = "Scanning left"
+            else:
+                raise ValueError(f"Invalid scan direction: {direction}")
+            logger.info(f"Scan started: {direction}")
+        
+        elif command == "demo_start":
+            if not demo_running:
+                asyncio.create_task(run_demo())
+                response["message"] = "Demo started"
+                logger.info("Demo started")
+            else:
+                response["message"] = "Demo already running"
+                logger.info("Demo already running")
+        
+        elif command == "demo_stop":
+            if demo_running:
+                demo_running = False
+                await asyncio.to_thread(axis.stopScan)
+                await asyncio.to_thread(axis.setDPOS, 0)
+                response["message"] = "Demo stopped, DPOS 0 mm"
+                logger.info("Demo stopped, DPOS 0 mm")
+            else:
+                response["message"] = "No demo running"
+                logger.info("No demo running")
+        
+        elif command == "stop":
+            await asyncio.to_thread(axis.stopScan)
+            await asyncio.to_thread(axis.setDPOS, 0)
+            response["message"] = "Stopped, DPOS 0 mm"
+            logger.info("Stopped, DPOS 0 mm")
+        
+        else:
+            raise ValueError(f"Unknown command: {command}")
+    
+    except Exception as e:
+        response["status"] = "error"
+        response["message"] = f"Command '{command}' failed: {str(e)}"
+        logger.error(f"Command error: {str(e)}")
+    
+    return response
+
+# WebSocket Tasks
+async def camera_feed():
+    """Stream camera frames."""
+    global picam2, frame_queue
+    session_retries = 0
+    connection_id = f"camera_{int(time.time())}"
+    
+    while True:
+        try:
+            if session_retries >= SESSION_RETRIES:
+                logger.error(f"Hit {SESSION_RETRIES} camera retries")
+                reset_camera_stack()
+                session_retries = 0
+
+            if not picam2 or not picam2.started:
+                if not initialize_camera():
+                    session_retries += 1
+                    logger.error(f"Camera retry {session_retries}/{SESSION_RETRIES}")
+                    await asyncio.sleep(RETRY_DELAY)
+                    continue
+
+            # Use a unique URL with connection type to avoid connection conflicts
+            camera_url = f"{SERVER_URL}?type=camera&id={connection_id}"
+            async with websockets.connect(camera_url, ping_interval=20, ping_timeout=60) as websocket:
+                # Send clear registration with connectionType
+                await websocket.send(json.dumps({
+                    "type": "register",
+                    "status": "ready",
+                    "connectionType": "camera",  # Explicitly identify this as camera connection
+                    "message": f"RPi {STATION_ID} camera online",
+                    "rpiId": STATION_ID
+                }))
+                logger.info(f"Camera connection registered with connection ID {connection_id}")
+                
+                session_retries = 0
+                frame_count = 0
+                start_time = time.time()
+                last_keepalive = time.time()
+                last_frame_time = time.time()
+                last_activity = time.time()
+
+                while True:
+                    frame_start = time.time()
+                    if time.time() - last_frame_time > STALL_TIMEOUT:
+                        logger.error(f"Camera stalled")
+                        stop_camera(picam2)
+                        picam2 = None
+                        break
+                    
+                    # Send periodic heartbeat to maintain connection
+                    if time.time() - last_activity > 30:
+                        ping_data = {
+                            "type": "ping",
+                            "timestamp": datetime.now().isoformat(),
+                            "rpiId": STATION_ID,
+                            "connectionType": "camera"
+                        }
+                        await websocket.send(json.dumps(ping_data))
+                        logger.debug(f"Sent camera heartbeat ping: {ping_data['timestamp']}")
+                        last_activity = time.time()
+                    
+                    try:
+                        # Handle incoming messages with a short timeout
+                        try:
+                            message = await asyncio.wait_for(websocket.recv(), timeout=0.01)
+                            last_activity = time.time()
+                            data = json.loads(message)
+                            
+                            # Only handle pings/pongs in camera connection
+                            if data.get("type") == "ping":
+                                response = {
+                                    "type": "pong",
+                                    "timestamp": data.get("timestamp"),
+                                    "rpiId": STATION_ID,
+                                    "connectionType": "camera"
+                                }
+                                await websocket.send(json.dumps(response))
+                                logger.debug(f"Replied to camera ping with pong")
+                                continue
+                            elif data.get("type") == "pong":
+                                logger.info(f"Camera received pong, timestamp: {data.get('timestamp')}")
+                                continue
+                            elif data.get("type") == "command":
+                                # Ignore commands sent to camera connection
+                                logger.warning(f"Command received on camera connection - ignoring: {data.get('command')}")
+                                continue
+                        except asyncio.TimeoutError:
+                            pass
+
+                        # Send ping every 10 frames
+                        if frame_count % 10 == 0:
+                            ping_data = {
+                                "type": "ping",
+                                "timestamp": datetime.now().isoformat(),
+                                "rpiId": STATION_ID,
+                                "connectionType": "camera"
+                            }
+                            await websocket.send(json.dumps(ping_data))
+                            logger.debug(f"Sent camera ping: {ping_data['timestamp']}")
+                            last_activity = time.time()
+
+                        frame = picam2.capture_array("main")
+                        if frame is None:
+                            logger.warning("Frame dropped")
+                            continue
+                        
+                        encode_start = time.time()
+                        _, jpg_buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY, cv2.IMWRITE_JPEG_OPTIMIZE, 1])
+                        jpg_as_text = base64.b64encode(jpg_buffer).decode('utf-8')
+                        encode_time = time.time() - encode_start
+                        if encode_time > 0.05:
+                            logger.warning(f"Slow encode: {encode_time:.3f}s")
+
+                        frame_data = {
+                            "type": "camera_frame",
+                            "rpiId": STATION_ID,
+                            "connectionType": "camera",
+                            "frame": jpg_as_text
+                        }
+                        frame_queue.append(frame_data)
+                        if len(frame_queue) == FRAME_QUEUE_LIMIT:
+                            logger.warning("Frame queue fullâdropping oldest frame")
+                            frame_queue.popleft()
+
+                        # Send frames from queue
+                        while frame_queue:
+                            send_start = time.time()
+                            await websocket.send(json.dumps(frame_queue[0]))
+                            last_activity = time.time()
+                            frame_queue.popleft()
+                            send_time = time.time() - send_start
+                            if send_time > 0.05:
+                                logger.warning(f"Slow send: {send_time:.3f}s")
+                        gc.collect()
+                    except Exception as e:
+                        logger.error(f"Camera frame error: {str(e)}")
+                        stop_camera(picam2)
+                        picam2 = None
+                        break
+
+                    last_frame_time = time.time()
+                    frame_count += 1
+                    elapsed = time.time() - frame_start
+                    if frame_count % 10 == 0:
+                        fps = frame_count / (time.time() - start_time)
+                        logger.info(f"Camera FPS: {fps:.2f}, Queue: {len(frame_queue)}")
+                        frame_count = 0
+                        start_time = time.time()
+                    if elapsed > 0.1:
+                        logger.warning(f"Frame lag: {elapsed:.3f}s")
+                    if time.time() - last_keepalive > 60:
+                        await websocket.ping()
+                        last_keepalive = time.time()
+                    target_delay = 1 / (TARGET_FPS * 0.9)
+                    if elapsed < target_delay:
+                        await asyncio.sleep(target_delay - elapsed)
+
+        except ConnectionClosed as e:
+            logger.error(f"Camera WebSocket closed: {str(e)}")
+            stop_camera(picam2)
+            picam2 = None
+            session_retries += 1
+            await asyncio.sleep(RETRY_DELAY * (1 + session_retries))  # Exponential backoff
+        except Exception as e:
+            logger.error(f"Camera error: {str(e)}")
+            stop_camera(picam2)
+            picam2 = None
+            session_retries += 1
+            await asyncio.sleep(RETRY_DELAY * (1 + session_retries))  # Exponential backoff
+
+async def xeryon_control():
+    """Handle Xeryon commands and EPOS."""
+    global controller, axis
+    session_retries = 0
+    connection_id = f"control_{int(time.time())}"
+    
+    while True:
+        try:
+            if session_retries >= SESSION_RETRIES:
+                logger.error(f"Hit {SESSION_RETRIES} Xeryon retries")
+                if controller:
+                    stop_controller(controller)
+                    controller = None
+                    axis = None
+                session_retries = 0
+
+            if not controller or not axis:
+                if not initialize_xeryon_controller():
+                    logger.error(f"Xeryon init failed")
+                    session_retries += 1
+                    await asyncio.sleep(RETRY_DELAY)
+                    continue
+            
+            # Use a unique URL with connection type to avoid connection conflicts
+            control_url = f"{SERVER_URL}?type=control&id={connection_id}"
+            async with websockets.connect(control_url, ping_interval=20, ping_timeout=60) as websocket:
+                # Send clear registration with connectionType
+                await websocket.send(json.dumps({
+                    "type": "register",
+                    "status": "ready",
+                    "connectionType": "control",  # Explicitly identify this as control connection
+                    "message": f"RPi {STATION_ID} Xeryon control online",
+                    "rpiId": STATION_ID
+                }))
+                logger.info(f"Control connection registered with connection ID {connection_id}")
+                
+                session_retries = 0
+                last_keepalive = time.time()
+                last_activity = time.time()
+                epos_task = asyncio.create_task(stream_epos(websocket))
+                
+                # Send periodic heartbeat to keep connection alive
+                while True:
+                    try:
+                        # Check if connection has been idle too long
+                        if time.time() - last_activity > 15:  # Reduce to 15 seconds
+                            logger.warning("Control connection idle for 15s, sending ping")
+                            ping_data = {
+                                "type": "ping", 
+                                "timestamp": datetime.now().isoformat(),
+                                "rpiId": STATION_ID,
+                                "connectionType": "control"
+                            }
+                            await websocket.send(json.dumps(ping_data))
+                            last_activity = time.time()
+                        
+                        # Try to receive message with shorter timeout
+                        message = await asyncio.wait_for(websocket.recv(), timeout=2)
+                        last_activity = time.time()
+                        data = json.loads(message)
+                        
+                        # Handle ping separately
+                        if data.get("type") == "ping":
+                            response = {
+                                "type": "pong",
+                                "timestamp": data.get("timestamp"),
+                                "rpiId": STATION_ID,
+                                "connectionType": "control"
+                            }
+                            await websocket.send(json.dumps(response))
+                            logger.debug(f"Replied to control ping with pong")
+                            continue
+                        elif data.get("type") == "pong":
+                            logger.info(f"Control received pong, timestamp: {data.get('timestamp')}")
+                            continue
+                        
+                        # Process commands
+                        response = await process_command(data)
+                        if response:
+                            response["connectionType"] = "control"  # Mark response
+                            await websocket.send(json.dumps(response))
+                            last_activity = time.time()
+                            
+                    except asyncio.TimeoutError:
+                        # This is normal - just means no message received within timeout
+                        continue
+                    except ConnectionClosed as e:
+                        logger.error(f"Control connection closed: {str(e)}")
+                        break
+                    except Exception as e:
+                        logger.error(f"Xeryon WebSocket error: {str(e)}")
+                        break
+                
+                # Clean up EPOS task when the main loop exits
+                logger.info("Cleaning up EPOS streaming task")
+                try:
+                    epos_task.cancel()
+                    await asyncio.wait_for(epos_task, timeout=1)
+                except (asyncio.TimeoutError, asyncio.CancelledError):
+                    pass
+                except Exception as e:
+                    logger.error(f"Error cancelling EPOS task: {str(e)}")
+
+        except ConnectionClosed as e:
+            logger.error(f"Xeryon WebSocket closed: {str(e)}")
+            # Don't stop controller on connection error, just retry connection
+            session_retries += 1
+            await asyncio.sleep(RETRY_DELAY * (1 + session_retries))  # Exponential backoff
+        except Exception as e:
+            logger.error(f"Xeryon error: {str(e)}")
+            # Only reset controller on critical errors
+            if "axis not initialized" not in str(e).lower():
+                if controller:
+                    stop_controller(controller)
+                    controller = None
+                    axis = None
+            session_retries += 1
+            await asyncio.sleep(RETRY_DELAY * (1 + session_retries))  # Exponential backoff
+
+async def stream_epos(websocket):
+    """Stream EPOS."""
+    global axis
+    epos_count = 0
+    last_ping_time = time.time()
+    last_epos_value = None
+    last_position_time = time.time()
+    
+    while True:
+        try:
+            if not axis:
+                logger.warning("Axis not available for EPOS streaming")
+                await asyncio.sleep(1)
+                continue
+                
+            # Send ping occasionally from EPOS task
+            if epos_count % 5 == 0 and time.time() - last_ping_time > 5:
+                ping_data = {
+                    "type": "ping",
+                    "timestamp": datetime.now().isoformat(),
+                    "rpiId": STATION_ID,
+                    "connectionType": "control"
+                }
+                await websocket.send(json.dumps(ping_data))
+                logger.debug(f"Sent EPOS ping: {ping_data['timestamp']}")
+                last_ping_time = time.time()
+
+            try:
+                # Use to_thread to prevent blocking
+                epos = await asyncio.to_thread(axis.getEPOS)
+                
+                # Only send position updates if value changed or 1 second passed
+                if epos != last_epos_value or time.time() - last_position_time > 1.0:
+                    position_data = {
+                        "type": "position_update",
+                        "rpiId": STATION_ID,
+                        "connectionType": "control", 
+                        "epos": epos
+                    }
+                    await websocket.send(json.dumps(position_data))
+                    logger.debug(f"EPOS: {epos} mm")
+                    last_epos_value = epos
+                    last_position_time = time.time()
+            except Exception as e:
+                logger.error(f"Error getting EPOS: {str(e)}")
+                await asyncio.sleep(1)
+                continue
+                
+            epos_count += 1
+            await asyncio.sleep(EPOS_UPDATE_INTERVAL)
+            
+        except asyncio.CancelledError:
+            logger.info("EPOS streaming task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"EPOS error: {str(e)}")
+            await asyncio.sleep(1)  # Don't break, just retry after a delay
+
+async def main():
+    """Run camera and Xeryon in parallel with better error handling."""
+    logger.info("Starting camera and Xeryon control")
+    while True:
+        try:
+            # Start the two main tasks
+            camera_task = asyncio.create_task(camera_feed())
+            # Give camera a head start
+            await asyncio.sleep(5)
+            xeryon_task = asyncio.create_task(xeryon_control())
+            
+            # Wait for either task to finish (they should run forever)
+            done, pending = await asyncio.wait(
+                [camera_task, xeryon_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            # If we get here, one of the tasks has completed/crashed
+            for task in pending:
+                logger.info(f"Cancelling task {task}")
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+                    
+            # Log which task completed
+            for task in done:
+                if task == camera_task:
+                    logger.error("Camera task ended unexpectedly")
+                else:
+                    logger.error("Xeryon control task ended unexpectedly")
+                    
+            # Wait before restarting
+            logger.error("One or more tasks failed - restarting system in 5 seconds")
+            await asyncio.sleep(5)
+            
+        except Exception as e:
+            logger.error(f"Fatal error in main: {str(e)}")
+            await asyncio.sleep(5)
+
+if __name__ == "__main__":
+    logger.info(f"Starting RPi {STATION_ID}")
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Stopped by user")
+    except Exception as e:
+        logger.error(f"Fatal error: {str(e)}")
+    finally:
+        if picam2:
+            stop_camera(picam2)
+        if controller:
+            stop_controller(controller)

@@ -1,0 +1,101 @@
+t": "jpg.base64"}' [78901 bytes]
+2025-04-14 11:36:58,585 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.585668"}' [101 bytes]
+2025-04-14 11:36:58,615 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd0773d0>
+2025-04-14 11:36:58,632 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79073 bytes]
+2025-04-14 11:36:58,633 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.633689"}' [101 bytes]
+2025-04-14 11:36:58,665 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd3c0850>
+2025-04-14 11:36:58,687 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79149 bytes]
+2025-04-14 11:36:58,688 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.688047"}' [101 bytes]
+2025-04-14 11:36:58,715 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077ed0>
+2025-04-14 11:36:58,733 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79121 bytes]
+2025-04-14 11:36:58,734 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.734622"}' [101 bytes]
+2025-04-14 11:36:58,765 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077790>
+2025-04-14 11:36:58,784 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79181 bytes]
+2025-04-14 11:36:58,785 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.785638"}' [101 bytes]
+2025-04-14 11:36:58,815 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077890>
+2025-04-14 11:36:58,831 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79165 bytes]
+2025-04-14 11:36:58,832 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.832786"}' [101 bytes]
+2025-04-14 11:36:58,865 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd05f510>
+2025-04-14 11:36:58,885 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79325 bytes]
+2025-04-14 11:36:58,886 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.886874"}' [101 bytes]
+2025-04-14 11:36:58,915 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefcfbd250>
+2025-04-14 11:36:58,933 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79289 bytes]
+2025-04-14 11:36:58,934 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.934458"}' [101 bytes]
+2025-04-14 11:36:58,965 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077810>
+2025-04-14 11:36:58,987 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79253 bytes]
+2025-04-14 11:36:58,988 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:58.988823"}' [101 bytes]
+2025-04-14 11:36:59,015 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077e90>
+2025-04-14 11:36:59,031 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78853 bytes]
+2025-04-14 11:36:59,032 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.032809"}' [101 bytes]
+2025-04-14 11:36:59,065 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077ed0>
+2025-04-14 11:36:59,090 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78981 bytes]
+2025-04-14 11:36:59,091 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.091864"}' [101 bytes]
+2025-04-14 11:36:59,115 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077710>
+2025-04-14 11:36:59,132 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79109 bytes]
+2025-04-14 11:36:59,134 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.133916"}' [101 bytes]
+2025-04-14 11:36:59,165 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd3c0850>
+2025-04-14 11:36:59,185 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79049 bytes]
+2025-04-14 11:36:59,186 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.186683"}' [101 bytes]
+2025-04-14 11:36:59,215 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd0773d0>
+2025-04-14 11:36:59,232 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79077 bytes]
+2025-04-14 11:36:59,233 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.233722"}' [101 bytes]
+2025-04-14 11:36:59,265 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd3c82d0>
+2025-04-14 11:36:59,284 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78929 bytes]
+2025-04-14 11:36:59,284 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.284932"}' [101 bytes]
+2025-04-14 11:36:59,315 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd0773d0>
+2025-04-14 11:36:59,331 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78981 bytes]
+2025-04-14 11:36:59,332 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.332408"}' [101 bytes]
+2025-04-14 11:36:59,365 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077e90>
+2025-04-14 11:36:59,386 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79009 bytes]
+2025-04-14 11:36:59,387 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.387175"}' [101 bytes]
+2025-04-14 11:36:59,415 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077710>
+2025-04-14 11:36:59,433 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78893 bytes]
+2025-04-14 11:36:59,435 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.434960"}' [101 bytes]
+2025-04-14 11:36:59,465 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff271d2050>
+2025-04-14 11:36:59,483 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79049 bytes]
+2025-04-14 11:36:59,484 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.484571"}' [101 bytes]
+2025-04-14 11:36:59,515 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd076b50>
+2025-04-14 11:36:59,533 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78793 bytes]
+2025-04-14 11:36:59,535 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.535228"}' [101 bytes]
+2025-04-14 11:36:59,565 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077dd0>
+2025-04-14 11:36:59,584 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78853 bytes]
+2025-04-14 11:36:59,585 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.585483"}' [101 bytes]
+2025-04-14 11:36:59,616 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077b50>
+2025-04-14 11:36:59,635 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78881 bytes]
+2025-04-14 11:36:59,636 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.636550"}' [101 bytes]
+2025-04-14 11:36:59,666 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077890>
+2025-04-14 11:36:59,685 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78917 bytes]
+2025-04-14 11:36:59,686 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.686420"}' [101 bytes]
+2025-04-14 11:36:59,716 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd3b8cd0>
+2025-04-14 11:36:59,733 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79029 bytes]
+2025-04-14 11:36:59,735 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.734980"}' [101 bytes]
+2025-04-14 11:36:59,766 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd0773d0>
+2025-04-14 11:36:59,785 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79013 bytes]
+2025-04-14 11:36:59,786 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.786160"}' [101 bytes]
+2025-04-14 11:36:59,816 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd0778d0>
+2025-04-14 11:36:59,835 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79029 bytes]
+2025-04-14 11:36:59,836 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.836469"}' [101 bytes]
+2025-04-14 11:36:59,867 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077710>
+2025-04-14 11:36:59,888 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [78989 bytes]
+2025-04-14 11:36:59,889 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.889442"}' [101 bytes]
+2025-04-14 11:36:59,916 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077310>
+2025-04-14 11:36:59,932 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79097 bytes]
+2025-04-14 11:36:59,933 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.933645"}' [101 bytes]
+2025-04-14 11:36:59,966 - DEBUG - Health: command=13.3s, frame=0.0s, ping=13.3s
+2025-04-14 11:36:59,966 - DEBUG - > TEXT '{"type": "health_check", "timestamp": "2025-04-...e": 13.265731811523438}' [114 bytes]
+2025-04-14 11:36:59,968 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:36:59.968214"}' [101 bytes]
+2025-04-14 11:37:00,017 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffee5d10090>
+2025-04-14 11:37:00,034 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79166 bytes]
+2025-04-14 11:37:00,035 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:37:00.035797"}' [101 bytes]
+2025-04-14 11:37:00,066 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd077a10>
+2025-04-14 11:37:00,084 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79102 bytes]
+2025-04-14 11:37:00,086 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:37:00.086179"}' [101 bytes]
+2025-04-14 11:37:00,116 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd076b50>
+2025-04-14 11:37:00,134 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79066 bytes]
+2025-04-14 11:37:00,135 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:37:00.135813"}' [101 bytes]
+2025-04-14 11:37:00,166 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefcfbd050>
+2025-04-14 11:37:00,185 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79050 bytes]
+2025-04-14 11:37:00,187 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "e...04-14T11:37:00.187042"}' [101 bytes]
+2025-04-14 11:37:00,219 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefd3bba50>
+2025-04-14 11:37:00,237 - DEBUG - > TEXT '{"type": "camera_frame", "rpiId": "RPI1", "fram...eFormat": "jpg.base64"}' [79118 bytes]
+2025-04-14 11:37:00,238 - DEBUG - > TEXT '{"t
