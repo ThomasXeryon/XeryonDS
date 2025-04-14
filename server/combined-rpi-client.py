@@ -199,11 +199,11 @@ async def run_demo():
         logger.error(f"Error getting position: {str(e)}")
         current_pos = 0.0
     
-    # Set up travel limits with 60mm total range
+    # Set up travel limits with 60mm total range and much smaller safety margins
     MIN_POSITION = 0.0
     MAX_POSITION = 60.0
     CENTER_POSITION = 30.0
-    SAFE_MARGIN = 2.0  # Safety margin near limits
+    SAFE_MARGIN = 1.0  # Reduced safety margin for more dramatic movements
     
     # Function to check if demo should still run and hasn't exceeded time limit
     def should_continue():
@@ -222,11 +222,14 @@ async def run_demo():
             sequence_counter += 1
             logger.info(f"Starting demo sequence #{sequence_counter}")
             
-            # Randomly choose a sequence type
-            sequence_type = random.choice([
+            # Randomly choose a sequence type, with weighted distribution
+            # favoring the most exciting sequences
+            sequence_types = [
                 "big_steps", "random_steps", "oscillation", 
-                "scan_pattern", "speed_burst", "precision_moves"
-            ])
+                "scan_pattern", "speed_burst", "precision_moves",
+                "big_steps", "speed_burst"  # Added twice for higher probability
+            ]
+            sequence_type = random.choice(sequence_types)
             
             # SEQUENCE TYPE 1: BIG STEPS
             if sequence_type == "big_steps" and should_continue():
@@ -248,8 +251,8 @@ async def run_demo():
                     direction = -1  # Move left if we're in the right half
                     max_step = min(20.0, current_pos - SAFE_MARGIN - MIN_POSITION)
                 
-                # Make 2-4 big dramatic steps
-                for _ in range(random.randint(2, 4)):
+                # Make 4-8 big dramatic steps - increased for more movement
+                for _ in range(random.randint(4, 8)):
                     if not should_continue(): break
                     
                     # Generate a large random step size
@@ -272,8 +275,8 @@ async def run_demo():
                 await asyncio.to_thread(axis.setSpeed, speed)
                 set_acce_dece_params(random.randint(15000, 40000), random.randint(15000, 40000))
                 
-                # Execute 5-8 steps of random sizes and directions
-                for _ in range(random.randint(5, 8)):
+                # Execute 8-12 steps of random sizes and directions
+                for _ in range(random.randint(8, 12)):
                     if not should_continue(): break
                     
                     # Choose direction and step size with position checking
