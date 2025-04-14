@@ -184,10 +184,12 @@ def stop_controller(ctrl):
 
 
 async def run_demo():
-    """Run an exciting Xeryon demo with dynamic movement patterns."""
+    """Run an exciting, highly dynamic Xeryon demo with random patterns."""
     global demo_running, axis
     demo_running = True
-    logger.info("Demo started")
+    demo_start_time = time.time()
+    MAX_DEMO_DURATION = 300  # 5 minutes in seconds
+    logger.info("Demo started - will run for 5 minutes")
     
     # Get current position to understand limits
     try:
@@ -197,169 +199,298 @@ async def run_demo():
         logger.error(f"Error getting position: {str(e)}")
         current_pos = 0.0
     
-    # Demo sequence tracker
-    sequence_num = 0
+    # Set up travel limits with 60mm total range
+    MIN_POSITION = 0.0
+    MAX_POSITION = 60.0
+    CENTER_POSITION = 30.0
+    SAFE_MARGIN = 2.0  # Safety margin near limits
     
-    # Function to check if demo should still run
+    # Function to check if demo should still run and hasn't exceeded time limit
     def should_continue():
+        time_elapsed = time.time() - demo_start_time
+        if time_elapsed > MAX_DEMO_DURATION:
+            logger.info(f"Demo timeout reached after {time_elapsed:.1f} seconds")
+            return False
         return demo_running and axis
-        
+    
+    # Initialize sequence counter to keep running forever
+    sequence_counter = 0
+    
     try:
-        # SEQUENCE 1: Fast micro-steps with increasing amplitude
-        if should_continue():
-            logger.info("Demo Sequence 1: Precision micro-steps with increasing amplitude")
-            await asyncio.to_thread(axis.setSpeed, 150)
-            # Set medium acceleration/deceleration for precise movements
-            set_acce_dece_params(20000, 20000)
+        # Main demo loop - will run until timeout or manually stopped
+        while should_continue():
+            sequence_counter += 1
+            logger.info(f"Starting demo sequence #{sequence_counter}")
             
-            # Start with tiny steps that gradually get larger
-            step_sizes = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
-            for step_size in step_sizes:
-                if not should_continue(): break
-                direction = 1 if current_pos < 7.5 else -1  # Ensure we stay in safe range
-                await asyncio.to_thread(axis.step, step_size * direction)
-                current_pos += step_size * direction
-                logger.info(f"Demo: Micro-step {step_size * direction:.3f} mm")
-                await asyncio.sleep(0.2)  # Quick succession of steps
+            # Randomly choose a sequence type
+            sequence_type = random.choice([
+                "big_steps", "random_steps", "oscillation", 
+                "scan_pattern", "speed_burst", "precision_moves"
+            ])
             
-        # SEQUENCE 2: Rapid oscillations around a point
-        if should_continue():
-            logger.info("Demo Sequence 2: Rapid oscillations")
-            # Set high speed and acceleration for snappy movement
-            await asyncio.to_thread(axis.setSpeed, 600)
-            set_acce_dece_params(45000, 45000)
-            
-            # Execute rapid back-and-forth movements
-            oscillation_sizes = [0.5, 0.8, 1.0, 0.8, 0.5, 0.3]
-            for size in oscillation_sizes:
-                if not should_continue(): break
-                for _ in range(2):  # Two oscillations at each size
+            # SEQUENCE TYPE 1: BIG STEPS
+            if sequence_type == "big_steps" and should_continue():
+                logger.info("Sequence: BIG DRAMATIC STEPS")
+                
+                # Use randomly high speed and acceleration for dramatic effect
+                speed = random.uniform(400, 800)
+                accel = random.randint(30000, 60000)
+                decel = random.randint(30000, 60000)
+                
+                await asyncio.to_thread(axis.setSpeed, speed)
+                set_acce_dece_params(accel, decel)
+                
+                # Determine safe direction and step size based on current position
+                if current_pos < CENTER_POSITION:
+                    direction = 1  # Move right if we're in the left half
+                    max_step = min(20.0, MAX_POSITION - SAFE_MARGIN - current_pos)
+                else:
+                    direction = -1  # Move left if we're in the right half
+                    max_step = min(20.0, current_pos - SAFE_MARGIN - MIN_POSITION)
+                
+                # Make 2-4 big dramatic steps
+                for _ in range(random.randint(2, 4)):
                     if not should_continue(): break
-                    # Step right
-                    await asyncio.to_thread(axis.step, size)
-                    current_pos += size
-                    await asyncio.sleep(0.1)
-                    # Step left
-                    await asyncio.to_thread(axis.step, -size)
-                    current_pos -= size
-                    await asyncio.sleep(0.1)
+                    
+                    # Generate a large random step size
+                    step_size = random.uniform(5.0, max_step)
+                    final_step = step_size * direction
+                    
+                    await asyncio.to_thread(axis.step, final_step)
+                    current_pos += final_step
+                    logger.info(f"Demo: BIG step {final_step:.2f} mm at speed {speed:.1f} mm/s")
+                    
+                    # Very minimal delay between steps
+                    await asyncio.sleep(0.05)
             
-        # SEQUENCE 3: Long scan followed by precise positioning
-        if should_continue():
-            logger.info("Demo Sequence 3: Long scan with precision stop")
-            # Move to left side first if needed
-            if current_pos > 7.0:
-                await asyncio.to_thread(axis.setSpeed, 400)
+            # SEQUENCE TYPE 2: RANDOM STEPS
+            elif sequence_type == "random_steps" and should_continue():
+                logger.info("Sequence: RANDOM VARIED STEPS")
+                
+                # Pick a medium-high speed for this sequence
+                speed = random.uniform(250, 500)
+                await asyncio.to_thread(axis.setSpeed, speed)
+                set_acce_dece_params(random.randint(15000, 40000), random.randint(15000, 40000))
+                
+                # Execute 5-8 steps of random sizes and directions
+                for _ in range(random.randint(5, 8)):
+                    if not should_continue(): break
+                    
+                    # Choose direction and step size with position checking
+                    if current_pos < SAFE_MARGIN:
+                        direction = 1  # Force right if too close to left limit
+                    elif current_pos > MAX_POSITION - SAFE_MARGIN:
+                        direction = -1  # Force left if too close to right limit
+                    else:
+                        direction = random.choice([-1, 1])
+                    
+                    # Random step size between 0.5 and 3.0 mm
+                    step_size = random.uniform(0.5, 3.0)
+                    
+                    # Check if this step would exceed limits
+                    if direction == 1 and current_pos + step_size > MAX_POSITION - SAFE_MARGIN:
+                        step_size = MAX_POSITION - SAFE_MARGIN - current_pos
+                    elif direction == -1 and current_pos - step_size < SAFE_MARGIN:
+                        step_size = current_pos - SAFE_MARGIN
+                    
+                    final_step = step_size * direction
+                    await asyncio.to_thread(axis.step, final_step)
+                    current_pos += final_step
+                    logger.info(f"Demo: Random step {final_step:.2f} mm")
+                    
+                    # Almost no delay
+                    await asyncio.sleep(0.02)
+            
+            # SEQUENCE TYPE 3: RAPID OSCILLATIONS
+            elif sequence_type == "oscillation" and should_continue():
+                logger.info("Sequence: RAPID OSCILLATIONS")
+                
+                # Very high speed for snappy movements
+                speed = random.uniform(600, 1000) 
+                await asyncio.to_thread(axis.setSpeed, speed)
+                set_acce_dece_params(60000, 60000)  # Max acceleration for quick response
+                
+                # Generate random oscillation sizes - much larger than before!
+                oscillation_sizes = [random.uniform(1.0, 4.0) for _ in range(4)]
+                
+                # Perform oscillations, varying from large to small
+                for size in oscillation_sizes:
+                    if not should_continue(): break
+                    
+                    # Safety check to ensure oscillations won't exceed limits
+                    if current_pos - size < SAFE_MARGIN or current_pos + size > MAX_POSITION - SAFE_MARGIN:
+                        # Reduce oscillation size if needed
+                        size = min(current_pos - SAFE_MARGIN, MAX_POSITION - SAFE_MARGIN - current_pos)
+                        if size < 0.1:  # Skip if we can't oscillate safely
+                            continue
+                    
+                    # Do 3-5 oscillations at this size
+                    for _ in range(random.randint(3, 5)):
+                        if not should_continue(): break
+                        
+                        # Oscillate right
+                        await asyncio.to_thread(axis.step, size)
+                        current_pos += size
+                        await asyncio.sleep(0.01)  # Minimal delay
+                        
+                        # Oscillate left
+                        await asyncio.to_thread(axis.step, -size)
+                        current_pos -= size
+                        await asyncio.sleep(0.01)  # Minimal delay
+            
+            # SEQUENCE TYPE 4: SCANNING PATTERNS
+            elif sequence_type == "scan_pattern" and should_continue():
+                logger.info("Sequence: SCANNING PATTERNS")
+                
+                # Choose random scan parameters
+                scan_speed = random.uniform(300, 900)
+                scan_accel = random.randint(10000, 50000)
+                scan_decel = random.randint(10000, 50000)
+                await asyncio.to_thread(axis.setSpeed, scan_speed)
+                set_acce_dece_params(scan_accel, scan_decel)
+                
+                # Determine scan direction based on position
+                if current_pos < CENTER_POSITION:
+                    # We're on the left side, scan right
+                    scan_direction = 1
+                else:
+                    # We're on the right side, scan left
+                    scan_direction = -1
+                
+                # Start the scan
+                await asyncio.to_thread(axis.startScan, scan_direction)
+                logger.info(f"Demo: Scanning {'right' if scan_direction == 1 else 'left'} at {scan_speed:.1f} mm/s")
+                
+                # Let it scan for a random time between 0.3 and 1.2 seconds
+                scan_time = random.uniform(0.3, 1.2)
+                await asyncio.sleep(scan_time)
+                
+                # Stop the scan
+                await asyncio.to_thread(axis.stopScan)
+                
+                # Update position after scan
+                try:
+                    current_pos = await asyncio.to_thread(axis.getEPOS)
+                    logger.info(f"Position after scan: {current_pos:.2f} mm")
+                except Exception as e:
+                    logger.error(f"Error getting position after scan: {str(e)}")
+                
+                # Safety check - if we're near limits, move to a safer position
+                if current_pos < SAFE_MARGIN:
+                    await asyncio.to_thread(axis.step, 5.0)
+                    current_pos += 5.0
+                elif current_pos > MAX_POSITION - SAFE_MARGIN:
+                    await asyncio.to_thread(axis.step, -5.0)
+                    current_pos -= 5.0
+            
+            # SEQUENCE TYPE 5: SPEED BURST
+            elif sequence_type == "speed_burst" and should_continue():
+                logger.info("Sequence: SPEED BURST")
+                
+                # Very high speed with high acceleration
+                await asyncio.to_thread(axis.setSpeed, 1000)  # Maximum speed
+                set_acce_dece_params(65000, 65000)  # Maximum acceleration
+                
+                # Choose movement direction based on position
+                if current_pos < CENTER_POSITION:
+                    direction = 1  # Move right
+                    max_burst = min(15.0, MAX_POSITION - SAFE_MARGIN - current_pos)
+                else:
+                    direction = -1  # Move left
+                    max_burst = min(15.0, current_pos - SAFE_MARGIN)
+                
+                # Execute a large, fast movement
+                burst_size = random.uniform(max_burst/2, max_burst)
+                await asyncio.to_thread(axis.step, burst_size * direction)
+                current_pos += burst_size * direction
+                logger.info(f"Demo: Speed burst {burst_size * direction:.2f} mm at MAX SPEED")
+                
+                # No delay needed - movement is already slow due to acceleration/deceleration
+            
+            # SEQUENCE TYPE 6: PRECISION MOVES
+            elif sequence_type == "precision_moves" and should_continue():
+                logger.info("Sequence: PRECISION MOVES")
+                
+                # Slower speed for precision
+                await asyncio.to_thread(axis.setSpeed, random.uniform(50, 150))
+                set_acce_dece_params(10000, 20000)
+                
+                # Series of precise steps of different sizes
+                step_sizes = [0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0]
+                random.shuffle(step_sizes)  # Mix up the order
+                
+                # Choose direction based on position
+                if current_pos < CENTER_POSITION:
+                    direction = 1  # Move right
+                else:
+                    direction = -1  # Move left
+                
+                # Execute precision steps with very minimal delays
+                for size in step_sizes[:random.randint(3, 5)]:  # Use 3-5 random sizes
+                    if not should_continue(): break
+                    
+                    # Safety check
+                    if (direction == 1 and current_pos + size > MAX_POSITION - SAFE_MARGIN) or \
+                       (direction == -1 and current_pos - size < SAFE_MARGIN):
+                        # Reverse direction if we'd go out of bounds
+                        direction *= -1
+                    
+                    final_step = size * direction
+                    await asyncio.to_thread(axis.step, final_step)
+                    current_pos += final_step
+                    logger.info(f"Demo: Precision step {final_step:.3f} mm")
+                    await asyncio.sleep(0.05)  # Very minimal delay
+            
+            # After each sequence, check if we should do a quick reposition for safety
+            if should_continue():
+                # If we're close to either limit, move toward center
+                if current_pos < SAFE_MARGIN + 2.0:
+                    await asyncio.to_thread(axis.setSpeed, 200)
+                    set_acce_dece_params(20000, 20000)
+                    await asyncio.to_thread(axis.step, 10.0)  # Move right by 10mm
+                    current_pos += 10.0
+                    logger.info(f"Safety repositioning: moved to {current_pos:.2f} mm")
+                elif current_pos > MAX_POSITION - SAFE_MARGIN - 2.0:
+                    await asyncio.to_thread(axis.setSpeed, 200)
+                    set_acce_dece_params(20000, 20000)
+                    await asyncio.to_thread(axis.step, -10.0)  # Move left by 10mm
+                    current_pos -= 10.0
+                    logger.info(f"Safety repositioning: moved to {current_pos:.2f} mm")
+                
+                # Get actual position to eliminate accumulated error
+                try:
+                    current_pos = await asyncio.to_thread(axis.getEPOS)
+                except Exception as e:
+                    pass
+                
+                # Minimal delay between sequences
+                await asyncio.sleep(random.uniform(0.05, 0.2))
+        
+        # After the main loop, return to a safe position
+        if demo_running:  # If we exited due to timeout
+            logger.info("Demo timeout reached - stopping and sending demo_stop command")
+            # Send a stop command to the controller
+            try:
+                await asyncio.to_thread(axis.stopScan)  # Stop any ongoing scan
+                await asyncio.to_thread(axis.setSpeed, 300)
                 set_acce_dece_params(30000, 30000)
-                await asyncio.to_thread(axis.step, -5.0)
-                current_pos -= 5.0
-                await asyncio.sleep(0.3)
-            
-            # Set up for scan
-            await asyncio.to_thread(axis.setSpeed, 200)
-            set_acce_dece_params(15000, 40000)  # Low accel, high decel for dramatic stop
-            
-            # Start scan right
-            await asyncio.to_thread(axis.startScan, 1)
-            logger.info("Demo: Starting long scan right")
-            await asyncio.sleep(2.0)  # Let it scan for a while
-            await asyncio.to_thread(axis.stopScan)
-            logger.info("Demo: Scan stopped dramatically")
-            
-            # Get new position
-            try:
-                current_pos = await asyncio.to_thread(axis.getEPOS)
-                logger.info(f"Current position after scan: {current_pos:.3f} mm")
+                
+                # Find index (home) to reset position
+                await asyncio.to_thread(axis.findIndex)
+                
+                # Reset to default parameters
+                set_acce_dece_params(DEFAULT_ACCELERATION, DEFAULT_DECELERATION)
+                await asyncio.to_thread(axis.setSpeed, 500)
+                
+                # Explicitly trigger the demo_stop command via internal API call
+                demo_stop_data = {
+                    "type": "command",
+                    "command": "demo_stop",
+                    "rpiId": STATION_ID
+                }
+                await process_command(demo_stop_data)
             except Exception as e:
-                logger.error(f"Error getting position: {str(e)}")
-            
-            await asyncio.sleep(0.5)  # Pause for effect
-        
-        # SEQUENCE 4: Precise rapid step sequence
-        if should_continue():
-            logger.info("Demo Sequence 4: Rapid precise steps")
-            # Set medium-high speed with balanced acceleration
-            await asyncio.to_thread(axis.setSpeed, 350)
-            set_acce_dece_params(35000, 35000)
-            
-            # Create an interesting pattern - 10 steps in rapid succession
-            step_pattern = [0.2, 0.3, 0.4, 0.3, 0.2, -0.2, -0.3, -0.4, -0.3, -0.2]
-            for step in step_pattern:
-                if not should_continue(): break
-                await asyncio.to_thread(axis.step, step)
-                current_pos += step
-                logger.info(f"Demo: Quick step {step:.2f} mm")
-                await asyncio.sleep(0.15)  # Very rapid succession
-            
-            await asyncio.sleep(0.5)  # Short pause after the sequence
-        
-        # SEQUENCE 5: Slow, precise movement with varying acceleration
-        if should_continue():
-            logger.info("Demo Sequence 5: Slow movement with variable acceleration")
-            # First determine which direction has more room
-            direction = -1 if current_pos > 7.5 else 1
-            
-            # Set slow speed for dramatic effect
-            await asyncio.to_thread(axis.setSpeed, 50)
-            
-            # Start with extremely low acceleration for a slow start
-            set_acce_dece_params(2000, 50000)
-            await asyncio.to_thread(axis.step, 2.0 * direction)
-            current_pos += 2.0 * direction
-            logger.info(f"Demo: Slow dramatic move with 2.0 mm {direction}")
-            await asyncio.sleep(0.3)
-            
-            # Then sudden high acceleration for contrast
-            set_acce_dece_params(60000, 60000)
-            await asyncio.to_thread(axis.step, -1.5 * direction)
-            current_pos -= 1.5 * direction
-            logger.info(f"Demo: Quick snap back with -1.5 mm {-direction}")
-            await asyncio.sleep(0.5)
-        
-        # SEQUENCE 6: Alternating scan directions with varying speeds
-        if should_continue():
-            logger.info("Demo Sequence 6: Alternating scans with varying speeds")
-            
-            # First scan right at medium speed
-            await asyncio.to_thread(axis.setSpeed, 250)
-            set_acce_dece_params(25000, 25000)
-            await asyncio.to_thread(axis.startScan, 1)
-            logger.info("Demo: Medium speed scan right")
-            await asyncio.sleep(1.0)
-            await asyncio.to_thread(axis.stopScan)
-            
-            # Short delay
-            await asyncio.sleep(0.3)
-            
-            # Then scan left at high speed
-            await asyncio.to_thread(axis.setSpeed, 700)
-            set_acce_dece_params(55000, 55000)
-            await asyncio.to_thread(axis.startScan, -1)
-            logger.info("Demo: High speed scan left")
-            await asyncio.sleep(0.8)
-            await asyncio.to_thread(axis.stopScan)
-            
-            # Get updated position
-            try:
-                current_pos = await asyncio.to_thread(axis.getEPOS)
-                logger.info(f"Current position after scans: {current_pos:.3f} mm")
-            except Exception as e:
-                logger.error(f"Error getting position: {str(e)}")
-        
-        # FINALE: Return to home with smooth movement
-        if should_continue():
-            logger.info("Demo Finale: Returning to home position")
-            await asyncio.to_thread(axis.setSpeed, 300)
-            set_acce_dece_params(20000, 20000)
-            
-            # Home the axis
-            await asyncio.to_thread(axis.findIndex)
-            logger.info("Demo: Homed to index position")
-            
-            # Set default parameters for clean finish
-            set_acce_dece_params(DEFAULT_ACCELERATION, DEFAULT_DECELERATION)
-            
-        logger.info("Demo sequence completed successfully")
+                logger.error(f"Error during demo auto-stop: {str(e)}")
         
     except Exception as e:
         logger.error(f"Demo error: {str(e)}")
@@ -368,6 +499,7 @@ async def run_demo():
         try:
             set_acce_dece_params(DEFAULT_ACCELERATION, DEFAULT_DECELERATION)
             await asyncio.to_thread(axis.setSpeed, 500)  # Restore default speed
+            await asyncio.to_thread(axis.stopScan)  # Ensure any scan is stopped
         except Exception as e:
             logger.error(f"Error restoring default parameters: {str(e)}")
         
