@@ -396,25 +396,28 @@ export function StationCard({ station }: { station: Station }) {
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
-            <div className="grid grid-cols-[1fr,1fr,350px] gap-6">
-              <div className="flex flex-col h-full">
-                {/* Position display moved to top with full width */}
-                <div className="mb-3">
-                  <EPOSDisplay />
-                </div>
-                {/* Camera feed with adjusted height to match position graph */}
-                <div className="flex-grow h-[460px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr,1fr,350px] gap-3 md:gap-6">
+              {/* Position display at the very top, visible on all screens */}
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 mb-2">
+                <EPOSDisplay />
+              </div>
+              
+              <div className="flex flex-col h-full col-span-1 md:col-span-1">
+                {/* Camera feed with responsive height */}
+                <div className="flex-grow md:h-[400px] lg:h-[460px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
-              <div className="flex flex-col h-full">
+              
+              <div className="flex flex-col h-full col-span-1 md:col-span-1">
                 <h3 className="text-lg font-semibold mb-3">Position Monitoring</h3>
-                {/* Pass currentEpos directly as currentPosition with adjusted height */}
-                <div className="flex-grow">
+                {/* Responsive position graph */}
+                <div className="flex-grow md:h-[400px]">
                   <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
                 </div>
               </div>
-              <div className="flex flex-col h-full justify-between">
+              
+              <div className="flex flex-col h-full col-span-1 md:col-span-2 lg:col-span-1 justify-between">
                 <div className="space-y-4">
                   <AdvancedControls
                     station={station}
@@ -513,8 +516,8 @@ export function StationCard({ station }: { station: Station }) {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="aspect-video relative">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="aspect-video relative rounded-lg overflow-hidden">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>
                 <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
