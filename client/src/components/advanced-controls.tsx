@@ -35,22 +35,31 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
   // Handle speed changes
   const handleSpeedChange = (value: number[]) => {
     setSpeed(value);
+  };
+
+  const handleSpeedCommit = () => {
     if (!enabled || !isConnected) return;
-    onCommand("speed", value[0].toString());
+    onCommand("speed", speed[0].toString());
   };
   
   // Handle acceleration changes
   const handleAccelerationChange = (value: number[]) => {
     setAcceleration(value);
+  };
+
+  const handleAccelerationCommit = () => {
     if (!enabled || !isConnected) return;
-    onCommand("acceleration", value[0].toString());
+    onCommand("acceleration", acceleration[0].toString());
   };
   
   // Handle deceleration changes
   const handleDecelerationChange = (value: number[]) => {
     setDeceleration(value);
+  };
+
+  const handleDecelerationCommit = () => {
     if (!enabled || !isConnected) return;
-    onCommand("deceleration", value[0].toString());
+    onCommand("deceleration", deceleration[0].toString());
   };
   
   // Handle step size input change
@@ -195,8 +204,9 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
         <Slider
           value={speed}
           onValueChange={handleSpeedChange}
+          onValueCommit={handleSpeedCommit}
           max={1000}
-          step={1}
+          step={10}
           disabled={!enabled || !isConnected}
           className="py-1"
         />
@@ -217,8 +227,10 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
                 <Slider
                   value={acceleration}
                   onValueChange={handleAccelerationChange}
+                  onValueCommit={handleAccelerationCommit}
+                  min={1}
                   max={65500}
-                  step={100}
+                  step={10}
                   disabled={!enabled || !isConnected}
                   className="py-1"
                 />
@@ -233,8 +245,10 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
                 <Slider
                   value={deceleration}
                   onValueChange={handleDecelerationChange}
+                  onValueCommit={handleDecelerationCommit}
+                  min={1}
                   max={65500}
-                  step={100}
+                  step={10}
                   disabled={!enabled || !isConnected}
                   className="py-1"
                 />
