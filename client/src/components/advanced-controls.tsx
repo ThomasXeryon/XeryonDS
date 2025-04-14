@@ -205,6 +205,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           value={speed}
           onValueChange={handleSpeedChange}
           onValueCommit={handleSpeedCommit}
+          min={1}
           max={1000}
           step={10}
           disabled={!enabled || !isConnected}
