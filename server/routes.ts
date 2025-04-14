@@ -42,7 +42,7 @@ const upload = multer({
 // Modified to store connection type with the RPi connections
 const rpiConnections = new Map<string, { 
   ws: WebSocket; 
-  connectionType: 'camera' | 'control' 
+  connectionType: 'camera' | 'control' | 'combined' 
 }>();
 
 // Map to store UI client connections with their associated RPi IDs
@@ -52,7 +52,7 @@ const uiConnections = new Map<string, { ws: WebSocket; rpiId?: string }>();
 interface WebSocketRegistrationMessage {
   type: 'register';
   rpiId: string;
-  connectionType?: 'camera' | 'control';
+  connectionType?: 'camera' | 'control' | 'combined';
 }
 
 interface WebSocketCommandMessage {
@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // The connection will be added when we receive a "register" message with connectionType
     
     // Default to "camera" until we get explicit connection type
-    let connectionType: 'camera' | 'control' = 'camera';
+    let connectionType: 'camera' | 'control' | 'combined' = 'camera';
     
     // Notify UI clients about new RPi connection
     for (const client of uiConnections.values()) {
@@ -444,8 +444,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
-        // Check if this is a control connection
-        if (rpiConnection.connectionType !== 'control') {
+        // Check if this is a control or combined connection
+        if (rpiConnection.connectionType !== 'control' && rpiConnection.connectionType !== 'combined') {
           console.log(`[WebSocket] RPi ${message.rpiId} has no control connection, only ${rpiConnection.connectionType}`);
           ws.send(JSON.stringify({
             type: "error",
