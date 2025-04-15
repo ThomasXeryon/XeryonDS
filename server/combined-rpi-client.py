@@ -902,11 +902,11 @@ async def send_position_updates(websocket):
 
 
 async def health_checker(websocket):
-    """Monitor and report on system health."""
+    """Monitor and report on system health with ultra-responsive connection verification."""
     global startup_time, thermal_error_count, amplifier_error_count, serial_error_count
-    health_check_interval = 5  # seconds
+    health_check_interval = CONNECTION_HEARTBEAT_INTERVAL  # Use configurable interval
 
-    logger.info("Starting health monitor task")
+    logger.info(f"Starting health monitor task with {health_check_interval}s heartbeat interval")
 
     while not shutdown_requested:
         try:
@@ -929,8 +929,14 @@ async def health_checker(websocket):
                 f"Health: command={command_silence:.1f}s, frame={frame_silence:.1f}s, ping={ping_silence:.1f}s"
             )
 
-            # Send health ping to server
+            # Send health ping to server with enhanced checking
             try:
+                # First check if websocket is still alive with a minimal operation
+                if not hasattr(websocket, 'open') or not websocket.open:
+                    logger.error("WebSocket reported as closed - triggering reconnection")
+                    break  # Exit to trigger reconnection in main loop
+                
+                # Create comprehensive health data
                 health_data = {
                     "type": "health_check",
                     "timestamp": datetime.now().isoformat(),
@@ -945,19 +951,73 @@ async def health_checker(websocket):
                         "command": command_silence,
                         "frame": frame_silence,
                         "ping": ping_silence
-                    }
+                    },
+                    "client_version": "2.1-ultra-reliable"
                 }
-
-                await websocket.send(json.dumps(health_data))
+                
+                # Use wait_for with tight timeout to detect slow connections immediately
+                try:
+                    await asyncio.wait_for(
+                        websocket.send(json.dumps(health_data)),
+                        timeout=2.0  # Strict timeout for health updates (2s max)
+                    )
+                except asyncio.TimeoutError:
+                    logger.error("Health update send timed out - triggering reconnection")
+                    break  # Exit to trigger reconnection in main loop
+                    
             except Exception as e:
                 logger.error(f"Health check send error: {e}")
+                # Connection is likely dead, break to trigger reconnection
+                break
+
+            # Detect prolonged silence in components (frames or commands)
+            if command_silence > 30 * 60:  # 30 minutes without commands
+                logger.warning(f"Long command silence detected: {command_silence:.1f}s")
+
+            if frame_silence > 30:  # 30 seconds without frames
+                logger.warning(f"Frame silence detected: {frame_silence:.1f}s")
+                if RUNNING_ON_RPI and picam2:
+                    # Try to restart the camera if no frames for 30 seconds
+                    logger.info("Attempting to reset camera due to silence")
+                    try:
+                        stop_camera()
+                        await asyncio.sleep(1)
+                        initialize_camera()
+                    except Exception as e:
+                        logger.error(f"Failed to reset camera: {str(e)}")
+
+            # Send ping to verify connection health with tight timeout
+            if not shutdown_requested:
+                try:
+                    ping_data = {
+                        "type": "ping",
+                        "timestamp": datetime.now().isoformat(),
+                        "rpiId": STATION_ID,
+                        "uptime": uptime
+                    }
+                    # Use wait_for with tight timeout to detect slow connections immediately
+                    try:
+                        await asyncio.wait_for(
+                            websocket.send(json.dumps(ping_data)),
+                            timeout=1.0  # Stricter timeout for pings (1s max)
+                        )
+                    except asyncio.TimeoutError:
+                        logger.error("Ping send timed out - triggering reconnection")
+                        break  # Exit loop to force reconnection
+                except Exception as e:
+                    logger.error(f"Error sending ping: {str(e)}")
+                    # Connection is probably dead
+                    break
 
             # Wait before next health check
             await asyncio.sleep(health_check_interval)
-
+            
+        except asyncio.CancelledError:
+            logger.info("Health monitor task cancelled")
+            break
         except Exception as e:
             logger.error(f"Health checker error: {str(e)}")
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)  # Shorter delay on error with faster recovery
 
 
 async def flush_buffers():
