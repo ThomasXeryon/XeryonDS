@@ -55,38 +55,42 @@ export function useWebSocket(rpiId?: string) {
       });
       setState(prev => ({ ...prev, connectionStatus: false }));
 
-      //Improved Reconnection Logic:  Instead of a simple setTimeout, use a more robust retry mechanism.
-      const reconnect = () => {
-        const backoffTime = Math.min(1000 * (Math.pow(2, Math.floor(Math.random() * 4))), 10000);
-        console.log(`[WebSocket] Will attempt to reconnect in ${backoffTime}ms`);
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log("[WebSocket] Attempting to reconnect...");
-          try {
-            const newSocket = new WebSocket(wsUrl);
-            wsRef.current = newSocket;
+      // Set a flag to show reconnecting status after a short delay
+      const reconnectStatusTimeout = window.setTimeout(() => {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          console.log("[WebSocket] Setting reconnecting status");
+          setState(prev => ({ ...prev, connectionStatus: false, frame: null }));
+        }
+      }, 5000);
 
-            // Set up event handlers for the new socket
-            newSocket.onopen = socket.onopen;
-            newSocket.onmessage = socket.onmessage;
-            newSocket.onerror = socket.onerror;
-            newSocket.onclose = socket.onclose;
-          } catch (error) {
-            console.error("[WebSocket] Failed to create new connection:", error);
-            //Retry if connection fails
-            reconnect();
-          }
-        }, backoffTime);
-      };
-      reconnect();
+      // Implement exponential backoff for reconnection attempts
+      const backoffTime = Math.min(1000 * (Math.pow(2, Math.floor(Math.random() * 4))), 10000);
+      console.log(`[WebSocket] Will attempt to reconnect in ${backoffTime}ms`);
 
+      // Attempt to reconnect with exponential backoff
+      reconnectTimeoutRef.current = window.setTimeout(() => {
+        console.log("[WebSocket] Attempting to reconnect...");
+        try {
+          const newSocket = new WebSocket(wsUrl);
+          wsRef.current = newSocket;
 
+          // Set up event handlers for the new socket
+          newSocket.onopen = socket.onopen;
+          newSocket.onmessage = socket.onmessage;
+          newSocket.onerror = socket.onerror;
+          newSocket.onclose = socket.onclose;
+        } catch (error) {
+          console.error("[WebSocket] Failed to create new connection:", error);
+        }
+
+        // Clear the reconnect status timeout
+        window.clearTimeout(reconnectStatusTimeout);
+      }, backoffTime);
     };
 
     socket.onerror = (error) => {
       console.error("[WebSocket] Connection error:", error);
       setState(prev => ({ ...prev, connectionStatus: false }));
-      //Trigger Reconnect on error
-      socket.close();
     };
 
     socket.onmessage = handleMessage;
@@ -97,12 +101,14 @@ export function useWebSocket(rpiId?: string) {
         wsRef.current.close();
         wsRef.current = null;
       }
+
       if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
+        window.clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
+
       if (frameTimeoutRef.current) {
-        clearTimeout(frameTimeoutRef.current);
+        window.clearTimeout(frameTimeoutRef.current);
         frameTimeoutRef.current = null;
       }
     };

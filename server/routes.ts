@@ -157,13 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     // Simple path-based routing for WebSockets
-    // Normalize WebSocket paths
-    if (pathname === '/ws' || pathname === '/appws' || pathname.endsWith('/ws') || pathname.endsWith('/appws')) {
-      wssUI.handleUpgrade(request, socket, head, (ws) => {
-        console.log("[WebSocket] UI client upgrade successful");
-        wssUI.emit('connection', ws, request);
-      });
-    } else if (pathname.startsWith('/rpi/')) {
+    if (pathname.startsWith('/rpi/')) {
       // Extract the RPi ID from the path
       const rpiId = pathname.split('/')[2];
 

@@ -205,9 +205,8 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                         await camera_ws.send(json.dumps(frame_data))
                         
                         # Also send position data update (EPOS value)
-                        # Send a sine wave oscillation for interesting movement, using -30 to +30 range
-                        # Currently using a portion of the range from -15 to +15
-                        position_value = round(0.0 + 15.0 * math.sin(frame_count * 0.2), 3)
+                        # Send a sine wave oscillation for interesting movement
+                        position_value = round(10.0 + 5.0 * math.sin(frame_count * 0.2), 3)
                         position_data = {
                             "type": "position_update",
                             "rpiId": rpi_id,

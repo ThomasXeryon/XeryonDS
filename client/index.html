@@ -3,37 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Xeryon Remote Demo Station</title>
-    <script>
-      // Anti-refresh code to keep the page from refreshing
-      
-      // Register service worker to intercept and block HMR requests
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/no-refresh-worker.js')
-            .then(registration => {
-              console.log('Anti-refresh Service Worker registered successfully');
-            })
-            .catch(error => {
-              console.log('Anti-refresh Service Worker registration failed:', error);
-            });
-        });
-      }
-      
-      // Block beforeunload events
-      window.addEventListener('beforeunload', function(e) {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      });
-      
-      // Intercept and block page reloads
-      const originalReload = window.location.reload;
-      window.location.reload = function() {
-        console.log('Page reload blocked');
-        return false;
-      };
-    </script>
   </head>
   <body>
     <div id="root"></div>
