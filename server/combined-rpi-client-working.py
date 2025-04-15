@@ -38,9 +38,9 @@ EPOS_UPDATE_INTERVAL = 0.1
 DEFAULT_ACCELERATION = 32750
 DEFAULT_DECELERATION = 32750
 
-# CPU Usage Management
+# CPU Usage Management - Optimized for max responsiveness
 CPU_MONITOR_INTERVAL = 10  # seconds
-MIN_SLEEP_DELAY = 0.001    # 1ms minimum delay between operations
+MIN_SLEEP_DELAY = 0.0005   # 0.5ms minimum delay between operations - half the original delay for maximum responsiveness
 
 # Globals
 picam2 = None
@@ -561,37 +561,38 @@ async def health_checker(websocket):
             logger.error(f"Health checker error: {str(e)}")
             await asyncio.sleep(1)
 
-async def monitor_cpu_usage():
-    """Monitor CPU usage periodically, adjust delays if needed."""
+async def flush_camera_buffer():
+    """Periodically flush camera buffer to ensure smooth operation."""
+    global picam2
     while not shutdown_requested:
         try:
-            # In a real implementation we would check actual CPU usage
-            # For now we just log the monitoring activity
-            logger.info("CPU monitoring active - preventing high CPU usage with sleep intervals")
-            
-            # Check if system is running hot by reading temperature
-            try:
-                # Read temperature on Raspberry Pi
-                temp_output = subprocess.check_output(['vcgencmd', 'measure_temp']).decode()
-                temp = float(temp_output.replace('temp=', '').replace('\'C', ''))
-                
-                if temp > 70:  # Temperature threshold
-                    logger.warning(f"System running hot: {temp}°C - adding extra cooling delays")
-                    # Increase all minimum delays temporarily
-                    global MIN_SLEEP_DELAY
-                    old_delay = MIN_SLEEP_DELAY
-                    MIN_SLEEP_DELAY = 0.01  # 10ms when hot
-                    await asyncio.sleep(30)  # Apply for 30 seconds
-                    MIN_SLEEP_DELAY = old_delay
-            except Exception as e:
-                logger.error(f"Failed to check temperature: {e}")
-            
-            # Wait before checking again
-            await asyncio.sleep(CPU_MONITOR_INTERVAL)
-            
+            if picam2 and hasattr(picam2, 'started') and picam2.started:
+                # Flush camera buffers by capturing a few frames 
+                # without processing them - prevents buffer buildup
+                for _ in range(3):
+                    _ = picam2.capture_array("main")
+                logger.debug("Camera buffers flushed")
+            await asyncio.sleep(30)  # Run every 30 seconds
         except Exception as e:
-            logger.error(f"CPU monitoring error: {e}")
-            await asyncio.sleep(5)  # Sleep longer on error
+            logger.error(f"Camera buffer flush error: {e}")
+            await asyncio.sleep(5)
+
+async def flush_usb_buffer():
+    """Periodically flush USB buffers to prevent data buildup."""
+    while not shutdown_requested:
+        try:
+            if os.path.exists(COM_PORT):
+                try:
+                    with serial.Serial(COM_PORT, 115200, timeout=1) as ser:
+                        ser.reset_input_buffer()
+                        ser.reset_output_buffer()
+                    logger.debug(f"USB port {COM_PORT} buffers flushed")
+                except Exception as e:
+                    logger.error(f"Error flushing USB port: {e}")
+            await asyncio.sleep(60)  # Run every 60 seconds
+        except Exception as e:
+            logger.error(f"USB buffer flush error: {e}")
+            await asyncio.sleep(5)
 
 async def command_processor():
     """Process queued commands in background."""
@@ -628,6 +629,10 @@ async def rpi_client():
     
     # Start the CPU monitoring task
     #cpu_monitor_task = asyncio.create_task(monitor_cpu_usage())
+    
+    # Start buffer flush tasks for maximum responsiveness
+    camera_flush_task = asyncio.create_task(flush_camera_buffer())
+    usb_flush_task = asyncio.create_task(flush_usb_buffer())
     
     # Start the command processor task
     cmd_processor_task = asyncio.create_task(command_processor())
