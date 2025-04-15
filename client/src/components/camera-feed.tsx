@@ -35,10 +35,12 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         }));
       }
     } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
-      // Just set reconnecting state if no frames
-      setIsReconnecting(true);
+      // Only update reconnecting state without forcing refresh
+      if (!isReconnecting) {
+        setIsReconnecting(true);
+      }
     }
-  }, [frame, wsRef]);
+  }, [frame, wsRef, isReconnecting]);
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
