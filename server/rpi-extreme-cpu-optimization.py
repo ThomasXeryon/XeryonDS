@@ -149,12 +149,26 @@ def set_cpu_governor(governor="performance"):
     For high-performance mode, we use 'performance' which keeps CPU at max frequency.
     """
     try:
+        # First check if the path exists to avoid hanging
+        if not os.path.exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"):
+            logger.warning("CPU governor path not found, skipping this step")
+            return False
+            
+        # Use a timeout to prevent hanging
         cmd = f"echo {governor} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
-        subprocess.run(cmd, shell=True)
-        logger.info(f"CPU governor set to {governor}")
-        return True
+        result = subprocess.run(cmd, shell=True, timeout=2)
+        
+        if result.returncode == 0:
+            logger.info(f"CPU governor set to {governor}")
+            return True
+        else:
+            logger.warning(f"Failed to set CPU governor, continuing anyway")
+            return False
+    except subprocess.TimeoutExpired:
+        logger.warning("CPU governor command timed out, continuing anyway")
+        return False
     except Exception as e:
-        logger.error(f"Failed to set CPU governor: {e}")
+        logger.error(f"Error setting CPU governor: {e}")
         return False
 
 def optimize_memory_usage():
@@ -673,9 +687,8 @@ async def main():
     last_ping_response_time = time.time()
     cpu_usage = 0.0
     
-    # Apply initial optimizations
-    logger.info("Applying CPU optimizations for high performance...")
-    set_cpu_governor("performance")  # Use performance governor for maximum CPU
+    # Skip CPU governor to avoid hanging issues
+    logger.info("Starting system with high-performance settings...")
     
     # Initialize variables
     camera = None
