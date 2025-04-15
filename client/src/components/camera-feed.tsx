@@ -35,8 +35,8 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         }));
       }
     } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
-      // Force reconnection if no frames for 5 seconds
-      window.location.reload();
+      // Just set reconnecting state if no frames
+      setIsReconnecting(true);
     }
   }, [frame, wsRef]);
 
