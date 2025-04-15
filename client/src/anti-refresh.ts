@@ -1,5 +1,13 @@
 // Anti-refresh script to prevent Vite from refreshing the page
 
+// Define custom Window interface with Vite properties
+declare global {
+  interface Window {
+    __vite_hmr?: any;
+    __vite_ws?: any;
+  }
+}
+
 // Function to disable Vite's HMR
 function disableHMR() {
   try {
