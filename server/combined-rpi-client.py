@@ -57,9 +57,14 @@ DEFAULT_ACCELERATION = 32750
 DEFAULT_DECELERATION = 32750
 DEFAULT_SPEED = 500
 MIN_SLEEP_DELAY = 0.00001  # Absolute minimum sleep (10μs)
-MAX_RECONNECT_ATTEMPTS = 20
-RECONNECT_BASE_DELAY = 2
-MAX_RECONNECT_DELAY = 30.0
+
+# Connection parameters - Optimized for ultra-fast reconnection
+MAX_RECONNECT_ATTEMPTS = 9999  # Effectively infinite retries
+RECONNECT_BASE_DELAY = 0.5  # Start with just 500ms delay
+MAX_RECONNECT_DELAY = 5.0  # Cap at 5 seconds maximum
+MAX_CONNECTION_TIMEOUT = 3.0  # Timeout for connection attempts
+MAX_CLOSE_TIMEOUT = 1.0  # Timeout for connection closure
+CONNECTION_HEARTBEAT_INTERVAL = 5.0  # Send heartbeats every 5 seconds
 
 # ===== GLOBAL STATE =====
 shutdown_requested = False
@@ -1077,13 +1082,29 @@ async def rpi_client():
                 f"Connecting to {SERVER_URL} (attempt {total_connection_failures + 1})..."
             )
 
-            # Connect to WebSocket server with optimized settings
-            websocket = await websockets.connect(
-                SERVER_URL,
-                ping_interval=None,  # We'll implement our own ping/pong
-                close_timeout=2,  # Faster closing for reconnection
-                max_size=10_000_000  # Allow large messages for camera frames
-            )
+            # Connect to WebSocket server with ultra-responsive optimized settings
+            try:
+                # Set super strict timeouts for fast connection detection
+                websocket = await asyncio.wait_for(
+                    websockets.connect(
+                        SERVER_URL,
+                        ping_interval=None,  # We'll implement our own application-level ping/pong
+                        ping_timeout=None,  # Disable built-in ping timeouts entirely
+                        close_timeout=MAX_CLOSE_TIMEOUT,  # Faster closing for quicker reconnection
+                        max_size=10_000_000,  # Allow large messages for camera frames
+                        compression=None,  # Disable compression for speed (we compress JPEG data already)
+                    ), 
+                    timeout=MAX_CONNECTION_TIMEOUT  # Strict timeout for connection attempt
+                )
+                logger.info("WebSocket connection established successfully")
+            except asyncio.TimeoutError:
+                logger.error(f"Connection timeout after {MAX_CONNECTION_TIMEOUT}s - will retry immediately")
+                # Skip the sleep at the end of the loop to retry immediately
+                continue
+            except Exception as e:
+                logger.error(f"Connection error: {str(e)}")
+                # Will retry after sleep at the end of the loop
+                raise
 
             logger.info("WebSocket connection established")
 
@@ -1200,17 +1221,30 @@ async def rpi_client():
         except Exception as e:
             logger.error(f"Connection error: {str(e)}")
 
-            # Use exponential backoff with jitter for reconnection
+            # Ultra-fast reconnection with minimal delay
             total_connection_failures += 1
-            reconnect_delay = min(MAX_RECONNECT_DELAY, reconnect_delay * 1.5)
-
-            # Add jitter to prevent reconnection storms
-            jitter = random.uniform(0, 0.3 * reconnect_delay)
-            actual_delay = reconnect_delay + jitter
-
-            logger.info(
-                f"Retrying connection in {actual_delay:.1f}s (attempt {total_connection_failures})..."
-            )
+            
+            # Use much more aggressive reconnection delay - optimized for ultra-reliability
+            if "device not connected" in str(e).lower() or "cannot connect" in str(e).lower():
+                # For connection refusals, retry almost immediately
+                actual_delay = 0.1
+                logger.warning(f"Connection refused - retrying almost immediately in {actual_delay:.1f}s")
+            else:
+                # For other errors, use a very short but slightly increasing delay
+                # Cap at an extremely low value (MAX_RECONNECT_DELAY) for ultra-responsiveness 
+                reconnect_delay = min(MAX_RECONNECT_DELAY, RECONNECT_BASE_DELAY * (1.2 ** min(total_connection_failures % 5, 4)))
+                
+                # Add minimal jitter to prevent reconnection storms (less than previous version)
+                jitter = random.uniform(0, 0.1 * reconnect_delay)
+                actual_delay = reconnect_delay + jitter
+            
+            logger.info(f"Retrying connection in {actual_delay:.2f}s (attempt {total_connection_failures})...")
+            
+            # For first few attempts, use even more aggressive retry
+            if total_connection_failures < 3:
+                actual_delay = min(0.1, actual_delay)  # Retry almost immediately for first 3 attempts
+                logger.info(f"First few attempts - using ultra-fast retry ({actual_delay:.2f}s)")
+                
             await asyncio.sleep(actual_delay)
 
             # Reset hardware after multiple failures
