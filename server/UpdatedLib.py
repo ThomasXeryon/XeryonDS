@@ -407,10 +407,13 @@ async def send_camera_frames(websocket):
                 continue
                 
             # Skip frame processing if we're extremely backlogged
-            if frame_backlog > 10:
+            if frame_backlog > 5:  # Lower threshold for faster response
                 frame_backlog += 1
-                if frame_backlog % 20 == 0:
-                    logger.warning(f"Extreme backlog: {frame_backlog} frames - skipping processing")
+                if frame_backlog % 10 == 0:
+                    logger.warning(f"Backlog: {frame_backlog} frames - prioritizing latest")
+                # Skip old frames, only process latest
+                while len(frame_queue) > 1:
+                    frame_queue.popleft()
                 continue
                 
             # Track backlog

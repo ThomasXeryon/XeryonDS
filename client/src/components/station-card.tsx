@@ -33,7 +33,7 @@ export function StationCard({ station }: { station: Station }) {
     connected: false,
     send: () => {},
   });
-  
+
   // Network metrics state with real measured values
   const [networkMetrics, setNetworkMetrics] = useState({
     clientToServer: 0, // Will be measured based on WebSocket roundtrip time
@@ -116,7 +116,7 @@ export function StationCard({ station }: { station: Station }) {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         // Log only essential info to avoid console flooding
         if (data.type === 'position_update') {
           console.log("[StationCard] Received message:", {
@@ -136,17 +136,17 @@ export function StationCard({ station }: { station: Station }) {
           // Calculate round trip time based on the timestamp in the pong message
           const now = new Date().getTime();
           const pingTime = data.timestamp;
-          
+
           if (pingTime && typeof pingTime === 'number') {
             const roundTripTime = now - pingTime; // Total roundtrip time
-            
+
             // Update network metrics with actual measured values
             setNetworkMetrics(prev => {
               // We now show simplified segments for better understanding:
               // Just measure the total roundtrip and subtract 25ms for RPi processing
-              
+
               console.log("[NetworkMetrics] Round trip:", roundTripTime.toFixed(2), "ms");
-              
+
               return {
                 ...prev,
                 totalLatency: roundTripTime,
@@ -164,10 +164,10 @@ export function StationCard({ station }: { station: Station }) {
           if (messageRpiId === station.rpiId) {
             console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
             setCurrentEpos(parseFloat(data.epos));
-            
+
             // Measure actual network latency
             const now = new Date();
-            
+
             // Send a ping to measure round-trip time
             if (wsConnection.connected && Math.random() > 0.8) { // Only ping occasionally
               const pingData = {
@@ -177,7 +177,7 @@ export function StationCard({ station }: { station: Station }) {
               };
               wsRef.current?.send(JSON.stringify(pingData));
             }
-            
+
             // Update metrics with new position data timestamp
             setNetworkMetrics(prev => {
               return {
@@ -213,7 +213,7 @@ export function StationCard({ station }: { station: Station }) {
         title: "Session started",
         description: "You now have control of the station",
       });
-      
+
       // Send default values for motion controls when session starts
       if (wsConnection.connected) {
         // Default acceleration value (middle of range)
@@ -224,7 +224,7 @@ export function StationCard({ station }: { station: Station }) {
           rpiId: station.rpiId,
           acce: 32750
         });
-        
+
         // Default deceleration value (middle of range)
         wsConnection.send({
           type: "command",
@@ -233,7 +233,7 @@ export function StationCard({ station }: { station: Station }) {
           rpiId: station.rpiId,
           dece: 32750
         });
-        
+
         // Default speed value (middle of range)
         wsConnection.send({
           type: "command",
@@ -255,7 +255,7 @@ export function StationCard({ station }: { station: Station }) {
       queryClient.invalidateQueries({ queryKey: ["/api/stations"] });
       setIsFullscreen(false);
       setShowThankYouDialog(true);
-      
+
       // Send reset values for motion controls when session ends
       if (wsConnection.connected) {
         // Reset acceleration value (middle of range)
@@ -266,7 +266,7 @@ export function StationCard({ station }: { station: Station }) {
           rpiId: station.rpiId,
           acce: 32750
         });
-        
+
         // Reset deceleration value (middle of range)
         wsConnection.send({
           type: "command",
@@ -275,7 +275,7 @@ export function StationCard({ station }: { station: Station }) {
           rpiId: station.rpiId,
           dece: 32750
         });
-        
+
         // Reset speed value (middle of range)
         wsConnection.send({
           type: "command",
@@ -284,7 +284,7 @@ export function StationCard({ station }: { station: Station }) {
           rpiId: station.rpiId,
           value: 500
         });
-        
+
         // Send stop command to ensure motion is stopped
         wsConnection.send({
           type: "command",
@@ -327,16 +327,23 @@ export function StationCard({ station }: { station: Station }) {
     dece?: number;
   }) => {
     if (wsConnection.connected) {
-      console.log("[StationCard] Sending command:", { command, direction, rpiId: station.rpiId, ...options });
-      wsConnection.send({
+      // Prepare command data once
+      const commandData = {
         type: "command",
         command,
         direction: direction || "none",
         rpiId: station.rpiId,
         stepSize: options?.stepSize,
         stepUnit: options?.stepUnit,
-        acce: options?.acce,      // Acceleration parameter
-        dece: options?.dece       // Deceleration parameter
+        acce: options?.acce,
+        dece: options?.dece,
+        timestamp: Date.now() // Add timestamp for latency tracking
+      };
+
+      // Use requestAnimationFrame for optimal timing
+      requestAnimationFrame(() => {
+        wsConnection.send(commandData);
+        console.log("[StationCard] Sent command:", command);
       });
     }
   };
@@ -401,14 +408,14 @@ export function StationCard({ station }: { station: Station }) {
               <div className="col-span-1 md:col-span-2 lg:col-span-3 mb-2">
                 <EPOSDisplay />
               </div>
-              
+
               <div className="flex flex-col h-full col-span-1 md:col-span-1">
                 {/* Camera feed with responsive height */}
                 <div className="flex-grow md:h-[400px] lg:h-[460px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
-              
+
               <div className="flex flex-col h-full col-span-1 md:col-span-1">
                 <h3 className="text-lg font-semibold mb-3">Position Monitoring</h3>
                 {/* Responsive position graph */}
@@ -416,7 +423,7 @@ export function StationCard({ station }: { station: Station }) {
                   <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
                 </div>
               </div>
-              
+
               <div className="flex flex-col h-full col-span-1 md:col-span-2 lg:col-span-1 justify-between">
                 <div className="space-y-4">
                   <AdvancedControls
@@ -437,7 +444,7 @@ export function StationCard({ station }: { station: Station }) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Button moved to bottom for better vertical alignment */}
                 <div className="mt-auto pt-4">
                   {station.status === "available" ? (
@@ -466,7 +473,7 @@ export function StationCard({ station }: { station: Station }) {
                     </Button>
                   )}
                 </div>
-                
+
                 {/* Network Connection Status */}
                 {isFullscreen && (
                   <div className="mt-4 p-4 border rounded-lg bg-slate-50">

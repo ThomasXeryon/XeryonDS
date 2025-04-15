@@ -8,22 +8,37 @@ interface CameraFeedProps {
 
 export function CameraFeed({ rpiId }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
-  const { connectionStatus, frame } = useWebSocket(String(rpiId));
+  const { connectionStatus, frame, wsRef } = useWebSocket(String(rpiId));
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
     if (frame) {
-      lastFrameTime.current = Date.now();
-      lastValidFrame.current = frame; // Store the last valid frame
-      setLoading(false); // Stop loading when frame arrives
+      const now = Date.now();
+      lastFrameTime.current = now;
+
+      // Skip frame if we already have a more recent one
+      if (lastValidFrame.current && frame.timestamp < lastValidFrame.current.timestamp) {
+        return;
+      }
+
+      lastValidFrame.current = frame;
+      setLoading(false);
       setIsReconnecting(false);
+
+      // Request next frame immediately
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: "request_frame",
+          timestamp: now
+        }));
+      }
     } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
       // Force reconnection if no frames for 5 seconds
       window.location.reload();
     }
-  }, [frame]);
+  }, [frame, wsRef]);
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
