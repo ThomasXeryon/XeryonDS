@@ -46,7 +46,7 @@ export function StationCard({ station }: { station: Station }) {
 
   // EPOS Display Component with consistent height and improved styling
   const EPOSDisplay = () => (
-    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 h-16 flex items-center">
+    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 h-16 flex items-center shadow-sm">
       <div className="w-full flex justify-between items-center">
         <span className="text-lg font-semibold">Current Position:</span>
         <span className="text-primary text-xl font-bold tracking-wider">
@@ -523,9 +523,13 @@ export function StationCard({ station }: { station: Station }) {
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Position display in overview mode, only for the camera column */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="aspect-video relative rounded-lg overflow-hidden">
-                  <CameraFeed rpiId={station.rpiId} />
+                <div className="flex flex-col space-y-2">
+                  <EPOSDisplay />
+                  <div className="aspect-video relative rounded-lg overflow-hidden">
+                    <CameraFeed rpiId={station.rpiId} />
+                  </div>
                 </div>
                 <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
                   {station.previewImage ? (
