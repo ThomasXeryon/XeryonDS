@@ -53,22 +53,15 @@ export function useWebSocket(rpiId?: string) {
         reason: event.reason,
         wasClean: event.wasClean
       });
-      setState(prev => ({ ...prev, connectionStatus: false, frame: null }));
+      setState(prev => ({ ...prev, connectionStatus: false }));
 
-      // Immediate attempt to reconnect
-      const reconnectNow = () => {
+      // Set a flag to show reconnecting status after a short delay
+      const reconnectStatusTimeout = window.setTimeout(() => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log("[WebSocket] Attempting immediate reconnection");
-          const newSocket = new WebSocket(wsUrl);
-          wsRef.current = newSocket;
-          newSocket.onopen = socket.onopen;
-          newSocket.onmessage = socket.onmessage;
-          newSocket.onerror = socket.onerror;
-          newSocket.onclose = socket.onclose;
+          console.log("[WebSocket] Setting reconnecting status");
+          setState(prev => ({ ...prev, connectionStatus: false, frame: null }));
         }
-      };
-
-      reconnectNow();
+      }, 5000);
 
       // Implement exponential backoff for reconnection attempts
       const backoffTime = Math.min(1000 * (Math.pow(2, Math.floor(Math.random() * 4))), 10000);

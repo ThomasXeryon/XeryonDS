@@ -105,33 +105,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/guest-login", async (req, res, next) => {
-    try {
-      // Since database migration is not working, create a temporary guest login that creates a demo user
-      console.log(`Guest login attempt with email: ${req.body.email}`);
-      
-      // Create a temporary guest user
-      const tempUser = {
-        id: 999,
-        username: `guest_${Date.now()}`,
-        password: null,
-        email: req.body.email || 'guest@example.com',
-        isAdmin: false,
-        isGuest: true
-      };
-      
-      // Log the user in
-      req.login(tempUser, (err) => {
-        if (err) return next(err);
-        console.log(`Temporary guest user logged in successfully: ${tempUser.username}`);
-        res.status(200).json(tempUser);
-      });
-    } catch (error) {
-      console.error("Guest login error:", error);
-      res.status(500).json({ message: "Failed to process guest login" });
-    }
-  });
-
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);

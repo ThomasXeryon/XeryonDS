@@ -2,7 +2,7 @@ import session from 'express-session';
 import { 
   users, stations, sessionLogs, feedback, 
   positionData, commandLogs, systemHealth, technicalSpecs,
-  type User, type InsertUser, type InsertGuestUser, type Station, type SessionLog, 
+  type User, type InsertUser, type Station, type SessionLog, 
   type Feedback, type InsertFeedback, type PositionDataPoint,
   type CommandLog, type SystemHealthStatus, type TechnicalSpec,
   type InsertTechSpecs
@@ -25,9 +25,7 @@ interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  createGuestUser(data: InsertGuestUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserAdmin(id: number, isAdmin: boolean): Promise<User>;
 
@@ -445,16 +443,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.email, email));
-      return user;
-    } catch (error) {
-      console.error("Error getting user by email:", error);
-      return undefined;
-    }
-  }
-
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
@@ -465,28 +453,6 @@ export class DatabaseStorage implements IStorage {
       return user;
     } catch (error) {
       console.error("Error creating user:", error);
-      throw error;
-    }
-  }
-
-  async createGuestUser(data: InsertGuestUser): Promise<User> {
-    try {
-      // Generate a random username based on the email
-      const emailPrefix = data.email.split('@')[0];
-      const timestamp = Date.now().toString().slice(-6);
-      const randomUsername = `guest_${emailPrefix}_${timestamp}`;
-      
-      // Create guest user (no password, has isGuest flag)
-      const [user] = await db.insert(users).values({
-        username: randomUsername,
-        email: data.email,
-        isGuest: true,
-        isAdmin: false
-      }).returning();
-      
-      return user;
-    } catch (error) {
-      console.error("Error creating guest user:", error);
       throw error;
     }
   }
