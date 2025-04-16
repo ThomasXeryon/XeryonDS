@@ -190,11 +190,12 @@ async def send_frames(websocket, rpi_id):
                 timeout=1.0  # 1 second timeout for sending frames
             )
             
-            # Send position update
+            # Send position update with timestamp
             position_data = {
                 "type": "position_update",
                 "rpiId": rpi_id,
-                "epos": current_position
+                "epos": current_position,
+                "timestamp": datetime.now().isoformat()  # ISO format timestamp
             }
             
             # Send position with strict timeout

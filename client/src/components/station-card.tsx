@@ -162,8 +162,26 @@ export function StationCard({ station }: { station: Station }) {
           // Check both rpiId and rpi_id formats for compatibility
           const messageRpiId = data.rpiId || data.rpi_id;
           if (messageRpiId === station.rpiId) {
-            console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos);
+            // Convert string timestamp to Date object if available
+            const sourceTimestamp = data.timestamp ? new Date(data.timestamp) : null;
+            const sourceTime = sourceTimestamp ? sourceTimestamp.getTime() : null;
+            
+            console.log(`[StationCard] Position update for ${messageRpiId}:`, data.epos, 
+              sourceTimestamp ? `(timestamp: ${sourceTimestamp.toISOString()})` : '');
+            
+            // Pass both position and timestamp information
             setCurrentEpos(parseFloat(data.epos));
+            
+            // If we have source timestamp, pass it to position graph via a custom event
+            if (sourceTime) {
+              window.dispatchEvent(new CustomEvent('position-update', {
+                detail: {
+                  position: parseFloat(data.epos),
+                  timestamp: sourceTime,
+                  rpiId: messageRpiId
+                }
+              }));
+            }
             
             // Measure actual network latency
             const now = new Date();

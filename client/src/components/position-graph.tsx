@@ -18,8 +18,9 @@ interface PositionGraphProps {
 }
 
 interface PositionDataPoint {
-  time: number;
-  position: number;
+  time: number;        // Timestamp (either from RPi or local)
+  position: number;    // Position value
+  sourceTime?: number; // Optional original timestamp from RPi
 }
 
 export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
@@ -45,24 +46,67 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
   }, [currentPosition]);
 
   // Main effect for continuous plotting - always runs to maintain data flow
+  // Listen for custom position-update events with timestamp from RPi
   useEffect(() => {
-    // Set up an interval to keep the graph moving and add new points
+    // Event handler for RPi timestamp-based position updates
+    const handlePositionUpdate = (event: any) => {
+      const { position, timestamp, rpiId: messageRpiId } = event.detail;
+      
+      if (messageRpiId === rpiId) {
+        console.log(`[PositionGraph] Received timestamped position update: ${position} at ${new Date(timestamp).toISOString()}`);
+        
+        // Add the point with RPi-provided timestamp
+        setPositionData(prevData => {
+          const newDataPoint = {
+            time: timestamp, // Use the timestamp from RPi
+            position: position,
+            sourceTime: timestamp // Store original timestamp
+          };
+          
+          // Add new point to data
+          const updatedData = [...prevData, newDataPoint];
+          
+          // Clean up old data points
+          const now = Date.now();
+          const cutoffTime = now - windowSize;
+          return updatedData.filter(point => point.time >= cutoffTime);
+        });
+      }
+    };
+    
+    // Add event listener for custom position updates with RPi timestamps
+    window.addEventListener('position-update', handlePositionUpdate);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('position-update', handlePositionUpdate);
+    };
+  }, [rpiId, windowSize]);
+
+  // Maintain continuous graph motion with or without new data
+  useEffect(() => {
+    // Set up an interval to keep the graph moving and add points for continuous rendering
     const intervalId = setInterval(() => {
       const now = Date.now();
       
       setPositionData(prevData => {
         let updatedData = [...prevData];
         
-        // If we have a position value, add it to the graph with the current timestamp
-        if (lastPositionRef.current !== null) {
+        // Only add a new point if we don't have RPi timestamp data recently
+        // This avoids duplicate points and gives priority to RPi-timestamped data
+        const latestPoint = updatedData.length > 0 ? updatedData[updatedData.length - 1] : null;
+        const isRpiDataRecent = latestPoint && latestPoint.sourceTime && (now - latestPoint.time < 100);
+        
+        // If we have a position value and no recent RPi data, add a point
+        if (lastPositionRef.current !== null && !isRpiDataRecent) {
           // Add a new data point with current timestamp and latest position
           const newDataPoint = {
             time: now,
             position: lastPositionRef.current
           };
           
-          // Add the new point - this ensures we're always plotting the current value
-          // even if it hasn't changed
+          // Add the point - this ensures we're always plotting the current value
+          // even when no RPi updates are coming in
           updatedData.push(newDataPoint);
         }
         
@@ -86,7 +130,7 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
     return () => {
       clearInterval(intervalId);
     };
-  }, [windowSize]);
+  }, [windowSize, rpiId]);
 
   // Format time for tooltip
   const formatTime = (time: number) => {
