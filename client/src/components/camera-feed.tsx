@@ -19,11 +19,18 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       lastValidFrame.current = frame; // Store the last valid frame
       setLoading(false); // Stop loading when frame arrives
       setIsReconnecting(false);
-    } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
-      // Force reconnection if no frames for 5 seconds
-      window.location.reload();
+    } else if (!frame && connectionStatus) {
+      // Only show reconnecting if we have a connection but no frames
+      setIsReconnecting(true);
+    } else if (!connectionStatus) {
+      // Clear frame when connection is lost
+      lastFrameTime.current = null;
+      lastValidFrame.current = null;
+      setLoading(true);
+      setIsReconnecting(true);
     }
-  }, [frame]);
+  }, [frame, connectionStatus]);
+
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
