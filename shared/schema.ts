@@ -6,8 +6,10 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Now nullable for guest users
+  email: text("email").unique(), // Added email field
   isAdmin: boolean("is_admin").notNull().default(false),
+  isGuest: boolean("is_guest").notNull().default(false), // Flag to identify guest users
 });
 
 export const stations = pgTable("stations", {
@@ -98,6 +100,15 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+// Schema for guest users who only need to provide an email
+export const insertGuestUserSchema = createInsertSchema(users)
+  .pick({
+    email: true,
+  })
+  .extend({
+    email: z.string().email("Please enter a valid email address"),
+  });
+
 export const insertStationSchema = createInsertSchema(stations).pick({
   name: true,
   rpiId: true,
@@ -113,6 +124,7 @@ export const insertFeedbackSchema = createInsertSchema(feedback)
   });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertGuestUser = z.infer<typeof insertGuestUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Station = typeof stations.$inferSelect;
 export type SessionLog = typeof sessionLogs.$inferSelect;

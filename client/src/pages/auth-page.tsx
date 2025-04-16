@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertGuestUserSchema } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
@@ -16,8 +16,10 @@ const authSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const guestSchema = insertGuestUserSchema;
+
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation, registerMutation, guestLoginMutation } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -27,11 +29,20 @@ export default function AuthPage() {
     }
   }, [user, setLocation]);
 
+  // Regular user form
   const form = useForm<z.infer<typeof authSchema>>({
     resolver: zodResolver(authSchema),
     defaultValues: {
       username: "",
       password: "",
+    },
+  });
+
+  // Guest user form
+  const guestForm = useForm<z.infer<typeof guestSchema>>({
+    resolver: zodResolver(guestSchema),
+    defaultValues: {
+      email: "",
     },
   });
 
@@ -42,6 +53,19 @@ export default function AuthPage() {
       } else {
         await registerMutation.mutateAsync(values);
       }
+      setLocation("/");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: (error as Error).message,
+      });
+    }
+  };
+
+  const onGuestSubmit = async (values: z.infer<typeof guestSchema>) => {
+    try {
+      await guestLoginMutation.mutateAsync(values);
       setLocation("/");
     } catch (error) {
       toast({
@@ -67,11 +91,40 @@ export default function AuthPage() {
             <CardTitle className="text-center">Remote Demo Station</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
+            <Tabs defaultValue="guest">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="guest">Guest Access</TabsTrigger>
+                <TabsTrigger value="login">Admin Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="guest">
+                <div className="mb-4 mt-2 text-sm text-center text-muted-foreground">
+                  Access the demo station with just your email
+                </div>
+                <Form {...guestForm}>
+                  <form onSubmit={guestForm.handleSubmit(onGuestSubmit)}>
+                    <div className="space-y-4">
+                      <FormField
+                        control={guestForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="your@email.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full">
+                        Access Demo Station
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </TabsContent>
 
               <TabsContent value="login">
                 <Form {...form}>

@@ -4,7 +4,7 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { insertUserSchema, User as SelectUser, InsertUser, InsertGuestUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +15,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  guestLoginMutation: UseMutationResult<SelectUser, Error, InsertGuestUser>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -81,6 +82,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const guestLoginMutation = useMutation({
+    mutationFn: async (guestData: InsertGuestUser) => {
+      const res = await apiRequest("POST", "/api/guest-login", guestData);
+      return await res.json();
+    },
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Guest login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -90,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        guestLoginMutation,
       }}
     >
       {children}
