@@ -247,12 +247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Forward binary frame directly to all UI clients interested in this RPi
           for (const client of uiConnections.values()) {
             if (client.ws.readyState === WebSocket.OPEN && 
-                (!client.rpiId || client.rpiId === rpiId)) {
+                (!client.rpiId || client.rpiId === stationId)) {  // Use stationId from binary header
               try {
                 // Send binary data directly - no encoding/decoding
                 client.ws.send(jpegData);
               } catch (err) {
-                console.error(`[RPi ${rpiId}] Error forwarding binary frame to UI:`, err);
+                console.error(`[RPi ${stationId}] Error forwarding binary frame to UI:`, err);
               }
             }
           }
