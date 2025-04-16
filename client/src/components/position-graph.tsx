@@ -108,8 +108,8 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
   return (
     <Card className="w-full h-full bg-slate-50">
       <CardContent className="p-2 sm:p-3 h-full">
-        <div className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-center">
-          Position History for {rpiId} ({positionData.length > 0 ? `${positionData[positionData.length - 1].position.toFixed(3)} mm` : 'N/A'})
+        <div className="text-[10px] sm:text-xs font-medium mb-1 sm:mb-2 text-center">
+          Position History ({positionData.length > 0 ? `${positionData[positionData.length - 1].position.toFixed(3)} mm` : 'N/A'})
         </div>
         <ResponsiveContainer width="100%" height="90%">
           <LineChart data={positionData}>
@@ -127,16 +127,17 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
                   return Date.now();
                 }
               ]}
-              tick={false}
+              tick={{fontSize: 9}}
               tickLine={false}
+              tickFormatter={(value) => formatTime(value)}
             />
             <YAxis 
               domain={['dataMin - 0.05', 'dataMax + 0.05']} 
-              tickCount={10}
-              tickFormatter={(value) => `${value.toFixed(3)}`}
-              width={45}
-              fontSize={10}
-              style={{ fontSize: '10px' }}
+              tickCount={7}
+              tickFormatter={(value) => `${value.toFixed(2)}`}
+              width={35}
+              fontSize={9}
+              style={{ fontSize: '9px' }}
             />
             {/* Add reference line for current position */}
             {lastPositionRef.current !== null && (
@@ -148,7 +149,7 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
                   value: `${lastPositionRef.current.toFixed(3)} mm`,
                   position: 'insideRight',
                   fill: '#ff5500',
-                  fontSize: 10
+                  fontSize: 8
                 }}
               />
             )}

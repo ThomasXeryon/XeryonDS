@@ -155,7 +155,9 @@ export function ConnectionVisualizer({ totalLatency, isConnected }: ConnectionVi
       packetPosition = (packetPosition + 2) % (canvas.width - 20);
       
       // Draw labels
-      ctx.font = '10px Arial';
+      // Responsive font size based on canvas width
+      const fontSize = canvas.width < 400 ? 8 : 10;
+      ctx.font = `${fontSize}px Arial`;
       ctx.textAlign = 'center';
       ctx.fillStyle = '#555';
       
@@ -165,7 +167,8 @@ export function ConnectionVisualizer({ totalLatency, isConnected }: ConnectionVi
       
       // Draw ping history graph
       if (pingHistory.current.length > 1) {
-        const graphHeight = 40;
+        // Responsive graph height based on canvas height
+      const graphHeight = canvas.height < 100 ? 30 : 40;
         const graphY = canvas.height - graphHeight - 5;
         const maxPing = Math.max(...pingHistory.current, 200); // At least 200ms for scale
         
@@ -193,7 +196,8 @@ export function ConnectionVisualizer({ totalLatency, isConnected }: ConnectionVi
         
         // Draw latest ping value
         const latestPing = pingHistory.current[pingHistory.current.length - 1];
-        ctx.font = '9px Arial';
+        const pingFontSize = canvas.width < 400 ? 8 : 9;
+        ctx.font = `${pingFontSize}px Arial`;
         ctx.textAlign = 'right';
         ctx.fillStyle = '#333';
         ctx.fillText(`${latestPing.toFixed(1)}ms`, canvas.width - 12, graphY + 10);
@@ -217,7 +221,7 @@ export function ConnectionVisualizer({ totalLatency, isConnected }: ConnectionVi
   return (
     <canvas 
       ref={canvasRef} 
-      className="w-full h-[120px] rounded-lg"
+      className="w-full h-[100px] sm:h-[120px] rounded-lg"
       style={{ 
         border: '1px solid rgba(0,0,0,0.1)',
         background: '#f8f9fa'

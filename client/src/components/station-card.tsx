@@ -46,10 +46,10 @@ export function StationCard({ station }: { station: Station }) {
 
   // EPOS Display Component with consistent height and improved styling
   const EPOSDisplay = () => (
-    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 h-auto md:h-16 flex items-center">
-      <div className="w-full flex flex-col md:flex-row justify-between items-center gap-2">
-        <span className="text-lg font-semibold">Current Position:</span>
-        <span className="text-primary text-xl font-bold tracking-wider">
+    <div className="bg-primary/10 p-3 sm:p-4 rounded-lg border border-primary/20 mb-4 h-auto md:h-16 flex items-center">
+      <div className="w-full flex flex-col md:flex-row justify-between items-center gap-1 sm:gap-2">
+        <span className="text-base sm:text-lg font-semibold">Current Position:</span>
+        <span className="text-primary text-lg sm:text-xl font-bold tracking-wider">
           {currentEpos !== null
             ? `${currentEpos.toFixed(3)} mm`
             : 'Waiting...'}
@@ -466,12 +466,12 @@ export function StationCard({ station }: { station: Station }) {
                 
                 {/* Network Connection Status */}
                 {isFullscreen && (
-                  <div className="mt-4 p-4 border rounded-lg bg-slate-50">
-                    <h4 className="text-sm font-semibold mb-2 flex items-center">
+                  <div className="mt-4 p-3 sm:p-4 border rounded-lg bg-slate-50">
+                    <h4 className="text-xs sm:text-sm font-semibold mb-2 flex items-center">
                       <span className={`inline-block w-2 h-2 rounded-full mr-2 ${wsConnection.connected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                       Connection Status
                     </h4>
-                    <div className="grid grid-cols-1 gap-y-2 text-xs">
+                    <div className="grid grid-cols-1 gap-y-1 sm:gap-y-2 text-[10px] sm:text-xs">
                       <div className="flex flex-col sm:flex-row sm:justify-between">
                         <span className="text-slate-500 mb-1 sm:mb-0">Command: User → Server → Xeryon:</span>
                         <span className="font-medium">{networkMetrics.totalLatency > 0 
