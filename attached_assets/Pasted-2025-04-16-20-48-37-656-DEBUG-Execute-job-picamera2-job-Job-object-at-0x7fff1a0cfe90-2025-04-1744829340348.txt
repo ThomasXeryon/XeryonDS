@@ -1,0 +1,106 @@
+2025-04-16 20:48:37,656 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfe90>
+2025-04-16 20:48:37,676 - DEBUG - > BINARY 52 50 49 31 12 0b 00 00 c2 83 ee 3f ff d8 ff e0 ... 4b fc 15 77 86 9f ff d9 [19561 bytes]
+2025-04-16 20:48:37,689 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf6d0>
+2025-04-16 20:48:37,706 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:37,707 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:37,709 - DEBUG - > BINARY 52 50 49 31 13 0b 00 00 e3 83 ee 3f ff d8 ff e0 ... 77 e9 f9 fc 05 6b ff d9 [19540 bytes]
+2025-04-16 20:48:37,722 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfad0>
+2025-04-16 20:48:37,741 - DEBUG - > BINARY 52 50 49 31 14 0b 00 00 03 84 ee 3f ff d8 ff e0 ... a8 d6 fc d2 57 a5 ff d9 [19501 bytes]
+2025-04-16 20:48:37,756 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cff90>
+2025-04-16 20:48:37,777 - DEBUG - > BINARY 52 50 49 31 15 0b 00 00 27 84 ee 3f ff d8 ff e0 ... 78 43 d5 d7 7f 2f ff d9 [19458 bytes]
+2025-04-16 20:48:37,789 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1ad52050>
+2025-04-16 20:48:37,809 - DEBUG - > BINARY 52 50 49 31 16 0b 00 00 47 84 ee 3f ff d8 ff e0 ... 76 70 7f 42 ff 00 ff d9 [19479 bytes]
+2025-04-16 20:48:37,822 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfbd0>
+2025-04-16 20:48:37,843 - DEBUG - > BINARY 52 50 49 31 17 0b 00 00 69 84 ee 3f ff d8 ff e0 ... 0f 1b e8 af f1 9f ff d9 [19439 bytes]
+2025-04-16 20:48:37,857 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3e85d0>
+2025-04-16 20:48:37,877 - DEBUG - > BINARY 52 50 49 31 18 0b 00 00 8b 84 ee 3f ff d8 ff e0 ... 2e fc db f4 0f ad ff d9 [19565 bytes]
+2025-04-16 20:48:37,890 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff3c957690>
+2025-04-16 20:48:37,907 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:37,908 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:37,910 - DEBUG - > BINARY 52 50 49 31 19 0b 00 00 ac 84 ee 3f ff d8 ff e0 ... 05 fa 07 d6 ff 00 ff d9 [19502 bytes]
+2025-04-16 20:48:37,923 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfbd0>
+2025-04-16 20:48:37,946 - DEBUG - > BINARY 52 50 49 31 1a 0b 00 00 d0 84 ee 3f ff d8 ff e0 ... e6 70 7e 42 bd 2f ff d9 [19645 bytes]
+2025-04-16 20:48:37,956 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf750>
+2025-04-16 20:48:37,977 - DEBUG - > BINARY 52 50 49 31 1b 0b 00 00 ef 84 ee 3f ff d8 ff e0 ... fc f9 35 e6 9e 47 ff d9 [19508 bytes]
+2025-04-16 20:48:37,989 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0b58d0>
+2025-04-16 20:48:38,009 - DEBUG - > BINARY 52 50 49 31 1c 0b 00 00 0f 85 ee 3f ff d8 ff e0 ... f8 0a f2 39 f3 bf ff d9 [19503 bytes]
+2025-04-16 20:48:38,023 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf910>
+2025-04-16 20:48:38,044 - DEBUG - > BINARY 52 50 49 31 1d 0b 00 00 32 85 ee 3f ff d8 ff e0 ... 9f 17 07 a2 3f 27 ff d9 [19480 bytes]
+2025-04-16 20:48:38,057 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d41d0>
+2025-04-16 20:48:38,077 - DEBUG - > BINARY 52 50 49 31 1e 0b 00 00 53 85 ee 3f ff d8 ff e0 ... 7c 3c 1f 90 af 4b ff d9 [19593 bytes]
+2025-04-16 20:48:38,092 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d77d0>
+2025-04-16 20:48:38,109 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:38,109 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:38,111 - DEBUG - > BINARY 52 50 49 31 1f 0b 00 00 75 85 ee 3f ff d8 ff e0 ... a9 38 3f 82 ff 00 ff d9 [19485 bytes]
+2025-04-16 20:48:38,125 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d41d0>
+2025-04-16 20:48:38,145 - DEBUG - > BINARY 52 50 49 31 20 0b 00 00 97 85 ee 3f ff d8 ff e0 ... af 33 83 d0 1f 95 ff d9 [19456 bytes]
+2025-04-16 20:48:38,156 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0b58d0>
+2025-04-16 20:48:38,176 - DEBUG - > BINARY 52 50 49 31 21 0b 00 00 b6 85 ee 3f ff d8 ff e0 ... 67 9f cf a0 af 47 ff d9 [19471 bytes]
+2025-04-16 20:48:38,189 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d77d0>
+2025-04-16 20:48:38,210 - DEBUG - > BINARY 52 50 49 31 22 0b 00 00 d8 85 ee 3f ff d8 ff e0 ... 7a f2 73 f8 4f dc ff d9 [19426 bytes]
+2025-04-16 20:48:38,223 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf910>
+2025-04-16 20:48:38,243 - DEBUG - > BINARY 52 50 49 31 23 0b 00 00 f9 85 ee 3f ff d8 ff e0 ... bc ce 0f cb be 77 ff d9 [19429 bytes]
+2025-04-16 20:48:38,256 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cd350>
+2025-04-16 20:48:38,276 - DEBUG - > BINARY 52 50 49 31 24 0b 00 00 1a 86 ee 3f ff d8 ff e0 ... 5f 8e fc fe 7d 37 ff d9 [19475 bytes]
+2025-04-16 20:48:38,289 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cd350>
+2025-04-16 20:48:38,309 - DEBUG - > BINARY 52 50 49 31 25 0b 00 00 3b 86 ee 3f ff d8 ff e0 ... 7c 3c 1f c1 3f 73 ff d9 [19531 bytes]
+2025-04-16 20:48:38,310 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:38,311 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:38,326 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfbd0>
+2025-04-16 20:48:38,345 - DEBUG - > BINARY 52 50 49 31 26 0b 00 00 5f 86 ee 3f ff d8 ff e0 ... d0 73 e4 df e3 3f ff d9 [19538 bytes]
+2025-04-16 20:48:38,358 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf910>
+2025-04-16 20:48:38,378 - DEBUG - > BINARY 52 50 49 31 27 0b 00 00 7f 86 ee 3f ff d8 ff e0 ... 93 cc 3c de 7c df ff d9 [19560 bytes]
+2025-04-16 20:48:38,391 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf750>
+2025-04-16 20:48:38,411 - DEBUG - > BINARY 52 50 49 31 28 0b 00 00 a1 86 ee 3f ff d8 ff e0 ... f8 f5 ef 9b cf 99 ff d9 [19503 bytes]
+2025-04-16 20:48:38,425 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfd50>
+2025-04-16 20:48:38,447 - DEBUG - > BINARY 52 50 49 31 29 0b 00 00 c5 86 ee 3f ff d8 ff e0 ... 5d ff 00 80 ff 00 ff d9 [19507 bytes]
+2025-04-16 20:48:38,458 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0b58d0>
+2025-04-16 20:48:38,491 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cfd50>
+2025-04-16 20:48:38,511 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:38,512 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:38,512 - DEBUG - > BINARY 52 50 49 31 2a 0b 00 00 06 87 ee 3f ff d8 ff e0 ... 9c 1e a6 ff 00 19 ff d9 [19574 bytes]
+2025-04-16 20:48:38,524 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf6d0>
+2025-04-16 20:48:38,550 - DEBUG - > BINARY 52 50 49 31 2b 0b 00 00 2c 87 ee 3f ff d8 ff e0 ... f1 a9 f4 fc fa 3f ff d9 [19759 bytes]
+2025-04-16 20:48:38,559 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1ad52050>
+2025-04-16 20:48:38,579 - DEBUG - > BINARY 52 50 49 31 2c 0b 00 00 49 87 ee 3f ff d8 ff e0 ... b4 e0 f2 6b f3 9f ff d9 [19671 bytes]
+2025-04-16 20:48:38,591 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf810>
+2025-04-16 20:48:38,612 - DEBUG - > BINARY 52 50 49 31 2d 0b 00 00 6a 87 ee 3f ff d8 ff e0 ... c8 af 45 5a ff 00 ff d9 [19569 bytes]
+2025-04-16 20:48:38,623 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0b58d0>
+2025-04-16 20:48:38,644 - DEBUG - > BINARY 52 50 49 31 2e 0b 00 00 8a 87 ee 3f ff d8 ff e0 ... 70 7a 9b f3 df 5b ff d9 [19521 bytes]
+2025-04-16 20:48:38,658 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3e85d0>
+2025-04-16 20:48:38,680 - DEBUG - > BINARY 52 50 49 31 2f 0b 00 00 ae 87 ee 3f ff d8 ff e0 ... 7e 03 9f 45 5e 8f ff d9 [19530 bytes]
+2025-04-16 20:48:38,691 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d41d0>
+2025-04-16 20:48:38,711 - DEBUG - > BINARY 52 50 49 31 30 0b 00 00 cd 87 ee 3f ff d8 ff e0 ... 3c 5c 7a aa f5 1f ff d9 [19577 bytes]
+2025-04-16 20:48:38,713 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:38,713 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:38,725 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3e85d0>
+2025-04-16 20:48:38,745 - DEBUG - > BINARY 52 50 49 31 31 0b 00 00 ef 87 ee 3f ff d8 ff e0 ... 7a 73 f8 5a f4 1f ff d9 [19594 bytes]
+2025-04-16 20:48:38,755 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d41d0>
+2025-04-16 20:48:38,775 - DEBUG - > BINARY 52 50 49 31 32 0b 00 00 0d 88 ee 3f ff d8 ff e0 ... 7a 7a ef e8 6b c1 ff d9 [19579 bytes]
+2025-04-16 20:48:38,789 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0b4d10>
+2025-04-16 20:48:38,808 - DEBUG - > BINARY 52 50 49 31 33 0b 00 00 2e 88 ee 3f ff d8 ff e0 ... 79 bc 7e 8e bf 17 ff d9 [19541 bytes]
+2025-04-16 20:48:38,822 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff3c957690>
+2025-04-16 20:48:38,844 - DEBUG - > BINARY 52 50 49 31 34 0b 00 00 52 88 ee 3f ff d8 ff e0 ... bf 1d f9 9c 7a 9f ff d9 [19548 bytes]
+2025-04-16 20:48:38,855 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0cf950>
+2025-04-16 20:48:38,875 - DEBUG - > BINARY 52 50 49 31 35 0b 00 00 71 88 ee 3f ff d8 ff e0 ... 07 86 fd 5d fe 17 ff d9 [19559 bytes]
+2025-04-16 20:48:38,889 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a0b58d0>
+2025-04-16 20:48:38,908 - DEBUG - > BINARY 52 50 49 31 36 0b 00 00 92 88 ee 3f ff d8 ff e0 ... d3 5e 67 07 f0 5f ff d9 [19480 bytes]
+2025-04-16 20:48:38,914 - ERROR - Error getting position: 'Axis' object has no attribute 'getPos'
+2025-04-16 20:48:38,914 - DEBUG - > TEXT '{"type": "position_update", "rpiId": "RPI1", "epos": 0.0}' [57 bytes]
+2025-04-16 20:48:38,922 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff3c930c50>
+2025-04-16 20:48:38,941 - DEBUG - > BINARY 52 50 49 31 37 0b 00 00 b3 88 ee 3f ff d8 ff e0 ... 9c 1e 00 fc f5 6b ff d9 [19497 bytes]
+2025-04-16 20:48:38,955 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1a3d77d0>
+2025-04-16 20:48:38,974 - DEBUG - > BINARY 52 50 49 31 38 0b 00 00 d4 88 ee 3f ff d8 ff e0 ... ea 2e 5f a9 af 47 ff d9 [19500 bytes]
+2025-04-16 20:48:38,988 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff3c957690>
+^C2025-04-16 20:48:39,006 - INFO - Shutdown requested
+2025-04-16 20:48:39,106 - INFO - Controller stopped
+Communication has stopped. 
+2025-04-16 20:48:39,127 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1ad2fd50>
+2025-04-16 20:48:39,130 - INFO - Camera stopped
+2025-04-16 20:48:39,131 - INFO - Camera stopped
+2025-04-16 20:48:39,331 - DEBUG - Camera was not started
+2025-04-16 20:48:39,533 - INFO - Camera closed successfully.
+2025-04-16 20:48:39,533 - INFO - Camera resources released
+2025-04-16 20:48:39,552 - DEBUG - Resources now free: <picamera2.picamera2.Picamera2 object at 0x7fff3c957650>
+2025-04-16 20:48:39,553 - INFO - Shutdown complete
+2025-04-16 20:48:39,553 - DEBUG - > BINARY 52 50 49 31 39 0b 00 00 17 8b ee 3f ff d8 ff e0 ... 5e 3b f5 9c fa ef ff d9 [19503 bytes]
