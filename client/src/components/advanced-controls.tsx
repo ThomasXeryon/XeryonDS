@@ -239,7 +239,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
               
               {/* Deceleration Slider */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                   <label className="text-sm font-medium">Deceleration</label>
                   <span className="text-sm font-semibold">{deceleration[0]}</span>
                 </div>

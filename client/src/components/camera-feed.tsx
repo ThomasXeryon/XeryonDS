@@ -54,11 +54,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const statusText = getStatusText();
 
   return (
-    <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black">
+    <div className="relative w-full aspect-video sm:aspect-[16/9] rounded-md overflow-hidden bg-black">
       {loading && !lastValidFrame.current ? (
         <>
           <Skeleton className="h-full w-full" />
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-white/70">
+          <div className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm text-white/70">
             {statusText || 'Waiting for camera feed...'}
           </div>
         </>
@@ -84,7 +84,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </>
       ) : (
         <div className="absolute inset-0 flex items-center justify-center text-white bg-zinc-800/80">
-          <p className="text-sm">{statusText || "No camera feed available"}</p>
+          <p className="text-xs sm:text-sm">{statusText || "No camera feed available"}</p>
         </div>
       )}
     </div>
