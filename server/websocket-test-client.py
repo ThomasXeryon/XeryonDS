@@ -210,7 +210,8 @@ async def rpi_client(rpi_id='RPI1', server_url=None):
                         position_data = {
                             "type": "position_update",
                             "rpiId": rpi_id,
-                            "epos": position_value
+                            "epos": position_value,
+                            "timestamp": datetime.now().isoformat()  # Adding ISO formatted timestamp
                         }
                         await camera_ws.send(json.dumps(position_data))
                         
