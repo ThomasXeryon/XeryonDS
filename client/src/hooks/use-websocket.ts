@@ -30,7 +30,9 @@ export function useWebSocket(rpiId?: string) {
     const wsUrl = `${protocol}//${window.location.host}/appws`; // Changed from '/ws' to '/appws'
     console.log("[WebSocket] Attempting connection to:", wsUrl);
 
+    // Create socket and set it to accept binary data
     const socket = new WebSocket(wsUrl);
+    socket.binaryType = "blob"; // Set to handle binary data
     wsRef.current = socket;
 
     socket.onopen = () => {
@@ -72,6 +74,7 @@ export function useWebSocket(rpiId?: string) {
         console.log("[WebSocket] Attempting to reconnect...");
         try {
           const newSocket = new WebSocket(wsUrl);
+          newSocket.binaryType = "blob"; // Set binary type for the new socket
           wsRef.current = newSocket;
 
           // Set up event handlers for the new socket
@@ -116,10 +119,32 @@ export function useWebSocket(rpiId?: string) {
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
+      // Check if this is a binary message (camera frame)
+      if (event.data instanceof Blob) {
+        // Handle binary frame - convert to object URL for direct display
+        const objectUrl = URL.createObjectURL(event.data);
+        
+        setState(prev => ({
+          ...prev,
+          frame: objectUrl,
+          lastFrameTime: Date.now()
+        }));
+        
+        // Clean up previous object URL to prevent memory leaks
+        if (state.frame && state.frame.startsWith('blob:')) {
+          URL.revokeObjectURL(state.frame);
+        }
+        
+        console.debug("[WebSocket] Received binary frame");
+        return;
+      }
+      
+      // Handle JSON messages
       const data = JSON.parse(event.data);
 
       // Handle different message types
       if (data.type === 'camera_frame') {
+        // Handle base64 frame for backward compatibility
         setState(prev => ({
           ...prev,
           frame: data.frame,
@@ -159,9 +184,9 @@ export function useWebSocket(rpiId?: string) {
         }));
       }
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      console.error('Error processing WebSocket message:', error);
     }
-  }, [toast]);
+  }, [toast, state.frame]);
 
   const sendMessage = useCallback((message: any) => {
     if (!message.rpiId) {

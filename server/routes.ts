@@ -214,8 +214,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
+    // Configure binary data handling
+    ws.binaryType = 'arraybuffer';
+
     ws.on("message", async function(data) {
       try {
+        // Handle binary camera frames
+        if (data instanceof Buffer || data instanceof ArrayBuffer) {
+          // Process binary frame data
+          const buffer = Buffer.from(data);
+          
+          // First 12 bytes are header: 4-byte station ID, 4-byte frame number, 4-byte timestamp
+          if (buffer.length < 12) {
+            console.error(`[RPi ${rpiId}] Binary message too short (${buffer.length} bytes)`);
+            return;
+          }
+          
+          // Extract header data if needed
+          const stationIdBuffer = buffer.slice(0, 4);
+          const stationId = stationIdBuffer.toString('utf8').replace(/\0/g, '');
+          const frameNumber = buffer.readUInt32LE(4);
+          const timestamp = buffer.readUInt32LE(8);
+          
+          // Log occasional frame info (every 100 frames)
+          if (frameNumber % 100 === 0) {
+            console.debug(`[RPi ${stationId}] Received binary frame #${frameNumber}, size: ${buffer.length - 12} bytes`);
+          }
+          
+          // The rest is JPEG data
+          const jpegData = buffer.slice(12);
+          
+          // Forward binary frame directly to all UI clients interested in this RPi
+          for (const client of uiConnections.values()) {
+            if (client.ws.readyState === WebSocket.OPEN && 
+                (!client.rpiId || client.rpiId === rpiId)) {
+              try {
+                // Send binary data directly - no encoding/decoding
+                client.ws.send(jpegData);
+              } catch (err) {
+                console.error(`[RPi ${rpiId}] Error forwarding binary frame to UI:`, err);
+              }
+            }
+          }
+          
+          return;
+        }
+      
+        // For text messages, parse as JSON
         const response = JSON.parse(data.toString());
 
         // Handle ping messages from the RPi (for latency measurement)
