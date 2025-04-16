@@ -46,8 +46,8 @@ export function StationCard({ station }: { station: Station }) {
 
   // EPOS Display Component with consistent height and improved styling
   const EPOSDisplay = () => (
-    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 h-16 flex items-center">
-      <div className="w-full flex justify-between items-center">
+    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-4 h-auto md:h-16 flex items-center">
+      <div className="w-full flex flex-col md:flex-row justify-between items-center gap-2">
         <span className="text-lg font-semibold">Current Position:</span>
         <span className="text-primary text-xl font-bold tracking-wider">
           {currentEpos !== null
@@ -396,21 +396,21 @@ export function StationCard({ station }: { station: Station }) {
         </CardHeader>
         <CardContent>
           {isFullscreen ? (
-            <div className="grid grid-cols-[1fr,1fr,350px] gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr,1fr,350px] gap-4 md:gap-6">
               <div className="flex flex-col h-full">
                 {/* Position display moved to top with full width */}
                 <div className="mb-3">
                   <EPOSDisplay />
                 </div>
-                {/* Camera feed with adjusted height to match position graph */}
-                <div className="flex-grow h-[460px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
+                {/* Camera feed with responsive height */}
+                <div className="flex-grow h-[300px] md:h-[460px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>
               </div>
               <div className="flex flex-col h-full">
                 <h3 className="text-lg font-semibold mb-3">Position Monitoring</h3>
                 {/* Pass currentEpos directly as currentPosition with adjusted height */}
-                <div className="flex-grow">
+                <div className="flex-grow h-[300px] md:h-[460px]">
                   <PositionGraph rpiId={station.rpiId} currentPosition={currentEpos} />
                 </div>
               </div>
@@ -471,39 +471,39 @@ export function StationCard({ station }: { station: Station }) {
                       <span className={`inline-block w-2 h-2 rounded-full mr-2 ${wsConnection.connected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                       Connection Status
                     </h4>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                      <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">Command: User → Server → Xeryon:</span>
+                    <div className="grid grid-cols-1 gap-y-2 text-xs">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-slate-500 mb-1 sm:mb-0">Command: User → Server → Xeryon:</span>
                         <span className="font-medium">{networkMetrics.totalLatency > 0 
                           ? `${(networkMetrics.totalLatency).toFixed(2)}ms` 
                           : '75.00ms'}</span>
                       </div>
-                      <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">Video: Xeryon → Server → User:</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-slate-500 mb-1 sm:mb-0">Video: Xeryon → Server → User:</span>
                         <span className="font-medium">{networkMetrics.totalLatency > 0
                           ? `${(networkMetrics.totalLatency).toFixed(2)}ms`
                           : '75.00ms'}</span>
                       </div>
-                      <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">RPi processing delay:</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-slate-500 mb-1 sm:mb-0">RPi processing delay:</span>
                         <span className="font-medium">25.00ms</span>
                       </div>
-                      <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">Total roundtrip:</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-slate-500 mb-1 sm:mb-0">Total roundtrip:</span>
                         <span className="font-medium text-primary">
                           {networkMetrics.totalLatency > 0 
                             ? `${(networkMetrics.totalLatency * 2 + 25.00).toFixed(2)}ms` 
                             : '175.00ms'}
                         </span>
                       </div>
-                      <div className="flex justify-between col-span-2">
-                        <span className="text-slate-500">Connection quality:</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-slate-500 mb-1 sm:mb-0">Connection quality:</span>
                         <span className="font-medium text-green-600">
                           Good ({networkMetrics.uptime.toFixed(1)}% uptime)
                         </span>
                       </div>
-                      <div className="flex justify-between col-span-2 border-t pt-1 mt-1">
-                        <span className="text-slate-500">Last position update:</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between border-t pt-1 mt-1">
+                        <span className="text-slate-500 mb-1 sm:mb-0">Last position update:</span>
                         <span className="font-medium">{networkMetrics.lastUpdateTime.toLocaleTimeString()}</span>
                       </div>
                     </div>
@@ -513,7 +513,7 @@ export function StationCard({ station }: { station: Station }) {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="aspect-video relative">
                   <CameraFeed rpiId={station.rpiId} />
                 </div>

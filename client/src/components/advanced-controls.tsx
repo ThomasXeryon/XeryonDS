@@ -104,7 +104,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
     <div className="space-y-6">
       {/* Step Controls with improved sizing and spacing */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <Label htmlFor="stepSize" className="text-sm font-medium whitespace-nowrap">Step Size:</Label>
           <div className="flex items-center gap-2">
             <Input
@@ -132,8 +132,8 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           </div>
         </div>
         
-        {/* Control buttons with consistent height */}
-        <div className="grid grid-cols-3 gap-3 mx-auto w-full">
+        {/* Control buttons with consistent height and responsive layout */}
+        <div className="grid grid-cols-3 gap-2 md:gap-3 mx-auto w-full">
           <Button
             variant="outline"
             className="w-full h-10"
@@ -164,8 +164,8 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
         </div>
       </div>
 
-      {/* Scan Controls with consistent height */}
-      <div className="grid grid-cols-3 gap-3 mx-auto w-full">
+      {/* Scan Controls with consistent height and responsive layout */}
+      <div className="grid grid-cols-3 gap-2 md:gap-3 mx-auto w-full">
         <Button
           variant="outline"
           className="w-full h-10"
@@ -197,7 +197,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
 
       {/* Speed Slider with improved spacing */}
       <div className="space-y-3 pt-1">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
           <label className="text-sm font-medium">Speed (mm/s)</label>
           <span className="text-sm font-semibold">{speed[0]}</span>
         </div>
@@ -221,7 +221,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
             <div className="space-y-4 pt-2">
               {/* Acceleration Slider */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                   <label className="text-sm font-medium">Acceleration</label>
                   <span className="text-sm font-semibold">{acceleration[0]}</span>
                 </div>
@@ -259,8 +259,8 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
         </AccordionItem>
       </Accordion>
       
-      {/* Demo Controls with consistent height */}
-      <div className="grid grid-cols-2 gap-3 mx-auto w-full pt-3">
+      {/* Demo Controls with consistent height and responsive layout */}
+      <div className="grid grid-cols-2 gap-2 md:gap-3 mx-auto w-full pt-3">
         <Button
           className="w-full h-10"
           variant={isDemoRunning ? "outline" : "default"}
