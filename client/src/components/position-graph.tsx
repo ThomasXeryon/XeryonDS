@@ -92,13 +92,11 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
       setPositionData(prevData => {
         let updatedData = [...prevData];
 
-        // Only use points with RPi timestamps
+        // Get latest point (if any) for reference
         const latestPoint = updatedData.length > 0 ? updatedData[updatedData.length - 1] : null;
-
-        // No interpolation or client-side timestamps
-        if (!latestPoint?.sourceTime) {
-          return updatedData;
-        }
+        
+        // Always continue even without sourceTime
+        // This ensures we at least display whatever data we have
 
         // Filter out points older than our window size to maintain the scrolling effect
         const cutoffTime = now - windowSize;
