@@ -26,12 +26,12 @@ interface PositionDataPoint {
 export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
   const [positionData, setPositionData] = useState<PositionDataPoint[]>([]);
   const lastPositionRef = useRef<number | null>(null);
-  
+
   // Window size in milliseconds (10 seconds)
   const windowSize = 10000;
   // Sampling interval (add points every 100ms for a continuous graph)
   const sampleInterval = 100;
-  
+
   // Log for debugging
   useEffect(() => {
     console.log(`[PositionGraph] Current position received: ${currentPosition}`);
@@ -51,10 +51,10 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
     // Event handler for RPi timestamp-based position updates
     const handlePositionUpdate = (event: any) => {
       const { position, timestamp, rpiId: messageRpiId } = event.detail;
-      
+
       if (messageRpiId === rpiId) {
         console.log(`[PositionGraph] Received timestamped position update: ${position} at ${new Date(timestamp).toISOString()}`);
-        
+
         // Add the point with RPi-provided timestamp
         setPositionData(prevData => {
           const newDataPoint = {
@@ -62,10 +62,10 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
             position: position,
             sourceTime: timestamp // Store original timestamp
           };
-          
+
           // Add new point to data
           const updatedData = [...prevData, newDataPoint];
-          
+
           // Clean up old data points
           const now = Date.now();
           const cutoffTime = now - windowSize;
@@ -73,10 +73,10 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
         });
       }
     };
-    
+
     // Add event listener for custom position updates with RPi timestamps
     window.addEventListener('position-update', handlePositionUpdate);
-    
+
     // Cleanup
     return () => {
       window.removeEventListener('position-update', handlePositionUpdate);
@@ -88,32 +88,22 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
     // Set up an interval to keep the graph moving and add points for continuous rendering
     const intervalId = setInterval(() => {
       const now = Date.now();
-      
+
       setPositionData(prevData => {
         let updatedData = [...prevData];
-        
-        // Only add a new point if we don't have RPi timestamp data recently
-        // This avoids duplicate points and gives priority to RPi-timestamped data
+
+        // Only use points with RPi timestamps
         const latestPoint = updatedData.length > 0 ? updatedData[updatedData.length - 1] : null;
-        const isRpiDataRecent = latestPoint && latestPoint.sourceTime && (now - latestPoint.time < 100);
-        
-        // If we have a position value and no recent RPi data, add a point
-        if (lastPositionRef.current !== null && !isRpiDataRecent) {
-          // Add a new data point with current timestamp and latest position
-          const newDataPoint = {
-            time: now,
-            position: lastPositionRef.current
-          };
-          
-          // Add the point - this ensures we're always plotting the current value
-          // even when no RPi updates are coming in
-          updatedData.push(newDataPoint);
+
+        // No interpolation or client-side timestamps
+        if (!latestPoint?.sourceTime) {
+          return updatedData;
         }
-        
+
         // Filter out points older than our window size to maintain the scrolling effect
         const cutoffTime = now - windowSize;
         const filteredData = updatedData.filter(point => point.time >= cutoffTime);
-        
+
         // If we've filtered out all data points but we have a current position,
         // keep at least one point at the left edge of the visible area
         if (filteredData.length === 0 && lastPositionRef.current !== null) {
@@ -122,11 +112,11 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
             position: lastPositionRef.current
           }];
         }
-        
+
         return filteredData;
       });
     }, 100); // Update every 100ms - frequent enough for smooth animation but not too resource-intensive
-    
+
     return () => {
       clearInterval(intervalId);
     };
