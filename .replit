@@ -67,3 +67,12 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 server/websocket-test-client.py RPI1"
+
+[[workflows.workflow]]
+name = "RPi Client"
+author = 32066522
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 server/combined-test-client.py RPI1"
