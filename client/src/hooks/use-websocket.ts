@@ -116,16 +116,52 @@ export function useWebSocket(rpiId?: string) {
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
+      // Fast-path optimization for camera frames
+      // Check if this is likely a camera frame without fully parsing the JSON first
+      if (event.data.indexOf('"type":"camera_frame"') !== -1) {
+        try {
+          // Parse the data for camera frames
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'camera_frame') {
+            // Process frame with highest possible priority
+            const frameData = data.frame.startsWith('data:') ? 
+                             data.frame : 
+                             `data:image/jpeg;base64,${data.frame}`;
+                        
+            // ZERO BACKLOG OPTIMIZATION:
+            // Dispatch custom event for ultra-high-priority processing
+            // This bypasses React's rendering cycle entirely
+            window.dispatchEvent(new CustomEvent('new-camera-frame', { 
+              detail: { 
+                rpiId: data.rpiId,
+                frame: frameData,
+                timestamp: data.timestamp,
+                frameNumber: data.frameNumber
+              }
+            }));
+            
+            // Also update React state as a backup path
+            setState(prev => ({
+              ...prev,
+              frame: frameData,
+              lastFrameTime: performance.now() // Use high-precision timing
+            }));
+            
+            // Skip further processing for maximum speed
+            return;
+          }
+        } catch (e) {
+          // If fast-path fails, continue with normal processing
+          console.error('Fast-path camera frame processing failed:', e);
+        }
+      }
+
+      // Normal path for all other message types
       const data = JSON.parse(event.data);
 
       // Handle different message types
-      if (data.type === 'camera_frame') {
-        setState(prev => ({
-          ...prev,
-          frame: data.frame,
-          lastFrameTime: Date.now()
-        }));
-      } else if (data.type === 'rpi_connected') {
+      if (data.type === 'rpi_connected') {
         setState(prev => ({
           ...prev,
           rpiStatus: {
@@ -151,6 +187,18 @@ export function useWebSocket(rpiId?: string) {
           description: `RPi ${data.rpiId} has disconnected`,
           variant: "destructive",
         });
+      } else if (data.type === 'camera_frame') {
+        // This is the backup path for camera frames 
+        // Our fast path should handle most camera frames
+        const frameData = data.frame.startsWith('data:') ? 
+                         data.frame : 
+                         `data:image/jpeg;base64,${data.frame}`;
+        
+        setState(prev => ({
+          ...prev,
+          frame: frameData,
+          lastFrameTime: performance.now()
+        }));
       } else {
         // Store all other responses in lastResponse
         setState(prev => ({
