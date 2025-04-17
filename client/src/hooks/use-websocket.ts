@@ -115,7 +115,7 @@ export function useWebSocket(rpiId?: string) {
   }, [rpiId]); // Added rpiId to dependencies
 
   // Keep track of the latest frame and its metadata to ensure zero-latency display
-  const frameBufferRef = useRef<{timestamp: number, frame: string, frameNumber: number}[]>([]);
+  const frameBufferRef = useRef<{timestamp: number, frame: string, frameNumber: number, positionText?: string}[]>([]);
   const maxBufferLength = 3; // Only keep the latest 3 frames to avoid memory issues
   const lastDisplayedFrameNumber = useRef<number>(0);
   const lastProcessTimeRef = useRef<number>(Date.now());
@@ -186,12 +186,14 @@ export function useWebSocket(rpiId?: string) {
         // Extract metadata
         const frameNumber = data.frameNumber || 0;
         const timestamp = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
+        const positionText = data.positionText || '';
         
         // Store frame in buffer - we'll process it in our RAF loop
         frameBufferRef.current.push({
           frame: data.frame,
           frameNumber,
-          timestamp
+          timestamp,
+          positionText
         });
         
         // Calculate processing delay for monitoring
@@ -209,10 +211,44 @@ export function useWebSocket(rpiId?: string) {
         // Log receipt of frame
         console.log(
           `[WebSocket] Received frame #${frameNumber} | ` +
+          `Position: ${positionText} | ` +
           `Size: ${data.frame?.length || 0} chars | ` +
           `Process delay: ${processingDelay.toFixed(1)}ms`
         );
 
+      } else if (data.type === 'position_update') {
+        // Update the current position state
+        setState(prev => ({
+          ...prev,
+          lastResponse: data
+        }));
+        
+        // Extract position and timestamp
+        const position = data.epos;
+        const timestamp = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
+        
+        // Log position update
+        console.log(`[WebSocket] Position update: ${position} mm at ${new Date(timestamp).toISOString()}`);
+        
+        // Create and dispatch a custom event for the position graph
+        const positionEvent = new CustomEvent('position-update', {
+          detail: {
+            position,
+            timestamp,
+            rpiId: data.rpiId
+          }
+        });
+        window.dispatchEvent(positionEvent);
+        
+      } else if (data.type === 'custom_event') {
+        // Forward custom events from the server to the frontend
+        if (data.eventName === 'position-update') {
+          const positionEvent = new CustomEvent(data.eventName, {
+            detail: data.data
+          });
+          window.dispatchEvent(positionEvent);
+        }
+        
       } else if (data.type === 'rpi_connected') {
         setState(prev => ({
           ...prev,

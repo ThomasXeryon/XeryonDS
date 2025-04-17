@@ -14,6 +14,7 @@ import sys
 import os
 import logging
 import math
+import base64
 from datetime import datetime
 
 # Set up logging
@@ -25,12 +26,59 @@ logger = logging.getLogger(__name__)
 STATION_ID = sys.argv[1] if len(sys.argv) > 1 else "RPI1"
 SERVER_URL = f"wss://xeryonremotedemostation.replit.app/rpi/{STATION_ID}"
 EPOS_UPDATE_INTERVAL = 0.05  # 20 Hz
+CAMERA_UPDATE_INTERVAL = 0.1  # 10 FPS
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
 
 # Current position simulation
 current_position = 0.0  # in mm
 scanning = False
 scan_direction = 1
 scan_speed = 0.1  # mm per update
+frame_number = 0
+
+# Static base64 encoded JPEG image (1x1 transparent pixel)
+STATIC_IMAGE = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AP/B//9k="
+
+# We no longer need this function, as we'll just use the static image directly
+# and send position text as a separate field
+
+async def send_camera_frames(websocket):
+    """Send simulated camera frames with the current position overlay."""
+    global current_position, frame_number
+    logger.info(f"Starting camera frame stream for {STATION_ID}")
+    
+    while True:
+        try:
+            # Prepare image data info
+            position_text = f"EPOS: {current_position:.3f} mm | Frame #{frame_number}"
+            
+            # Create camera frame message using the static JPEG
+            camera_data = {
+                "type": "camera_frame",
+                "rpiId": STATION_ID,
+                "frame": STATIC_IMAGE,
+                "frameNumber": frame_number,
+                "timestamp": datetime.now().isoformat(),
+                "positionText": position_text
+            }
+            
+            try:
+                # Send the frame
+                await websocket.send(json.dumps(camera_data))
+                logger.debug(f"Sent camera frame #{frame_number}")
+            except Exception as e:
+                logger.error(f"Error sending camera frame: {str(e)}")
+            
+            # Increment frame number
+            frame_number += 1
+            
+            # Sleep for camera update interval
+            await asyncio.sleep(CAMERA_UPDATE_INTERVAL)
+            
+        except Exception as e:
+            logger.error(f"Camera frame error: {str(e)}")
+            await asyncio.sleep(1)
 
 async def send_position_updates(websocket):
     """Send simulated position updates with varying positions to test graph display."""
@@ -154,6 +202,9 @@ async def client():
                 # Start position update task
                 position_task = asyncio.create_task(send_position_updates(websocket))
                 
+                # Start camera frame task
+                camera_task = asyncio.create_task(send_camera_frames(websocket))
+                
                 # Reset retry on successful connection
                 retry_count = 0
                 
@@ -188,6 +239,7 @@ async def client():
                         
                 # Clean up tasks if we break out of the loop
                 position_task.cancel()
+                camera_task.cancel()
                 
         except Exception as e:
             logger.error(f"Connection error: {str(e)}")

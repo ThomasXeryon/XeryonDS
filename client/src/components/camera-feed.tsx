@@ -16,6 +16,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const frameNumberRef = useRef<number | null>(null);
   const frameStartTimeRef = useRef<number | null>(null);
+  const frameRef = useRef<{
+    positionText?: string;
+    frameNumber?: number;
+    timestamp?: number;
+  } | null>(null);
 
   // Process new frames with request animation frame for smoothest possible rendering
   useEffect(() => {
@@ -29,6 +34,47 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
     lastValidFrame.current = frame;
     setLoading(false);
     setIsReconnecting(false);
+    
+    // Extract position text either from message data or using a regular expression
+    try {
+      const message = JSON.parse(event.data);
+      if (message && message.type === 'camera_frame' && message.positionText) {
+        // If we have positionText in the message itself, use it
+        frameRef.current = {
+          ...frameRef.current,
+          positionText: message.positionText
+        };
+        console.log(`[CameraFeed] Extracted position from message: ${message.positionText}`);
+      } else if (frame.includes('|')) {
+        // Try to extract position from frame text
+        const positionMatch = frame.match(/([-+]?\d+\.\d+) mm \|/);
+        if (positionMatch && positionMatch[1]) {
+          const positionText = `Position: ${positionMatch[1]} mm`;
+          frameRef.current = {
+            ...frameRef.current,
+            positionText
+          };
+          console.log(`[CameraFeed] Extracted position from regex: ${positionText}`);
+        }
+      }
+    } catch (e) {
+      // If JSON parsing fails, try regex extraction from the frame content
+      if (frame.includes('|')) {
+        try {
+          const positionMatch = frame.match(/([-+]?\d+\.\d+) mm \|/);
+          if (positionMatch && positionMatch[1]) {
+            const positionText = `Position: ${positionMatch[1]} mm`;
+            frameRef.current = {
+              ...frameRef.current,
+              positionText
+            };
+            console.log(`[CameraFeed] Extracted position from regex fallback: ${positionText}`);
+          }
+        } catch (regexError) {
+          console.error("Failed to extract position text", regexError);
+        }
+      }
+    }
     
     // Process frame in a non-blocking way using requestAnimationFrame
     // This ensures the browser can optimize rendering and avoid jank
@@ -222,6 +268,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
               }
             }}
           />
+          
+          {/* Position display at the top */}
+          <div className="absolute top-0 left-0 right-0 bg-blue-600/70 text-white px-2 py-1 text-sm font-semibold text-center">
+            {frameRef.current?.positionText || 'Position: 0.000 mm'}
+          </div>
           
           {/* Frame stats overlay in bottom-left */}
           {frameNumberRef.current !== null && (
