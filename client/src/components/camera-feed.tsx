@@ -10,7 +10,7 @@ interface CameraFeedProps {
 export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
   const { connectionStatus, frame, lastFrameMetadata } = useWebSocket(String(rpiId));
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -25,139 +25,11 @@ export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) 
     };
   }, []);
 
-  // Canvas rendering function
-  const renderFrameToCanvas = (frameData: string, metadata?: {
-    frameNumber?: number;
-    timestamp?: number | null;
-    latency?: number | null;
-  }) => {
-    if (!canvasRef.current || !isMounted.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Create an image object
-    const img = new Image();
-    
-    // Only render once the image is loaded
-    img.onload = () => {
-      if (!canvasRef.current || !isMounted.current) return;
-      
-      // Get current canvas dimensions
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      
-      // Clear canvas
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-      
-      // Draw the image preserving aspect ratio
-      const imgAspect = img.width / img.height;
-      const canvasAspect = canvasWidth / canvasHeight;
-      
-      let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-      
-      if (imgAspect > canvasAspect) {
-        // Image is wider than canvas
-        drawWidth = canvasWidth;
-        drawHeight = canvasWidth / imgAspect;
-        offsetY = (canvasHeight - drawHeight) / 2;
-      } else {
-        // Image is taller than canvas
-        drawHeight = canvasHeight;
-        drawWidth = canvasHeight * imgAspect;
-        offsetX = (canvasWidth - drawWidth) / 2;
-      }
-      
-      // Draw image centered
-      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-      
-      // Add debug overlay if enabled
-      if (showDebugOverlay && metadata) {
-        // Configure text style
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, canvasHeight - 50, canvasWidth, 50);
-        
-        // Frame number and latency display
-        ctx.font = '14px monospace';
-        ctx.fillStyle = 'white';
-        ctx.textBaseline = 'top';
-        
-        const frameNumberText = `Frame #${metadata.frameNumber || 'N/A'}`;
-        const latencyText = metadata.latency !== null 
-          ? `Latency: ${metadata.latency}ms` 
-          : 'No latency data';
-        
-        // Position text
-        ctx.fillText(frameNumberText, 10, canvasHeight - 45);
-        ctx.fillText(latencyText, canvasWidth - ctx.measureText(latencyText).width - 10, canvasHeight - 45);
-        
-        // Timestamp in smaller font
-        ctx.font = '10px monospace';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        
-        const timestampText = metadata.timestamp 
-          ? new Date(metadata.timestamp).toISOString() 
-          : 'No timestamp';
-        
-        ctx.fillText(timestampText, 10, canvasHeight - 25);
-      }
-    };
-    
-    // Handle any errors
-    img.onerror = () => {
-      console.error("[CameraFeed] Error loading frame");
-      if (isMounted.current) {
-        setLoading(true);
-      }
-    };
-    
-    // Set the image source with proper URL formatting
-    const frameUrl = frameData.startsWith('data:image') 
-      ? frameData 
-      : `data:image/jpeg;base64,${frameData}`;
-    
-    img.src = frameUrl;
-  };
-
-  // Resize canvas to match container
-  useEffect(() => {
-    const resizeCanvas = () => {
-      if (!canvasRef.current || !canvasRef.current.parentElement) return;
-      
-      const parent = canvasRef.current.parentElement;
-      const { width, height } = parent.getBoundingClientRect();
-      
-      canvasRef.current.width = width;
-      canvasRef.current.height = height;
-      
-      // Re-render the last valid frame after resize
-      if (lastValidFrame.current) {
-        renderFrameToCanvas(lastValidFrame.current, lastFrameMetadata);
-      }
-    };
-    
-    // Initial resize
-    resizeCanvas();
-    
-    // Add resize listener
-    window.addEventListener('resize', resizeCanvas);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, [lastFrameMetadata]);
-
-  // Process new frames
   useEffect(() => {
     if (frame) {
       // Using direct reference update rather than state for best performance
       lastFrameTime.current = Date.now();
       lastValidFrame.current = frame; // Store the last valid frame
-      
-      // Render frame to canvas
-      renderFrameToCanvas(frame, lastFrameMetadata);
       
       // Only update state if component is still mounted
       if (isMounted.current) {
@@ -171,7 +43,7 @@ export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) 
         window.location.reload();
       }
     }
-  }, [frame, lastFrameMetadata]);
+  }, [frame]);
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
@@ -180,7 +52,7 @@ export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) 
         setIsReconnecting(true);
       }
       
-      // Force reconnection after 10 seconds of no connection
+      // Force reconnection after 10 seconds of no connection (increased from 5s)
       const timeout = setTimeout(() => {
         if (isMounted.current) {
           window.location.reload();
@@ -216,11 +88,18 @@ export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) 
             {statusText || 'Waiting for camera feed...'}
           </div>
         </>
-      ) : (
+      ) : (isFrameRecent && frame) || lastValidFrame.current ? (
         <>
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full"
+          <img
+            ref={imgRef}
+            src={isFrameRecent && frame ? frame : lastValidFrame.current!}
+            alt="Camera Feed"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              console.error("[CameraFeed] Error loading frame:", e);
+              setLoading(true);
+            }}
+            // Removed onLoad console log to reduce overhead
           />
 
           {/* Reconnecting overlay that shows in corner when connection is lost */}
@@ -230,17 +109,26 @@ export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) 
             </div>
           )}
           
-          {/* Only use this as a fallback if rendering to canvas fails */}
-          {!canvasRef.current && lastValidFrame.current && (
-            <div className="absolute inset-0 flex items-center justify-center text-white bg-zinc-800/80">
-              <p className="text-xs sm:text-sm">Canvas rendering not supported</p>
+          {/* Debug overlay with frame information */}
+          {showDebugOverlay && lastFrameMetadata && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-1 text-xs font-mono">
+              <div className="flex justify-between">
+                <span>Frame #{lastFrameMetadata.frameNumber || 'N/A'}</span>
+                <span>
+                  {lastFrameMetadata.latency !== null 
+                    ? `Latency: ${lastFrameMetadata.latency}ms` 
+                    : 'No latency data'}
+                </span>
+              </div>
+              <div className="text-[8px] opacity-70">
+                {lastFrameMetadata.timestamp 
+                  ? new Date(lastFrameMetadata.timestamp).toISOString() 
+                  : 'No timestamp'}
+              </div>
             </div>
           )}
         </>
-      )}
-      
-      {/* Status text when no feed is available */}
-      {!loading && !lastValidFrame.current && (
+      ) : (
         <div className="absolute inset-0 flex items-center justify-center text-white bg-zinc-800/80">
           <p className="text-xs sm:text-sm">{statusText || "No camera feed available"}</p>
         </div>
