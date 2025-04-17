@@ -21,6 +21,7 @@ import logging
 import gc
 import subprocess
 from datetime import datetime
+from collections import deque
 import threading
 import signal
 
@@ -49,24 +50,22 @@ RESOLUTION_HEIGHT = 720  # 720
 JPEG_QUALITY = 70
 TARGET_FPS = 25
 COM_PORT = "/dev/ttyACM0"
-EPOS_UPDATE_INTERVAL = 0.2  # Reduced frequency to 200ms to reduce load
-COMMAND_TIMEOUT = 2.0  # Timeout for serial commands (2 seconds)
-COMMAND_RATE_LIMIT = 0.05  # Minimum interval between commands (50ms)
+EPOS_UPDATE_INTERVAL = 0.05  # 50ms position update interval
+COMMAND_TIMEOUT = 60
 
 # Default parameters
 DEFAULT_ACCELERATION = 32750
 DEFAULT_DECELERATION = 32750
 DEFAULT_SPEED = 500
-MIN_SLEEP_DELAY = 0.000001  # Reduced to 1μs for maximum responsiveness
+MIN_SLEEP_DELAY = 0.00001  # Absolute minimum sleep (10Î¼s)
 
-# Connection parameters
+# Connection parameters - Optimized for ultra-fast reconnection
 MAX_RECONNECT_ATTEMPTS = 9999  # Effectively infinite retries
-RECONNECT_BASE_DELAY = 0.5  # Start with 500ms delay
+RECONNECT_BASE_DELAY = 0.5  # Start with just 500ms delay
 MAX_RECONNECT_DELAY = 5.0  # Cap at 5 seconds maximum
 MAX_CONNECTION_TIMEOUT = 3.0  # Timeout for connection attempts
 MAX_CLOSE_TIMEOUT = 1.0  # Timeout for connection closure
 CONNECTION_HEARTBEAT_INTERVAL = 5.0  # Send heartbeats every 5 seconds
-BUFFER_FLUSH_INTERVAL = 10.0  # Flush USB less frequently (10 seconds)
 
 # ===== GLOBAL STATE =====
 shutdown_requested = False
@@ -79,11 +78,9 @@ last_successful_command_time = time.time()
 last_successful_frame_time = time.time()
 last_ping_response_time = time.time()
 startup_time = None
-last_command_time = 0  # For rate limiting
 
 # Tracking variables
 position_lock = threading.Lock()
-serial_lock = threading.Lock()  # Synchronize serial access
 current_position = 0.0  # Current position in mm
 thermal_error_count = 0
 amplifier_error_count = 0
@@ -103,7 +100,8 @@ logging.basicConfig(level=logging.DEBUG,
                         if RUNNING_ON_RPI else logging.NullHandler()
                     ])
 logger = logging.getLogger("XeryonClient")
-jpeg_executor = ThreadPoolExecutor(max_workers=2)
+jpeg_executor = ThreadPoolExecutor(
+    max_workers=2)  # One thread is often enough, 2 max
 
 
 # ===== SERIAL AND CONTROLLER MANAGEMENT =====
@@ -113,6 +111,7 @@ def flush_serial_port():
         return True
 
     try:
+        # First check if the COM port exists
         if not os.path.exists(COM_PORT):
             logger.warning(f"{COM_PORT} not found - attempting reset")
             try:
@@ -121,18 +120,23 @@ def flush_serial_port():
             except Exception as e:
                 logger.error(f"Failed to reset USB: {str(e)}")
 
+            # Check again after reset attempt
             if not os.path.exists(COM_PORT):
                 logger.error(f"{COM_PORT} still not available after reset")
                 return False
 
+        # Aggressively flush serial buffers
         with serial.Serial(COM_PORT, 115200, timeout=0.5) as ser:
-            for _ in range(2):  # Reduced flushes to minimize interference
+            # Execute multiple flushes
+            for _ in range(3):
                 ser.reset_input_buffer()
                 ser.reset_output_buffer()
                 time.sleep(0.01)
 
+            # Send a harmless command to clear any pending data
             ser.write(b'\r\n')
             time.sleep(0.05)
+            # Read and discard any pending data
             _ = ser.read(ser.in_waiting or 1)
 
         logger.debug(f"Serial port {COM_PORT} flushed successfully")
@@ -155,34 +159,40 @@ def initialize_xeryon_controller():
     try:
         logger.info(f"Initializing Xeryon controller on {COM_PORT}")
 
-        with serial_lock:
-            if not flush_serial_port():
-                logger.error(
-                    "Failed to flush serial port - aborting controller init")
-                return False
+        # First aggressively flush the serial port
+        if not flush_serial_port():
+            logger.error(
+                "Failed to flush serial port - aborting controller init")
+            return False
 
+        # Create controller
         controller = Xeryon(COM_port=COM_PORT, baudrate=115200)
         axis = controller.addAxis(Stage.XLA_312_3N, "X")
         controller.start()
-        time.sleep(0.5)
+        time.sleep(0.5)  # Allow controller to initialize fully
 
+        # Configure units and basic parameters
         axis.setUnits(Units.mm)
         time.sleep(0.1)
-        axis.sendCommand("POLI=50")
+        axis.sendCommand("POLI=50")  # Set polling rate
         time.sleep(0.1)
 
+        # Reset error counters
         thermal_error_count = 0
         amplifier_error_count = 0
         serial_error_count = 0
 
+        # Set default parameters
         axis.setSpeed(DEFAULT_SPEED)
         time.sleep(0.1)
         set_acce_dece_params(DEFAULT_ACCELERATION, DEFAULT_DECELERATION)
         time.sleep(0.1)
 
+        # Enable controller
         axis.sendCommand("ENBL=1")
         time.sleep(0.1)
 
+        # Home to index
         axis.findIndex()
         logger.info("Xeryon controller initialized successfully")
         return True
@@ -204,6 +214,7 @@ def stop_controller():
         if controller:
             if axis:
                 try:
+                    # Try to gracefully stop any movements
                     axis.stopScan()
                     time.sleep(0.1)
                 except Exception as e:
@@ -232,16 +243,20 @@ def set_acce_dece_params(acce_value=None, dece_value=None):
     success = True
     try:
         if acce_value is not None:
+            # Ensure acce_value is within valid range (0-65500)
             acce_value = max(0, min(65500, int(acce_value)))
             axis.sendCommand(f"ACCE={acce_value}")
             logger.info(f"Set acceleration to {acce_value}")
 
         if dece_value is not None:
+            # Ensure dece_value is within valid range (0-65500)
             dece_value = max(0, min(65500, int(dece_value)))
             axis.sendCommand(f"DECE={dece_value}")
             logger.info(f"Set deceleration to {dece_value}")
 
+        # To be extra safe, re-enable the controller
         axis.sendCommand("ENBL=1")
+
         return True
     except Exception as e:
         logger.error(f"Error setting acce/dece parameters: {str(e)}")
@@ -253,9 +268,12 @@ def initialize_camera():
     """Initialize camera with robust error handling."""
     global picam2
 
-    CROP_FRACTION = 1 / 3
-    HORIZONTAL_SHIFT = 0.0
-    VERTICAL_SHIFT = 0.0
+    # === Adjustable crop settings ===
+    CROP_FRACTION = 1 / 3  # Capture 1/5th of full sensor area
+    HORIZONTAL_SHIFT = 0.0  # -1.0 (left) to 1.0 (right)
+    VERTICAL_SHIFT = 0.0  # -1.0 (up) to 1.0 (down)
+
+    # Full sensor resolution for Pi Camera 3 (IMX708)
     SENSOR_WIDTH = 4608
     SENSOR_HEIGHT = 2592
 
@@ -267,14 +285,21 @@ def initialize_camera():
         logger.info("Initializing camera")
         picam2 = Picamera2()
 
+        # Calculate crop dimensions
         crop_w = int(SENSOR_WIDTH * CROP_FRACTION)
         crop_h = int(SENSOR_HEIGHT * CROP_FRACTION)
+
+        # Calculate center-based offset
         max_x_shift = (SENSOR_WIDTH - crop_w) // 2
         max_y_shift = (SENSOR_HEIGHT - crop_h) // 2
+
         x = int((SENSOR_WIDTH - crop_w) // 2 + HORIZONTAL_SHIFT * max_x_shift)
         y = int((SENSOR_HEIGHT - crop_h) // 2 + VERTICAL_SHIFT * max_y_shift)
+
+        # Clamp x and y to valid sensor bounds
         x = max(0, min(x, SENSOR_WIDTH - crop_w))
         y = max(0, min(y, SENSOR_HEIGHT - crop_h))
+
         scaler_crop = (x, y, crop_w, crop_h)
         logger.info(f"ScalerCrop: {scaler_crop}")
 
@@ -287,13 +312,15 @@ def initialize_camera():
 
         picam2.configure(config)
         picam2.start()
+
+        # Enable autofocus
         picam2.set_controls({
-            "AeEnable": False,
+            "AeEnable": False,  # Disable auto exposure
             "AfMode": 2,
-            "ExposureTime": 20000,
-            "AnalogueGain": 1.0
+            "ExposureTime": 20000,  # 20ms = sync with 50Hz lighting
+            "AnalogueGain": 1.0  # You can raise this if image too dark
         })
-        time.sleep(5)
+        time.sleep(5)  # Allow autofocus/exposure/white balance to stabilize
 
         for i in range(3):
             _ = picam2.capture_array("main")
@@ -355,17 +382,26 @@ def stop_camera():
 # ===== COMMAND PROCESSING =====
 async def process_command(data):
     """Process incoming commands with comprehensive error handling and safety checks."""
-    global axis, last_successful_command_time, current_position, last_command_time
+    global axis, last_successful_command_time, current_position
     global thermal_error_count, amplifier_error_count
+    axis.sendCommand("ENBL=1")
 
+    # Extract command data
     message_type = data.get("type")
     command = data.get("command", "unknown")
     direction = data.get("direction", "none")
     step_size = data.get("stepSize")
     step_unit = data.get("stepUnit")
     timestamp = data.get("timestamp")
-    acce_value = data.get("acceleration", data.get("acce"))
-    dece_value = data.get("deceleration", data.get("dece"))
+
+    # Handle acceleration/deceleration parameters (support both naming conventions)
+    acce_value = data.get("acceleration")
+    if acce_value is None:
+        acce_value = data.get("acce")
+
+    dece_value = data.get("deceleration")
+    if dece_value is None:
+        dece_value = data.get("dece")
 
     logger.debug(
         f"Command received: {command}, direction: {direction}, stepSize: {step_size}, stepUnit: {step_unit}, acce: {acce_value}, dece: {dece_value}"
@@ -389,6 +425,7 @@ async def process_command(data):
             logger.debug(f"Received pong with timestamp: {timestamp}")
             return None
         elif message_type == "heartbeat":
+            # Heartbeat message for connection health verification
             response.update({
                 "type": "heartbeat_response",
                 "timestamp": datetime.now().isoformat(),
@@ -397,62 +434,35 @@ async def process_command(data):
             })
             return response
 
+        # Verify controller is initialized
         if not RUNNING_ON_RPI or not axis:
-            if RUNNING_ON_RPI:
+            if RUNNING_ON_RPI:  # Only log as error if actually on RPi
                 logger.error("Axis not initialized - cannot process command")
                 response["status"] = "error"
                 response["message"] = "Controller not initialized"
                 return response
             else:
+                # In simulation mode, we'll pretend commands work
                 logger.info(f"Simulation: Processing command {command}")
                 response["message"] = f"Simulation: Executed {command}"
                 last_successful_command_time = time.time()
                 return response
 
-        # Rate limit commands to prevent flooding
-        current_time = time.time()
-        time_since_last_command = current_time - last_command_time
-        if time_since_last_command < COMMAND_RATE_LIMIT:
-            await asyncio.sleep(COMMAND_RATE_LIMIT - time_since_last_command)
-        last_command_time = time.time()
+        # Add minimal sleep to prevent CPU hogging while ensuring ultra-responsiveness
+        await asyncio.sleep(MIN_SLEEP_DELAY)
 
-        # Check controller state before sending commands
-        with serial_lock:
-            try:
-                stat = await asyncio.to_thread(axis.getData, "STAT")
-                if axis.isThermalProtection1(
-                        stat) or axis.isThermalProtection2(stat):
-                    logger.error("Controller in thermal protection state")
-                    response["status"] = "error"
-                    response[
-                        "message"] = "Controller in thermal protection state"
-                    return response
-                if axis.isErrorLimit(stat):
-                    logger.error("Controller in error limit state")
-                    response["status"] = "error"
-                    response["message"] = "Controller in error limit state"
-                    return response
-                if axis.isSafetyTimeoutTriggered(stat):
-                    logger.error("Controller safety timeout triggered")
-                    response["status"] = "error"
-                    response["message"] = "Controller safety timeout triggered"
-                    return response
+        # Always enable controller before commands to prevent thermal protection issues
+        try:
+            axis.sendCommand("ENBL=1")
+        except Exception as e:
+            logger.warning(f"Error enabling controller: {str(e)}")
 
-                axis.sendCommand("ENBL=1")
-            except Exception as e:
-                logger.warning(f"Error checking controller state: {str(e)}")
-                response["status"] = "error"
-                response[
-                    "message"] = f"Error checking controller state: {str(e)}"
-                return response
-
-        # Handle acceleration and deceleration commands
+        # Handle acceleration and deceleration commands first
         if command in ["acceleration", "acce"]:
             if acce_value is None:
                 acce_value = int(
                     direction) if direction.isdigit() else DEFAULT_ACCELERATION
-            with serial_lock:
-                set_acce_dece_params(acce_value=acce_value)
+            set_acce_dece_params(acce_value=acce_value)
             response["message"] = f"Acceleration set to {acce_value}"
             last_successful_command_time = time.time()
             return response
@@ -461,15 +471,14 @@ async def process_command(data):
             if dece_value is None:
                 dece_value = int(
                     direction) if direction.isdigit() else DEFAULT_DECELERATION
-            with serial_lock:
-                set_acce_dece_params(dece_value=dece_value)
+            set_acce_dece_params(dece_value=dece_value)
             response["message"] = f"Deceleration set to {dece_value}"
             last_successful_command_time = time.time()
             return response
 
+        # Apply acce/dece parameters for all commands if provided
         if acce_value is not None or dece_value is not None:
-            with serial_lock:
-                set_acce_dece_params(acce_value, dece_value)
+            set_acce_dece_params(acce_value, dece_value)
             if acce_value is not None:
                 response["acceleration"] = acce_value
             if dece_value is not None:
@@ -477,42 +486,36 @@ async def process_command(data):
 
         # Process the main command
         if command in ["move", "step"]:
+            axis.sendCommand("ENBL=1")
+            # Validate parameters
             if direction not in ["right", "left"]:
                 raise ValueError(f"Invalid direction: {direction}")
             if step_size is None or not isinstance(
                     step_size, (int, float)) or step_size < 0:
                 raise ValueError(f"Invalid stepSize: {step_size}")
-            if step_unit not in ["mm", "μm", "nm"]:
+            if step_unit not in ["mm", "Î¼m", "nm"]:
                 raise ValueError(f"Invalid stepUnit: {step_unit}")
 
+            # Convert to mm
             step_value = float(step_size)
-            if step_unit == "μm":
+            if step_unit == "Î¼m":
                 step_value /= 1000
             elif step_unit == "nm":
                 step_value /= 1_000_000
+
+            # Apply direction
             final_step = step_value if direction == "right" else -step_value
 
+            # Execute the step
             try:
-                with serial_lock:
-                    try:
-                        await asyncio.wait_for(asyncio.to_thread(
-                            axis.step, final_step),
-                                               timeout=COMMAND_TIMEOUT)
-                    except asyncio.TimeoutError:
-                        logger.error("Timeout waiting for axis.step")
-                        raise Exception("Timeout waiting for axis.step")
+                await asyncio.to_thread(axis.step, final_step)
 
+                # Update our tracked position
                 with position_lock:
                     current_position += final_step
 
-                with serial_lock:
-                    try:
-                        epos = await asyncio.wait_for(asyncio.to_thread(
-                            axis.getEPOS),
-                                                      timeout=COMMAND_TIMEOUT)
-                    except asyncio.TimeoutError:
-                        logger.error("Timeout waiting for axis.getEPOS")
-                        raise Exception("Timeout waiting for axis.getEPOS")
+                # Read back actual position
+                epos = await asyncio.to_thread(axis.getEPOS)
 
                 response[
                     "message"] = f"Stepped {final_step:.6f} mm {'right' if direction == 'right' else 'left'}"
@@ -523,20 +526,29 @@ async def process_command(data):
                 )
                 last_successful_command_time = time.time()
             except Exception as e:
+                # Check for specific errors
                 error_str = str(e)
                 if "amplifier error" in error_str:
                     amplifier_error_count += 1
+                    # Try to recover
+                    try:
+                        axis.sendCommand("ENBL=1")
+                    except:
+                        pass
                 elif "thermal protection" in error_str:
                     thermal_error_count += 1
+                    # Try to recover
+                    try:
+                        axis.sendCommand("ENBL=1")
+                    except:
+                        pass
                 raise
 
         elif command == "home":
-            with serial_lock:
-                await asyncio.wait_for(asyncio.to_thread(axis.findIndex),
-                                       timeout=COMMAND_TIMEOUT)
-                epos = await asyncio.wait_for(asyncio.to_thread(axis.getEPOS),
-                                              timeout=COMMAND_TIMEOUT)
+            await asyncio.to_thread(axis.findIndex)
+            epos = await asyncio.to_thread(axis.getEPOS)
 
+            # Reset our tracked position
             with position_lock:
                 current_position = epos
 
@@ -547,27 +559,19 @@ async def process_command(data):
 
         elif command == "speed":
             speed_value = float(direction)
+            # Clamp to reasonable values
             speed_value = max(1, min(1000, speed_value))
-            with serial_lock:
-                await asyncio.wait_for(asyncio.to_thread(
-                    axis.setSpeed, speed_value),
-                                       timeout=COMMAND_TIMEOUT)
+            await asyncio.to_thread(axis.setSpeed, speed_value)
             response["message"] = f"Speed set to {speed_value:.2f} mm/s"
             logger.info(f"Speed set to {speed_value:.2f} mm/s")
             last_successful_command_time = time.time()
 
         elif command == "scan":
             if direction == "right":
-                with serial_lock:
-                    await asyncio.wait_for(asyncio.to_thread(
-                        axis.startScan, 1),
-                                           timeout=COMMAND_TIMEOUT)
+                await asyncio.to_thread(axis.startScan, 1)
                 response["message"] = "Scanning right"
             elif direction == "left":
-                with serial_lock:
-                    await asyncio.wait_for(asyncio.to_thread(
-                        axis.startScan, -1),
-                                           timeout=COMMAND_TIMEOUT)
+                await asyncio.to_thread(axis.startScan, -1)
                 response["message"] = "Scanning left"
             else:
                 raise ValueError(f"Invalid scan direction: {direction}")
@@ -590,12 +594,10 @@ async def process_command(data):
         elif command == "demo_stop":
             if demo_running:
                 demo_running = False
-                with serial_lock:
-                    await asyncio.wait_for(asyncio.to_thread(axis.stopScan),
-                                           timeout=COMMAND_TIMEOUT)
-                    await asyncio.wait_for(asyncio.to_thread(axis.setDPOS, 0),
-                                           timeout=COMMAND_TIMEOUT)
+                await asyncio.to_thread(axis.stopScan)
+                await asyncio.to_thread(axis.setDPOS, 0)
 
+                # Reset tracked position
                 with position_lock:
                     current_position = 0
 
@@ -607,12 +609,10 @@ async def process_command(data):
             last_successful_command_time = time.time()
 
         elif command == "stop":
-            with serial_lock:
-                await asyncio.wait_for(asyncio.to_thread(axis.stopScan),
-                                       timeout=COMMAND_TIMEOUT)
-                await asyncio.wait_for(asyncio.to_thread(axis.setDPOS, 0),
-                                       timeout=COMMAND_TIMEOUT)
+            await asyncio.to_thread(axis.stopScan)
+            await asyncio.to_thread(axis.setDPOS, 0)
 
+            # Reset tracked position
             with position_lock:
                 current_position = 0
 
@@ -621,12 +621,9 @@ async def process_command(data):
             last_successful_command_time = time.time()
 
         elif command == "reset_params":
-            with serial_lock:
-                await asyncio.wait_for(asyncio.to_thread(
-                    axis.setSpeed, DEFAULT_SPEED),
-                                       timeout=COMMAND_TIMEOUT)
-                set_acce_dece_params(DEFAULT_ACCELERATION,
-                                     DEFAULT_DECELERATION)
+            # Reset to default parameters
+            await asyncio.to_thread(axis.setSpeed, DEFAULT_SPEED)
+            set_acce_dece_params(DEFAULT_ACCELERATION, DEFAULT_DECELERATION)
             response["message"] = "Parameters reset to defaults"
             response["speed"] = DEFAULT_SPEED
             response["acceleration"] = DEFAULT_ACCELERATION
@@ -645,24 +642,27 @@ async def process_command(data):
         response["message"] = f"Command '{command}' failed: {str(e)}"
         logger.error(f"Command error ({command}): {str(e)}")
 
+        # Try to recover from common errors
         if RUNNING_ON_RPI and axis:
-            with serial_lock:
-                try:
-                    axis.sendCommand("ENBL=1")
-                    time.sleep(0.1)
-                except Exception as recovery_error:
-                    logger.error(
-                        f"Error recovery failed: {str(recovery_error)}")
+            try:
+                # Re-enable controller
+                axis.sendCommand("ENBL=1")
+                time.sleep(0.1)
+            except Exception as recovery_error:
+                logger.error(f"Error recovery failed: {str(recovery_error)}")
 
+    # Add minimal sleep before returning to ensure optimal responsiveness
+    await asyncio.sleep(MIN_SLEEP_DELAY)
     return response
 
 
 async def run_demo():
     """Run a safe demo sequence that showcases the capabilities of the actuator."""
-    global demo_running, axis, current_position, last_command_time
+    global demo_running, axis, current_position
 
     logger.info("Demo started")
     try:
+        # Safety check - make sure demo won't exceed limits
         if not axis:
             logger.error("Cannot run demo - no axis initialized")
             demo_running = False
@@ -670,37 +670,38 @@ async def run_demo():
 
         demo_running = True
 
-        with serial_lock:
-            await asyncio.wait_for(asyncio.to_thread(axis.setDPOS, 0),
-                                   timeout=COMMAND_TIMEOUT)
-        with position_lock:
-            current_position = 0
-        logger.info("Demo: Position reset to 0 mm")
-        await asyncio.sleep(1)
+        # Reset to a known position
+        try:
+            await asyncio.to_thread(axis.setDPOS, 0)
+            with position_lock:
+                current_position = 0
+            logger.info("Demo: Position reset to 0 mm")
+            await asyncio.sleep(1)
+        except Exception as e:
+            logger.error(f"Demo position reset error: {str(e)}")
 
-        for i in range(100):
+        # Run the demo sequence (until stopped or max iterations)
+        for i in range(100):  # Limit to 100 iterations
             if not demo_running or not axis:
                 break
 
             try:
+                # Vary speed randomly within safe limits
                 speed = random.uniform(10, 500)
-                with serial_lock:
-                    await asyncio.wait_for(asyncio.to_thread(
-                        axis.setSpeed, speed),
-                                           timeout=COMMAND_TIMEOUT)
+                await asyncio.to_thread(axis.setSpeed, speed)
                 logger.info(f"Demo: Speed set to {speed:.1f} mm/s")
 
+                # Randomly choose between step and scan operations
                 action = random.choice(["step", "scan"])
 
                 if action == "step":
+                    # Make a random step
                     direction = random.choice([1, -1])
-                    step_size = random.uniform(0.1, 2.0)
+                    step_size = random.uniform(0.1, 2.0)  # Smaller steps
 
-                    with serial_lock:
-                        await asyncio.wait_for(asyncio.to_thread(
-                            axis.step, step_size * direction),
-                                               timeout=COMMAND_TIMEOUT)
+                    await asyncio.to_thread(axis.step, step_size * direction)
 
+                    # Update tracked position
                     with position_lock:
                         current_position += step_size * direction
 
@@ -709,78 +710,77 @@ async def run_demo():
                     )
                     await asyncio.sleep(random.uniform(0.3, 1.0))
 
-                else:
+                else:  # scan
+                    # Randomly scan in one direction
                     direction = random.choice([1, -1])
-                    with serial_lock:
-                        await asyncio.wait_for(asyncio.to_thread(
-                            axis.startScan, direction),
-                                               timeout=COMMAND_TIMEOUT)
+
+                    await asyncio.to_thread(axis.startScan, direction)
                     logger.info(
                         f"Demo: Scan {'right' if direction == 1 else 'left'}")
 
+                    # Scan for a short, random time
                     scan_time = random.uniform(0.3, 1.5)
                     await asyncio.sleep(scan_time)
 
-                    with serial_lock:
-                        await asyncio.wait_for(asyncio.to_thread(
-                            axis.stopScan),
-                                               timeout=COMMAND_TIMEOUT)
+                    # Stop scan
+                    await asyncio.to_thread(axis.stopScan)
                     logger.info("Demo: Scan stopped")
 
+                    # Update position
                     try:
-                        with serial_lock:
-                            epos = await asyncio.wait_for(
-                                asyncio.to_thread(axis.getEPOS),
-                                timeout=COMMAND_TIMEOUT)
+                        epos = await asyncio.to_thread(axis.getEPOS)
                         with position_lock:
                             current_position = epos
                     except Exception as e:
                         logger.error(f"Demo position update error: {str(e)}")
 
+                # Add small delay between actions
                 await asyncio.sleep(random.uniform(0.2, 0.8))
 
             except Exception as e:
                 logger.error(f"Demo error: {str(e)}")
-                with serial_lock:
-                    try:
-                        if axis:
-                            axis.stopScan()
-                            axis.sendCommand("ENBL=1")
-                    except:
-                        pass
+                # Try to recover
+                try:
+                    if axis:
+                        axis.stopScan()
+                        axis.sendCommand("ENBL=1")
+                except:
+                    pass
                 await asyncio.sleep(1)
 
         logger.info("Demo sequence completed")
     except Exception as e:
         logger.error(f"Demo error: {str(e)}")
     finally:
+        # Make sure to clean up
         demo_running = False
         try:
-            with serial_lock:
-                if axis:
-                    await asyncio.wait_for(asyncio.to_thread(axis.stopScan),
-                                           timeout=COMMAND_TIMEOUT)
-                    await asyncio.wait_for(asyncio.to_thread(axis.setDPOS, 0),
-                                           timeout=COMMAND_TIMEOUT)
-            with position_lock:
-                current_position = 0
+            if axis:
+                await asyncio.to_thread(axis.stopScan)
+                await asyncio.to_thread(axis.setDPOS, 0)
+                with position_lock:
+                    current_position = 0
         except Exception as e:
             logger.error(f"Demo cleanup error: {str(e)}")
 
 
 # ===== BACKGROUND TASKS =====
 async def send_camera_frames(websocket):
-    """Send the newest camera frames in real-time, dropping older frames if necessary."""
+    """Send camera frames with real-time optimization, prioritizing freshness."""
     global picam2, last_successful_frame_time
 
     frame_count = 0
     last_frame_time = time.time()
+    frame_backlog = 0
+    delay_factor = 1.0  # Dynamically adjusted based on performance
 
     logger.info("Starting camera frame sender task")
 
     while not shutdown_requested:
         try:
+            # Check if camera is available
             if not RUNNING_ON_RPI:
+                # Simulation mode - generate a colored test pattern
                 await asyncio.sleep(1.0 / TARGET_FPS)
                 frame_count += 1
                 continue
@@ -793,16 +793,44 @@ async def send_camera_frames(websocket):
                 await asyncio.sleep(1)
                 continue
 
-            # Always capture the newest frame, dropping any pending frames
+            # Real-time optimization: Calculate timing
+            current_time = time.time()
+            frame_interval = 1.0 / TARGET_FPS
+            elapsed = current_time - last_frame_time
+
+            # Skip frames if we're falling behind to prioritize showing the most current image
+            if elapsed > frame_interval * 2:
+                frame_backlog += 1
+                if frame_backlog % 10 == 0:
+                    logger.debug(
+                        f"Frame sender falling behind (backlog: {frame_backlog}) - prioritizing freshness"
+                    )
+                # Don't sleep - capture a fresh frame immediately
+            else:
+                frame_backlog = max(0, frame_backlog -
+                                    1)  # Gradually reduce backlog count
+
+                # Brief sltimestampeep if we're ahead of schedule (but keep it minimal)
+                if elapsed < frame_interval:
+                    # Use a very short sleep to maintain real-time priority
+                    await asyncio.sleep(
+                        min(frame_interval - elapsed, 0.005) * delay_factor)
+
+            # Take absolute minimal sleep to prevent CPU hogging while maintaining responsiveness
+            await asyncio.sleep(MIN_SLEEP_DELAY)
+
+            # Capture frame with error handling
+            last_frame_time = time.time()
             try:
+                # Capture the frame
                 rgb_buffer = picam2.capture_array("main")
                 frame = cv2.cvtColor(rgb_buffer, cv2.COLOR_RGB2BGR)
             except Exception as e:
                 logger.error(f"Frame capture error: {e}")
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.01)  # Brief pause on error
                 continue
 
-            last_frame_time = time.time()
+            # Get timestamp and prepare frame
             frame_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
             # Add frame info overlay
@@ -810,15 +838,23 @@ async def send_camera_frames(websocket):
             cv2.putText(frame, id_string, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                         0.7, (0, 0, 255), 2)
 
-            # Encode with highest priority
+            # Adjust JPEG quality based on backlog (lower quality if falling behind)
+            jpeg_quality = JPEG_QUALITY
+            if frame_backlog > 5:
+                # Reduce quality in steps as backlog increases
+                jpeg_quality = max(30,
+                                   JPEG_QUALITY - (frame_backlog // 5) * 10)
+
+            # Encode with threaded JPEG encoder
             try:
-                buffer = await encode_jpeg_async(frame, JPEG_QUALITY)
+                buffer = await encode_jpeg_async(frame, jpeg_quality)
                 jpg_as_text = base64.b64encode(buffer).decode('utf-8')
             except Exception as e:
                 logger.error(f"Frame encoding error: {e}")
                 await asyncio.sleep(0.01)
                 continue
 
+            # Prepare and send the message
             frame_data = {
                 "type": "camera_frame",
                 "rpiId": STATION_ID,
@@ -828,26 +864,31 @@ async def send_camera_frames(websocket):
             }
 
             try:
+                # Send with minimal added delay
                 await websocket.send(json.dumps(frame_data))
                 frame_count += 1
                 last_successful_frame_time = time.time()
 
+                # Log only occasionally to reduce overhead
                 if frame_count % 30 == 0:
                     logger.debug(f"Sent frame {frame_count} at {frame_time}")
 
+                # Dynamically adjust delay factor based on success
+                delay_factor = max(0.1, delay_factor * 0.95 +
+                                   0.05)  # Slowly increase performance
+
             except Exception as e:
                 logger.error(f"Frame send error: {e}")
+                delay_factor = min(1.0, delay_factor *
+                                   1.2)  # Back off slightly on error
                 await asyncio.sleep(0.01)
-
-            # Target FPS control with minimal delay
-            elapsed = time.time() - last_frame_time
-            frame_interval = 1.0 / TARGET_FPS
-            if elapsed < frame_interval:
-                await asyncio.sleep(frame_interval - elapsed)
 
         except Exception as e:
             logger.error(f"Camera frame sender error: {str(e)}")
             await asyncio.sleep(0.1)
+
+        # Minimal delay at end of loop
+        await asyncio.sleep(MIN_SLEEP_DELAY)
 
 
 async def send_position_updates(websocket):
@@ -861,6 +902,7 @@ async def send_position_updates(websocket):
 
     while not shutdown_requested:
         try:
+            # Check if controller is available
             if not RUNNING_ON_RPI or not axis:
                 if RUNNING_ON_RPI:
                     logger.warning(
@@ -868,6 +910,7 @@ async def send_position_updates(websocket):
                 await asyncio.sleep(1)
                 continue
 
+            # Time-based control for update frequency
             current_time = time.time()
             elapsed = current_time - last_update_time
 
@@ -876,15 +919,15 @@ async def send_position_updates(websocket):
 
             last_update_time = time.time()
 
+            # Get current position
             try:
-                with serial_lock:
-                    epos = await asyncio.wait_for(asyncio.to_thread(
-                        axis.getEPOS),
-                                                  timeout=COMMAND_TIMEOUT)
+                epos = await asyncio.to_thread(axis.getEPOS)
 
+                # Update our tracked position
                 with position_lock:
                     current_position = epos
 
+                # Only send if position changed or periodically regardless
                 if last_epos != epos or elapsed > 1.0:
                     position_data = {
                         "type": "position_update",
@@ -897,6 +940,8 @@ async def send_position_updates(websocket):
                         await websocket.send(json.dumps(position_data))
                         last_epos = epos
                         last_successful_command_time = time.time()
+
+                        # Log with reduced frequency
                         logger.debug(f"Position update: {epos:.6f} mm")
                     except Exception as e:
                         logger.error(f"Position update send error: {e}")
@@ -905,15 +950,18 @@ async def send_position_updates(websocket):
                 logger.error(f"Position reading error: {e}")
                 await asyncio.sleep(0.2)
 
+            # Brief sleep to reduce CPU usage
+            await asyncio.sleep(MIN_SLEEP_DELAY)
+
         except Exception as e:
             logger.error(f"Position update error: {str(e)}")
             await asyncio.sleep(0.5)
 
 
 async def health_checker(websocket):
-    """Monitor and report on system health."""
+    """Monitor and report on system health with ultra-responsive connection verification."""
     global startup_time, thermal_error_count, amplifier_error_count, serial_error_count
-    health_check_interval = CONNECTION_HEARTBEAT_INTERVAL
+    health_check_interval = CONNECTION_HEARTBEAT_INTERVAL  # Use configurable interval
 
     logger.info(
         f"Starting health monitor task with {health_check_interval}s heartbeat interval"
@@ -921,60 +969,79 @@ async def health_checker(websocket):
 
     while not shutdown_requested:
         try:
+            # Gather health metrics
             current_time = time.time()
             command_silence = current_time - last_successful_command_time
             frame_silence = current_time - last_successful_frame_time
             ping_silence = current_time - last_ping_response_time
             uptime = current_time - startup_time
 
-            if int(uptime) % 60 == 0:
+            # Log only occasionally to reduce output clutter
+            if int(uptime) % 60 == 0:  # Once per minute
                 logger.info(
                     f"Health status: Uptime={uptime:.1f}s, Errors: Thermal={thermal_error_count}, "
                     f"Amplifier={amplifier_error_count}, Serial={serial_error_count}"
                 )
 
+            # More frequent condensed logging
             logger.debug(
                 f"Health: command={command_silence:.1f}s, frame={frame_silence:.1f}s, ping={ping_silence:.1f}s"
             )
 
-            if not hasattr(websocket, 'open') or not websocket.open:
-                logger.error(
-                    "WebSocket reported as closed - triggering reconnection")
-                break
-
-            health_data = {
-                "type": "health_check",
-                "timestamp": datetime.now().isoformat(),
-                "rpiId": STATION_ID,
-                "uptime": uptime,
-                "errors": {
-                    "thermal": thermal_error_count,
-                    "amplifier": amplifier_error_count,
-                    "serial": serial_error_count
-                },
-                "silence": {
-                    "command": command_silence,
-                    "frame": frame_silence,
-                    "ping": ping_silence
-                },
-                "client_version": "2.2-ultra-reliable"
-            }
-
+            # Send health ping to server with enhanced checking
             try:
-                await asyncio.wait_for(websocket.send(json.dumps(health_data)),
-                                       timeout=2.0)
-            except asyncio.TimeoutError:
-                logger.error(
-                    "Health update send timed out - triggering reconnection")
+                # First check if websocket is still alive with a minimal operation
+                if not hasattr(websocket, 'open') or not websocket.open:
+                    logger.error(
+                        "WebSocket reported as closed - triggering reconnection"
+                    )
+                    break  # Exit to trigger reconnection in main loop
+
+                # Create comprehensive health data
+                health_data = {
+                    "type": "health_check",
+                    "timestamp": datetime.now().isoformat(),
+                    "rpiId": STATION_ID,
+                    "uptime": uptime,
+                    "errors": {
+                        "thermal": thermal_error_count,
+                        "amplifier": amplifier_error_count,
+                        "serial": serial_error_count
+                    },
+                    "silence": {
+                        "command": command_silence,
+                        "frame": frame_silence,
+                        "ping": ping_silence
+                    },
+                    "client_version": "2.1-ultra-reliable"
+                }
+
+                # Use wait_for with tight timeout to detect slow connections immediately
+                try:
+                    await asyncio.wait_for(
+                        websocket.send(json.dumps(health_data)),
+                        timeout=2.0  # Strict timeout for health updates (2s max)
+                    )
+                except asyncio.TimeoutError:
+                    logger.error(
+                        "Health update send timed out - triggering reconnection"
+                    )
+                    break  # Exit to trigger reconnection in main loop
+
+            except Exception as e:
+                logger.error(f"Health check send error: {e}")
+                # Connection is likely dead, break to trigger reconnection
                 break
 
-            if command_silence > 30 * 60:
+            # Detect prolonged silence in components (frames or commands)
+            if command_silence > 30 * 60:  # 30 minutes without commands
                 logger.warning(
                     f"Long command silence detected: {command_silence:.1f}s")
 
-            if frame_silence > 30:
+            if frame_silence > 30:  # 30 seconds without frames
                 logger.warning(f"Frame silence detected: {frame_silence:.1f}s")
                 if RUNNING_ON_RPI and picam2:
+                    # Try to restart the camera if no frames for 30 seconds
                     logger.info("Attempting to reset camera due to silence")
                     try:
                         stop_camera()
@@ -983,6 +1050,7 @@ async def health_checker(websocket):
                     except Exception as e:
                         logger.error(f"Failed to reset camera: {str(e)}")
 
+            # Send ping to verify connection health with tight timeout
             if not shutdown_requested:
                 try:
                     ping_data = {
@@ -991,13 +1059,22 @@ async def health_checker(websocket):
                         "rpiId": STATION_ID,
                         "uptime": uptime
                     }
-                    await asyncio.wait_for(websocket.send(
-                        json.dumps(ping_data)),
-                                           timeout=1.0)
+                    # Use wait_for with tight timeout to detect slow connections immediately
+                    try:
+                        await asyncio.wait_for(
+                            websocket.send(json.dumps(ping_data)),
+                            timeout=1.0  # Stricter timeout for pings (1s max)
+                        )
+                    except asyncio.TimeoutError:
+                        logger.error(
+                            "Ping send timed out - triggering reconnection")
+                        break  # Exit loop to force reconnection
                 except Exception as e:
                     logger.error(f"Error sending ping: {str(e)}")
+                    # Connection is probably dead
                     break
 
+            # Wait before next health check
             await asyncio.sleep(health_check_interval)
 
         except asyncio.CancelledError:
@@ -1005,35 +1082,41 @@ async def health_checker(websocket):
             break
         except Exception as e:
             logger.error(f"Health checker error: {str(e)}")
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(
+                0.5)  # Shorter delay on error with faster recovery
 
 
 async def flush_buffers():
-    """Flush buffers to prevent data buildup, but only when necessary."""
+    """Aggressively flush all buffers to prevent data buildup."""
+    buffer_flush_interval = 5  # seconds
+
     logger.info("Starting buffer flush task")
 
     while not shutdown_requested:
         try:
-            # Only flush if there has been recent activity
-            if (time.time() - last_successful_command_time) < 30:
-                if RUNNING_ON_RPI and picam2 and hasattr(
-                        picam2, 'started') and picam2.started:
-                    try:
-                        for _ in range(2):
-                            _ = picam2.capture_array("main")
-                        logger.debug("Camera buffers flushed")
-                    except Exception as e:
-                        logger.error(f"Camera buffer flush error: {e}")
+            # Camera buffer flush
+            if RUNNING_ON_RPI and picam2 and hasattr(
+                    picam2, 'started') and picam2.started:
+                try:
+                    # Capture and discard frames to clear any buffered data
+                    for _ in range(3):
+                        _ = picam2.capture_array("main")
+                    logger.debug("Camera buffers flushed")
+                except Exception as e:
+                    logger.error(f"Camera buffer flush error: {e}")
 
-                if RUNNING_ON_RPI and os.path.exists(COM_PORT):
-                    with serial_lock:
-                        try:
-                            flush_serial_port()
-                        except Exception as e:
-                            logger.error(f"Serial buffer flush error: {e}")
+            # Serial port flush
+            if RUNNING_ON_RPI and os.path.exists(COM_PORT):
+                try:
+                    flush_serial_port()
+                except Exception as e:
+                    logger.error(f"Serial buffer flush error: {e}")
 
+            # Memory management
             gc.collect()
-            await asyncio.sleep(BUFFER_FLUSH_INTERVAL)
+
+            # Wait before next flush
+            await asyncio.sleep(buffer_flush_interval)
 
         except Exception as e:
             logger.error(f"Buffer flush error: {str(e)}")
@@ -1048,14 +1131,17 @@ async def command_processor():
 
     while not shutdown_requested:
         try:
+            # Very brief sleep to prevent CPU hogging
             await asyncio.sleep(MIN_SLEEP_DELAY)
 
+            # Get a command from the queue with a timeout
             try:
                 command = await asyncio.wait_for(command_queue.get(),
                                                  timeout=0.5)
             except asyncio.TimeoutError:
                 continue
 
+            # Process the command
             websocket = getattr(command_processor, 'websocket', None)
             if websocket:
                 try:
@@ -1065,9 +1151,11 @@ async def command_processor():
                     )
                 except Exception as e:
                     logger.error(f"Failed to send queued command: {str(e)}")
+                    # Put command back in queue if it seems important
                     if command.get('status') == 'success':
                         await command_queue.put(command)
 
+            # Small delay between commands
             await asyncio.sleep(0.05)
 
         except Exception as e:
@@ -1082,9 +1170,13 @@ async def rpi_client():
     global startup_time, demo_running
 
     startup_time = time.time()
-    logger.info(f"Starting RPi Client version 2.2 for {STATION_ID}")
+    logger.info(f"Starting RPi Client version 2.0 for {STATION_ID}")
     logger.info(f"Connecting to server: {SERVER_URL}")
+    logger.info(
+        f"Ultra-responsive mode enabled with {MIN_SLEEP_DELAY*1000000:.2f}Î¼s minimum delay"
+    )
 
+    # Initialize hardware with retry logic
     if RUNNING_ON_RPI:
         logger.info("Initializing camera...")
         camera_initialized = initialize_camera()
@@ -1100,66 +1192,90 @@ async def rpi_client():
             await asyncio.sleep(2)
             controller_initialized = initialize_xeryon_controller()
 
+    # Create a unique connection ID
     connection_id = f"bp_{int(time.time())}"
 
+    # Start the buffer flush task
     buffer_task = asyncio.create_task(flush_buffers())
+
+    # Start the command processor task
     cmd_processor_task = asyncio.create_task(command_processor())
 
+    # Main connection loop
     while not shutdown_requested:
         try:
             logger.info(
                 f"Connecting to {SERVER_URL} (attempt {total_connection_failures + 1})..."
             )
 
+            # Connect to WebSocket server with ultra-responsive optimized settings
             try:
+                # Set super strict timeouts for fast connection detection
                 websocket = await asyncio.wait_for(
                     websockets.connect(
                         SERVER_URL,
-                        ping_interval=None,
-                        ping_timeout=None,
-                        close_timeout=MAX_CLOSE_TIMEOUT,
-                        max_size=10_000_000,
-                        compression=None,
+                        ping_interval=
+                        None,  # We'll implement our own application-level ping/pong
+                        ping_timeout=
+                        None,  # Disable built-in ping timeouts entirely
+                        close_timeout=
+                        MAX_CLOSE_TIMEOUT,  # Faster closing for quicker reconnection
+                        max_size=
+                        10_000_000,  # Allow large messages for camera frames
+                        compression=
+                        None,  # Disable compression for speed (we compress JPEG data already)
                     ),
-                    timeout=MAX_CONNECTION_TIMEOUT)
+                    timeout=
+                    MAX_CONNECTION_TIMEOUT  # Strict timeout for connection attempt
+                )
                 logger.info("WebSocket connection established successfully")
             except asyncio.TimeoutError:
                 logger.error(
                     f"Connection timeout after {MAX_CONNECTION_TIMEOUT}s - will retry immediately"
                 )
+                # Skip the sleep at the end of the loop to retry immediately
                 continue
             except Exception as e:
                 logger.error(f"Connection error: {str(e)}")
+                # Will retry after sleep at the end of the loop
                 raise
 
             logger.info("WebSocket connection established")
 
+            # Register this connection
             registration_message = {
                 "type": "register",
                 "rpiId": STATION_ID,
-                "connectionType": "combined",
+                "connectionType":
+                "combined",  # Single connection for both camera and control
                 "status": "ready",
                 "message":
-                f"RPi {STATION_ID} combined connection initialized (Bulletproof v2.2)",
+                f"RPi {STATION_ID} combined connection initialized (Bulletproof v2.0)",
                 "connectionId": connection_id,
                 "timestamp": datetime.now().isoformat()
             }
 
+            # Send registration message
             await websocket.send(json.dumps(registration_message))
             logger.info(f"Sent registration message for {STATION_ID}")
 
+            # Store websocket reference for command processor
             command_processor.websocket = websocket
 
+            # Start background tasks
             frame_task = asyncio.create_task(send_camera_frames(websocket))
             position_task = asyncio.create_task(
                 send_position_updates(websocket))
             health_task = asyncio.create_task(health_checker(websocket))
 
+            # Reset connection tracking
             total_connection_failures = 0
             reconnect_delay = RECONNECT_BASE_DELAY
 
+            # Handle incoming messages
             try:
                 while not shutdown_requested:
+                    # Set a timeout to detect dead connections
                     try:
                         message = await asyncio.wait_for(websocket.recv(),
                                                          timeout=30)
@@ -1168,6 +1284,7 @@ async def rpi_client():
                             "No messages received for 30s - checking connection..."
                         )
                         try:
+                            # Send a ping to check connection
                             ping_data = {
                                 "type": "ping",
                                 "timestamp": datetime.now().isoformat(),
@@ -1183,15 +1300,21 @@ async def rpi_client():
                                 "Connection seems dead - will reconnect")
                             break
 
+                    # Minimal delay to prevent CPU hogging
+                    await asyncio.sleep(MIN_SLEEP_DELAY)
+
+                    # Process the received message
                     try:
                         data = json.loads(message)
 
                         if data.get("type") == "command":
+                            # Process command and queue response
                             response = await process_command(data)
                             if response:
                                 await command_queue.put(response)
 
                         elif data.get("type") == "ping":
+                            # Handle ping messages for latency measurement
                             response = {
                                 "type": "pong",
                                 "timestamp": data.get("timestamp"),
@@ -1207,9 +1330,13 @@ async def rpi_client():
                         logger.error(f"Error processing message: {str(e)}")
                         await asyncio.sleep(0.1)
 
+                    # Minimal delay at end of loop
+                    await asyncio.sleep(MIN_SLEEP_DELAY)
+
             except websockets.exceptions.ConnectionClosed as e:
                 logger.error(f"WebSocket connection closed: {e}")
 
+            # Connection lost, clean up tasks
             for task in [frame_task, position_task, health_task]:
                 if not task.done():
                     task.cancel()
@@ -1228,43 +1355,62 @@ async def rpi_client():
         except Exception as e:
             logger.error(f"Connection error: {str(e)}")
 
+            # Ultra-fast reconnection with minimal delay
             total_connection_failures += 1
+
+            # Use much more aggressive reconnection delay - optimized for ultra-reliability
             if "device not connected" in str(
                     e).lower() or "cannot connect" in str(e).lower():
+                # For connection refusals, retry almost immediately
                 actual_delay = 0.1
                 logger.warning(
-                    f"Connection refused - retrying in {actual_delay:.1f}s")
+                    f"Connection refused - retrying almost immediately in {actual_delay:.1f}s"
+                )
             else:
+                # For other errors, use a very short but slightly increasing delay
+                # Cap at an extremely low value (MAX_RECONNECT_DELAY) for ultra-responsiveness
                 reconnect_delay = min(
                     MAX_RECONNECT_DELAY,
                     RECONNECT_BASE_DELAY *
                     (1.2**min(total_connection_failures % 5, 4)))
+
+                # Add minimal jitter to prevent reconnection storms (less than previous version)
                 jitter = random.uniform(0, 0.1 * reconnect_delay)
                 actual_delay = reconnect_delay + jitter
 
             logger.info(
                 f"Retrying connection in {actual_delay:.2f}s (attempt {total_connection_failures})..."
             )
+
+            # For first few attempts, use even more aggressive retry
             if total_connection_failures < 3:
-                actual_delay = min(0.1, actual_delay)
+                actual_delay = min(
+                    0.1, actual_delay
+                )  # Retry almost immediately for first 3 attempts
                 logger.info(
                     f"First few attempts - using ultra-fast retry ({actual_delay:.2f}s)"
                 )
 
             await asyncio.sleep(actual_delay)
 
+            # Reset hardware after multiple failures
             if total_connection_failures % 3 == 0:
                 logger.warning(
                     f"Multiple connection failures ({total_connection_failures}), resetting hardware..."
                 )
 
+                # Stop hardware
                 if RUNNING_ON_RPI:
                     stop_camera()
                     stop_controller()
 
+                # Reset demo state
                 demo_running = False
+
+                # Delay before reinitializing
                 await asyncio.sleep(3)
 
+                # Reinitialize hardware
                 if RUNNING_ON_RPI:
                     initialize_camera()
                     initialize_xeryon_controller()
@@ -1275,6 +1421,7 @@ async def main():
     """Entry point with proper signal handling and cleanup."""
     global shutdown_requested
 
+    # Set up signal handlers
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown()))
@@ -1297,10 +1444,12 @@ async def shutdown():
     shutdown_requested = True
     logger.info("Shutting down...")
 
+    # Stop hardware
     if RUNNING_ON_RPI:
         stop_camera()
         stop_controller()
 
+    # Force garbage collection
     gc.collect()
     logger.info("Shutdown complete")
 
@@ -1312,6 +1461,7 @@ if __name__ == "__main__":
         logger.info("Stopped by user")
     except Exception as e:
         logger.error(f"Critical error: {str(e)}")
+        # Attempt emergency hardware shutdown
         if RUNNING_ON_RPI:
             try:
                 if 'picam2' in globals() and picam2:
