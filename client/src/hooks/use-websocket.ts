@@ -116,14 +116,46 @@ export function useWebSocket(rpiId?: string) {
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
+      // Fast path for camera frames - this is a simple check before full parsing
+      if (event.data.indexOf('"type":"camera_frame"') !== -1) {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'camera_frame') {
+            // Ensure we have proper data:image/jpeg;base64 format
+            const frameData = data.frame.startsWith('data:') ? 
+                             data.frame : 
+                             `data:image/jpeg;base64,${data.frame}`;
+            
+            // Use functional update for atomic state changes
+            setState(prev => ({
+              ...prev,
+              frame: frameData,
+              lastFrameTime: performance.now() // More precise timing
+            }));
+            
+            // Exit early for camera frames
+            return;
+          }
+        } catch (e) {
+          // If fast-path fails, continue with normal processing
+          console.error('Fast-path camera frame processing failed:', e);
+        }
+      }
+
+      // Standard path for all other message types
       const data = JSON.parse(event.data);
 
       // Handle different message types
       if (data.type === 'camera_frame') {
+        // This is a fallback for camera frames that didn't match the fast path
+        const frameData = data.frame.startsWith('data:') ? 
+                         data.frame : 
+                         `data:image/jpeg;base64,${data.frame}`;
+                         
         setState(prev => ({
           ...prev,
-          frame: data.frame,
-          lastFrameTime: Date.now()
+          frame: frameData,
+          lastFrameTime: performance.now()
         }));
       } else if (data.type === 'rpi_connected') {
         setState(prev => ({

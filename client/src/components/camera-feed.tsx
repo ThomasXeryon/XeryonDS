@@ -12,14 +12,34 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  
+  // Handle direct frame updates with high priority (bypass state)
+  useEffect(() => {
+    const handleFrameUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.rpiId === String(rpiId) && imgRef.current) {
+        // Immediately update image src for zero delay
+        imgRef.current.src = customEvent.detail.frame;
+        lastFrameTime.current = performance.now();
+        lastValidFrame.current = customEvent.detail.frame;
+        setLoading(false);
+        setIsReconnecting(false);
+      }
+    };
+    
+    window.addEventListener('new-camera-frame', handleFrameUpdate);
+    return () => window.removeEventListener('new-camera-frame', handleFrameUpdate);
+  }, [rpiId]);
 
+  // Normal React state-based updates (backup path)
   useEffect(() => {
     if (frame) {
-      lastFrameTime.current = Date.now();
+      lastFrameTime.current = performance.now();
       lastValidFrame.current = frame; // Store the last valid frame
       setLoading(false); // Stop loading when frame arrives
       setIsReconnecting(false);
-    } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
+    } else if (lastFrameTime.current && (performance.now() - lastFrameTime.current > 5000)) {
       // Force reconnection if no frames for 5 seconds
       window.location.reload();
     }
@@ -38,7 +58,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   }, [connectionStatus]);
 
   // Check if the frame is recent (within the last 5 seconds)
-  const isFrameRecent = frame && lastFrameTime.current && (Date.now() - lastFrameTime.current < 5000);
+  const isFrameRecent = frame && lastFrameTime.current && (performance.now() - lastFrameTime.current < 5000);
 
   // Determine if we should show the reconnecting overlay
   const showReconnectingOverlay = !isFrameRecent && isReconnecting;
@@ -65,14 +85,20 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       ) : (isFrameRecent && frame) || lastValidFrame.current ? (
         <>
           <img
+            ref={imgRef}
             src={isFrameRecent && frame ? frame : lastValidFrame.current!}
             alt="Camera Feed"
             className="w-full h-full object-contain"
+            style={{ 
+              imageRendering: 'optimizeSpeed', // For smoother image updates
+            }}
             onError={(e) => {
               console.error("[CameraFeed] Error loading frame:", e);
               setLoading(true);
             }}
-            onLoad={() => console.log("[CameraFeed] Frame loaded successfully for RPi:", rpiId)}
+            loading="eager" // Force eager loading
+            decoding="async" // Allow async decoding for performance
+            crossOrigin="anonymous" // Allow cross-origin images
           />
 
           {/* Reconnecting overlay that shows in corner when connection is lost */}
