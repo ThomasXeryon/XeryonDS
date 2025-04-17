@@ -13,6 +13,7 @@ import random
 import sys
 import os
 import logging
+import math
 from datetime import datetime
 
 # Set up logging
@@ -32,13 +33,18 @@ scan_direction = 1
 scan_speed = 0.1  # mm per update
 
 async def send_position_updates(websocket):
-    """Send simulated position updates."""
+    """Send simulated position updates with varying positions to test graph display."""
     global current_position, scanning, scan_direction
     logger.info(f"Starting position update stream for {STATION_ID}")
     
+    # Start with automatic slow movement to make plotting visible
+    scanning = True 
+    scan_speed = 0.05  # Slower speed for visible movement
+    
     while True:
         try:
-            # Update position if scanning
+            # Always update position to make it more interesting for testing
+            # Use a slow sine wave pattern if not scanning
             if scanning:
                 current_position += scan_direction * scan_speed
                 # Bounds checking (-30mm to +30mm)
@@ -48,6 +54,9 @@ async def send_position_updates(websocket):
                 elif current_position < -30:
                     current_position = -30
                     scan_direction = 1
+            else:
+                # Sine wave pattern for interesting visualization
+                current_position = 10 * math.sin(time.time() / 3)
             
             # Send position update with timestamp
             position_data = {

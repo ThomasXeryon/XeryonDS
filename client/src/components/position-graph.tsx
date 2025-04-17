@@ -92,11 +92,21 @@ export function PositionGraph({ rpiId, currentPosition }: PositionGraphProps) {
       setPositionData(prevData => {
         let updatedData = [...prevData];
 
-        // Get latest point (if any) for reference
-        const latestPoint = updatedData.length > 0 ? updatedData[updatedData.length - 1] : null;
-        
-        // Always continue even without sourceTime
-        // This ensures we at least display whatever data we have
+        // Add current position to the graph if it exists (but only once per interval)
+        if (lastPositionRef.current !== null && 
+            (updatedData.length === 0 || 
+             Math.abs(updatedData[updatedData.length - 1].position - lastPositionRef.current) > 0.001 ||
+             now - updatedData[updatedData.length - 1].time > 300)) {
+          
+          // Add a new point with the current position and time
+          updatedData.push({
+            time: now,
+            position: lastPositionRef.current,
+            sourceTime: now
+          });
+          
+          console.log(`[PositionGraph] Added interpolated point: ${lastPositionRef.current.toFixed(3)} mm at ${new Date(now).toISOString()}`);
+        }
 
         // Filter out points older than our window size to maintain the scrolling effect
         const cutoffTime = now - windowSize;
