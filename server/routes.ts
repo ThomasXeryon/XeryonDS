@@ -266,25 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               client.ws.send(JSON.stringify({
                 type: 'position_update',
                 rpiId: rpiId,
-                epos: response.epos,
-                timestamp: response.timestamp || new Date().toISOString()
+                epos: response.epos
               }));
-              
-              // Also dispatch a custom event for position-graph component
-              // This dispatches the event to clients as a custom event
-              try {
-                client.ws.send(JSON.stringify({
-                  type: 'custom_event',
-                  eventName: 'position-update',
-                  data: {
-                    position: response.epos,
-                    timestamp: response.timestamp || new Date().toISOString(),
-                    rpiId: rpiId
-                  }
-                }));
-              } catch (error) {
-                console.error(`[RPi ${rpiId}] Error sending position event:`, error);
-              }
             }
           }
           return;
@@ -345,10 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const frameMessage = JSON.stringify({
             type: "camera_frame",
             rpiId,
-            frame: frameToSend,
-            frameNumber: response.frameNumber,
-            positionText: response.positionText,
-            timestamp: response.timestamp || new Date().toISOString()
+            frame: frameToSend
           });
 
           let forwardCount = 0;
