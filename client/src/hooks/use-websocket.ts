@@ -114,10 +114,67 @@ export function useWebSocket(rpiId?: string) {
     };
   }, [rpiId]); // Added rpiId to dependencies
 
-  // Keep track of the latest frame number to ensure we only process the newest frames
-  const latestFrameNumberRef = useRef<number>(0);
-  // Store last frame processing time to measure performance
+  // Keep track of the latest frame and its metadata to ensure zero-latency display
+  const frameBufferRef = useRef<{timestamp: number, frame: string, frameNumber: number}[]>([]);
+  const maxBufferLength = 3; // Only keep the latest 3 frames to avoid memory issues
+  const lastDisplayedFrameNumber = useRef<number>(0);
   const lastProcessTimeRef = useRef<number>(Date.now());
+  
+  // Function to process the frame buffer and get the latest frame
+  const processFrameBuffer = useCallback(() => {
+    if (frameBufferRef.current.length === 0) return;
+    
+    // Sort buffer by frameNumber (descending)
+    frameBufferRef.current.sort((a, b) => b.frameNumber - a.frameNumber);
+    
+    // Get the latest frame
+    const latestFrame = frameBufferRef.current[0];
+    
+    // If this is a new frame we haven't shown yet
+    if (latestFrame.frameNumber > lastDisplayedFrameNumber.current) {
+      // Update the frame in state
+      setState(prev => ({
+        ...prev,
+        frame: latestFrame.frame,
+        lastFrameTime: Date.now()
+      }));
+      
+      // Update our tracking
+      lastDisplayedFrameNumber.current = latestFrame.frameNumber;
+      
+      // Log performance metrics
+      const now = Date.now();
+      const endToEndLatency = now - latestFrame.timestamp;
+      console.log(
+        `[WebSocket] Displaying frame #${latestFrame.frameNumber} | ` +
+        `End-to-end latency: ${endToEndLatency}ms | ` +
+        `Buffer size: ${frameBufferRef.current.length} frames`
+      );
+    }
+    
+    // Trim buffer to keep only recent frames
+    if (frameBufferRef.current.length > maxBufferLength) {
+      frameBufferRef.current = frameBufferRef.current.slice(0, maxBufferLength);
+    }
+  }, []);
+
+  // Set up a continuous RAF loop to always show the latest frame
+  useEffect(() => {
+    let rafId: number;
+    
+    const updateLoop = () => {
+      processFrameBuffer();
+      rafId = requestAnimationFrame(updateLoop);
+    };
+    
+    // Start the loop
+    rafId = requestAnimationFrame(updateLoop);
+    
+    // Clean up
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [processFrameBuffer]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
@@ -126,43 +183,35 @@ export function useWebSocket(rpiId?: string) {
 
       // Track and handle camera frames with ultra-low latency approach
       if (data.type === 'camera_frame') {
-        // Skip this frame if we're already processing a newer one
-        if (data.frameNumber && data.frameNumber < latestFrameNumberRef.current) {
-          console.log(`[WebSocket] Skipping outdated frame #${data.frameNumber} (current: #${latestFrameNumberRef.current})`);
-          return;
-        }
-
-        // Update the latest frame number
-        if (data.frameNumber) {
-          latestFrameNumberRef.current = data.frameNumber;
-        }
-
+        // Extract metadata
+        const frameNumber = data.frameNumber || 0;
+        const timestamp = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
+        
+        // Store frame in buffer - we'll process it in our RAF loop
+        frameBufferRef.current.push({
+          frame: data.frame,
+          frameNumber,
+          timestamp
+        });
+        
         // Calculate processing delay for monitoring
         const processingDelay = now - lastProcessTimeRef.current;
         lastProcessTimeRef.current = now;
-
-        // Measure end-to-end latency if timestamp is available
-        let latency = null;
-        if (data.timestamp) {
-          const frameTime = new Date(data.timestamp).getTime();
-          latency = Date.now() - frameTime;
-        }
-
-        // Log detailed frame info with performance metrics
-        console.log(
-          `[WebSocket] Frame #${data.frameNumber || 'unknown'} | ` +
-          `Size: ${data.frame?.length || 0} chars | ` +
-          `Process delay: ${processingDelay.toFixed(1)}ms | ` + 
-          `End-to-end latency: ${latency !== null ? latency + 'ms' : 'unknown'}`
-        );
-
-        // Use lightweight state update with only necessary changes
-        // This is much faster than updating the entire state object
+        
+        // Immediately update the frame to avoid waiting for the next RAF cycle
+        // This ensures we get the frame on screen as fast as possible
         setState(prev => ({
           ...prev,
           frame: data.frame,
           lastFrameTime: Date.now()
         }));
+        
+        // Log receipt of frame
+        console.log(
+          `[WebSocket] Received frame #${frameNumber} | ` +
+          `Size: ${data.frame?.length || 0} chars | ` +
+          `Process delay: ${processingDelay.toFixed(1)}ms`
+        );
 
       } else if (data.type === 'rpi_connected') {
         setState(prev => ({

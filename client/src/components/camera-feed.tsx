@@ -198,26 +198,36 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
         </>
       ) : (isFrameRecent && frame) || lastValidFrame.current ? (
         <>
-          {/* Replace img with canvas for better performance */}
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full"
-            style={{ objectFit: 'contain' }}
+          {/* Use img for now but with optimized handling */}
+          <img
+            src={isFrameRecent && frame ? frame : lastValidFrame.current!}
+            alt="Camera Feed"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              console.error("[CameraFeed] Error loading frame:", e);
+              setLoading(true);
+            }}
+            onLoad={() => {
+              // Extract frame number for debugging if available
+              if (frame && frame.includes('frameNumber')) {
+                try {
+                  const match = frame.match(/frameNumber=(\d+)/);
+                  if (match && match[1]) {
+                    frameNumberRef.current = parseInt(match[1], 10);
+                    console.log(`[CameraFeed] Loaded frame #${frameNumberRef.current} for RPi:${rpiId}`);
+                  }
+                } catch (e) {
+                  console.error("Failed to extract frame number", e);
+                }
+              }
+            }}
           />
-
-          {/* Fallback image only used for first load or if canvas fails */}
-          {!canvasRef.current && (
-            <img
-              src={isFrameRecent && frame ? frame : lastValidFrame.current!}
-              alt="Camera Feed"
-              className="w-full h-full object-contain absolute top-0 left-0 opacity-0"
-              style={{ visibility: 'hidden' }}
-              onError={(e) => {
-                console.error("[CameraFeed] Error loading frame:", e);
-                setLoading(true);
-              }}
-              onLoad={() => console.log("[CameraFeed] Frame loaded successfully for RPi:", rpiId)}
-            />
+          
+          {/* Frame stats overlay in bottom-left */}
+          {frameNumberRef.current !== null && (
+            <div className="absolute left-2 bottom-2 bg-black/60 text-white px-2 py-1 rounded text-xs font-mono">
+              Frame #{frameNumberRef.current}
+            </div>
           )}
 
           {/* Reconnecting overlay that shows in corner when connection is lost */}
