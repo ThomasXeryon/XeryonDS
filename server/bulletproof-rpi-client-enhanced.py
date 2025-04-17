@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced Bulletproof Raspberry Pi Client for Xeryon Demo Station
-- Ultra-responsive with real-time performance
+- Ultra-responsive witha real-time performance
 - Robust error handling and recovery
 - Optimized for reliability and low latency
 - Aggressive buffer management to prevent hanging

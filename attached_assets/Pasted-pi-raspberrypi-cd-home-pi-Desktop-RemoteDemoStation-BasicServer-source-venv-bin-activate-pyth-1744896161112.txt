@@ -1,0 +1,218 @@
+pi@raspberrypi:~ $ cd /home/pi/Desktop/RemoteDemoStation/BasicServer
+source venv/bin/activate
+python TotalStation.py RPI1
+2025-04-17 15:22:15,864 - DEBUG - Using selector: EpollSelector
+2025-04-17 15:22:15,865 - INFO - Starting RPi client for Xeryon Demo Station (RPI1)
+2025-04-17 15:22:15,865 - INFO - Starting RPi client for RPI1
+2025-04-17 15:22:15,865 - INFO - Initializing hardware
+2025-04-17 15:22:15,865 - INFO - Initializing Xeryon controller on /dev/ttyACM0 (attempt 1/3)
+2025-04-17 15:22:15,865 - INFO - Starting command processor
+2025-04-17 15:22:15,949 - DEBUG - Serial port /dev/ttyACM0 flushed successfully
+2025-04-17 15:22:16,651 - INFO - Set acceleration to 32750
+2025-04-17 15:22:16,651 - INFO - Set deceleration to 32750
+2025-04-17 15:22:23,324 - INFO - Xeryon controller initialized successfully
+2025-04-17 15:22:23,325 - INFO - Initializing camera (attempt 1/3)
+[4:54:29.912320744] [6010]  INFO Camera camera_manager.cpp:327 libcamera v0.4.0+53-29156679
+[4:54:29.924034683] [6012]  INFO RPI pisp.cpp:720 libpisp version v1.1.0 e7974a156008 27-01-2025 (21:50:51)
+[4:54:29.943419743] [6012]  INFO RPI pisp.cpp:1179 Registered camera /base/axi/pcie@120000/rp1/i2c@80000/imx708@1a to CFE device /dev/media2 and ISP device /dev/media0 using PiSP variant BCM2712_C0
+2025-04-17 15:22:23,380 - INFO - Initialization successful.
+2025-04-17 15:22:23,380 - INFO - Camera now open.
+2025-04-17 15:22:23,381 - DEBUG - <libcamera._libcamera.CameraManager object at 0x7fff1b22d770>
+2025-04-17 15:22:23,384 - INFO - ScalerCrop: (1536, 864, 1536, 864)
+2025-04-17 15:22:23,386 - DEBUG - Requesting configuration: {'use_case': 'video', 'transform': <libcamera.Transform 'identity'>, 'colour_space': <libcamera.ColorSpace 'Rec709'>, 'buffer_count': 6, 'queue': True, 'main': {'format': 'RGB888', 'size': (1280, 720), 'preserve_ar': True, 'stride': 3840, 'framesize': 2764800}, 'lores': None, 'raw': {'format': 'BGGR_PISP_COMP1', 'size': (1536, 864), 'stride': 1536, 'framesize': 1327104}, 'controls': {'NoiseReductionMode': <NoiseReductionModeEnum.Fast: 1>, 'FrameDurationLimits': (33333, 33333), 'ScalerCrop': (1536, 864, 1536, 864)}, 'sensor': {'bit_depth': 10, 'output_size': (1536, 864)}, 'display': 'main', 'encode': 'main'}
+2025-04-17 15:22:23,386 - INFO - Camera configuration has been adjusted!
+[4:54:29.951283177] [6010]  INFO Camera camera.cpp:1202 configuring streams: (0) 1280x720-RGB888 (1) 1536x864-BGGR_PISP_COMP1
+[4:54:29.951446103] [6012]  INFO RPI pisp.cpp:1484 Sensor: /base/axi/pcie@120000/rp1/i2c@80000/imx708@1a - Selected sensor format: 1536x864-SBGGR10_1X10 - Selected CFE format: 1536x864-PC1B
+2025-04-17 15:22:23,387 - INFO - Configuration successful!
+2025-04-17 15:22:23,388 - DEBUG - Final configuration: {'use_case': 'video', 'transform': <libcamera.Transform 'identity'>, 'colour_space': <libcamera.ColorSpace 'Rec709'>, 'buffer_count': 6, 'queue': True, 'main': {'format': 'RGB888', 'size': (1280, 720), 'preserve_ar': True, 'stride': 3840, 'framesize': 2764800}, 'lores': None, 'raw': {'format': 'BGGR_PISP_COMP1', 'size': (1536, 864), 'stride': 1536, 'framesize': 1327104}, 'controls': {'NoiseReductionMode': <NoiseReductionModeEnum.Fast: 1>, 'FrameDurationLimits': (33333, 33333), 'ScalerCrop': (1536, 864, 1536, 864)}, 'sensor': {'bit_depth': 10, 'output_size': (1536, 864)}, 'display': 'main', 'encode': 'main'}
+2025-04-17 15:22:23,388 - DEBUG - Streams: {'main': <libcamera._libcamera.Stream object at 0x7ffefb164ff0>, 'lores': None, 'raw': <libcamera._libcamera.Stream object at 0x7ffefb164f70>}
+2025-04-17 15:22:23,392 - DEBUG - Allocated 6 buffers for stream 0 with fds [43, 46, 49, 52, 55, 58]
+2025-04-17 15:22:23,394 - DEBUG - Allocated 6 buffers for stream 1 with fds [61, 64, 67, 70, 73, 76]
+2025-04-17 15:22:23,487 - INFO - Camera started
+2025-04-17 15:22:25,488 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16c110>
+2025-04-17 15:22:25,591 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff2490d410>
+2025-04-17 15:22:25,701 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16d710>
+2025-04-17 15:22:25,809 - INFO - Camera initialized: 1280x720
+2025-04-17 15:22:25,813 - INFO - Connection attempt 1/9999 to wss://xeryonremotedemostation.replit.app/rpi/RPI1
+2025-04-17 15:22:25,945 - DEBUG - = connection is CONNECTING
+2025-04-17 15:22:26,117 - DEBUG - > GET /rpi/RPI1 HTTP/1.1
+2025-04-17 15:22:26,120 - DEBUG - > Host: xeryonremotedemostation.replit.app
+2025-04-17 15:22:26,126 - DEBUG - > Upgrade: websocket
+2025-04-17 15:22:26,128 - DEBUG - > Connection: Upgrade
+2025-04-17 15:22:26,133 - DEBUG - > Sec-WebSocket-Key: RRTPAY+RitUeDfkSKDd5/g==
+2025-04-17 15:22:26,135 - DEBUG - > Sec-WebSocket-Version: 13
+2025-04-17 15:22:26,137 - DEBUG - > Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+2025-04-17 15:22:26,138 - DEBUG - > User-Agent: Python/3.11 websockets/15.0.1
+2025-04-17 15:22:26,345 - DEBUG - < HTTP/1.1 101 Switching Protocols
+2025-04-17 15:22:26,345 - DEBUG - < Date: Thu, 17 Apr 2025 13:22:26 GMT
+2025-04-17 15:22:26,346 - DEBUG - < Sec-Websocket-Accept: mN8VppRcU/TpyWDhRDXgVOQtP2g=
+2025-04-17 15:22:26,346 - DEBUG - < Server: Google Frontend
+2025-04-17 15:22:26,346 - DEBUG - < Strict-Transport-Security: max-age=63072000; includeSubDomains
+2025-04-17 15:22:26,346 - DEBUG - < Traceparent: 00-a17ecabfd3c0e8bd899991938f403ead-16e08847d7413945-00
+2025-04-17 15:22:26,346 - DEBUG - < X-Cloud-Trace-Context: a17ecabfd3c0e8bd899991938f403ead/1648467305753033029
+2025-04-17 15:22:26,346 - DEBUG - < Via: 1.1 google
+2025-04-17 15:22:26,346 - DEBUG - < Upgrade: websocket
+2025-04-17 15:22:26,346 - DEBUG - < Connection: Upgrade
+2025-04-17 15:22:26,346 - DEBUG - < Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+2025-04-17 15:22:26,346 - DEBUG - = connection is OPEN
+2025-04-17 15:22:26,346 - INFO - Connected to server
+2025-04-17 15:22:26,346 - DEBUG - > TEXT '{"type": "register", "rpiId": "RPI1", "connectionType": "combined"}' [67 bytes]
+2025-04-17 15:22:26,347 - INFO - Registered as RPI1 with combined connection
+2025-04-17 15:22:26,347 - INFO - Starting camera frame transmission at 25 FPS
+2025-04-17 15:22:26,347 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16ce90>
+2025-04-17 15:22:26,348 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:26,348 - INFO - Starting position updates at 10.0 Hz
+2025-04-17 15:22:26,348 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:26,348 - INFO - Starting health checker
+2025-04-17 15:22:26,348 - ERROR - Error in health checker: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:26,349 - INFO - Starting buffer flush task
+2025-04-17 15:22:26,476 - DEBUG - Serial port /dev/ttyACM0 flushed successfully
+2025-04-17 15:22:26,477 - WARNING - Performing USB reset due to serial errors or scheduled reset
+No such device found
+2025-04-17 15:22:27,577 - DEBUG - Serial port /dev/ttyACM0 flushed successfully
+2025-04-17 15:22:27,577 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb587610>
+2025-04-17 15:22:27,579 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,579 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,579 - ERROR - Error in health checker: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,620 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e8d0>
+2025-04-17 15:22:27,621 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,662 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1daaa390>
+2025-04-17 15:22:27,663 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,681 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,703 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577dd0>
+2025-04-17 15:22:27,705 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,746 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb582490>
+2025-04-17 15:22:27,747 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,781 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,788 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb166f50>
+2025-04-17 15:22:27,791 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,831 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb5861d0>
+2025-04-17 15:22:27,833 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,874 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577e90>
+2025-04-17 15:22:27,876 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,882 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,917 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb582490>
+2025-04-17 15:22:27,919 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,959 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb1678d0>
+2025-04-17 15:22:27,961 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:27,983 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,003 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb582490>
+2025-04-17 15:22:28,005 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,045 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb576390>
+2025-04-17 15:22:28,046 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,085 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,088 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1daaa390>
+2025-04-17 15:22:28,089 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,130 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb1ebc50>
+2025-04-17 15:22:28,131 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,172 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e8d0>
+2025-04-17 15:22:28,173 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,188 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,215 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577dd0>
+2025-04-17 15:22:28,218 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,258 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577dd0>
+2025-04-17 15:22:28,260 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,288 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,301 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16ee90>
+2025-04-17 15:22:28,303 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,344 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e910>
+2025-04-17 15:22:28,345 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,386 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb575550>
+2025-04-17 15:22:28,388 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,389 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,429 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16ee90>
+2025-04-17 15:22:28,431 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,472 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb1678d0>
+2025-04-17 15:22:28,474 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,490 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,515 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1b1c5c10>
+2025-04-17 15:22:28,516 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,557 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb5861d0>
+2025-04-17 15:22:28,558 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,580 - ERROR - Error in health checker: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,591 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,601 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16ee90>
+2025-04-17 15:22:28,606 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,646 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e8d0>
+2025-04-17 15:22:28,649 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,690 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb166f50>
+2025-04-17 15:22:28,691 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,692 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,732 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffedf737050>
+2025-04-17 15:22:28,733 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,773 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb582490>
+2025-04-17 15:22:28,776 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,793 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,816 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1dace9d0>
+2025-04-17 15:22:28,818 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,858 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb587610>
+2025-04-17 15:22:28,859 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,894 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,901 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb587610>
+2025-04-17 15:22:28,902 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,942 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16ee90>
+2025-04-17 15:22:28,944 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,984 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb574f90>
+2025-04-17 15:22:28,985 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:28,995 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,026 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577e90>
+2025-04-17 15:22:29,027 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,067 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb1678d0>
+2025-04-17 15:22:29,069 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,096 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,111 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1b1c5c10>
+2025-04-17 15:22:29,112 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,152 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e8d0>
+2025-04-17 15:22:29,154 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,194 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577dd0>
+2025-04-17 15:22:29,196 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,197 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,237 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1daaa390>
+2025-04-17 15:22:29,239 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,280 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16ee10>
+2025-04-17 15:22:29,281 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,297 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,322 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb183750>
+2025-04-17 15:22:29,323 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,364 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb582490>
+2025-04-17 15:22:29,366 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,399 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,407 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb1ebc50>
+2025-04-17 15:22:29,410 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,451 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577dd0>
+2025-04-17 15:22:29,452 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,493 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1dace9d0>
+2025-04-17 15:22:29,495 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,500 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,538 - DEBUG - Execute job: <picamera2.job.Job object at 0x7fff1b1e7f10>
+2025-04-17 15:22:29,539 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,580 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e8d0>
+2025-04-17 15:22:29,582 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,582 - ERROR - Error in health checker: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,601 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,623 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb577dd0>
+2025-04-17 15:22:29,624 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,665 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb582490>
+2025-04-17 15:22:29,666 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,704 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,707 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb576390>
+2025-04-17 15:22:29,708 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,748 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb5855d0>
+2025-04-17 15:22:29,750 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,791 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb1ebc50>
+2025-04-17 15:22:29,792 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,804 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,834 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb16e8d0>
+2025-04-17 15:22:29,838 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,878 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb183750>
+2025-04-17 15:22:29,880 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,906 - ERROR - Error in position updates: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,922 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb575550>
+2025-04-17 15:22:29,923 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+2025-04-17 15:22:29,964 - DEBUG - Execute job: <picamera2.job.Job object at 0x7ffefb581710>
+2025-04-17 15:22:29,966 - ERROR - Error in camera frame loop: 'ClientConnection' object has no attribute 'closed'
+^C2025-04-17 15:22:29,989 - INFO - Received signal 2, initiating shutdown
+2025-04-17 15:22:30,008 - INFO - Position updates stopped
+2025-04-17 15:22:30,009 - INFO - Camera frame sender stopped
+2025-04-17 15:22:30,579 - INFO - Buffer flush task stopped
+2025-04-17 15:22:30,582 - INFO - Health checker stopped
