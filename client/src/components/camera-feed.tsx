@@ -12,28 +12,20 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameNumberRef = useRef<number | null>(null);
-  const animationRef = useRef<number | null>(null);
-  const newFrameAvailable = useRef<boolean>(false);
+  const frameInfoRef = useRef<HTMLDivElement | null>(null);
   
-  // Store the image object as a ref to maintain it between renders
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  if (imageRef.current === null) {
-    // Only create the image once to avoid memory leaks
-    imageRef.current = new Image();
-    // Set to standard HD resolution
-    imageRef.current.width = 1280;
-    imageRef.current.height = 720;
-  }
-
-  // This effect handles receiving and storing new frames from the WebSocket
+  // Store the frame size for statistics display
+  const [frameSize, setFrameSize] = useState<number>(0);
+  
+  // Effect to process and record new frames when they arrive
   useEffect(() => {
-    // Skip if no frame is available
     if (!frame) return;
     
-    // Update timestamp and store the latest frame
-    lastFrameTime.current = Date.now();
+    const now = Date.now();
+    
+    // Update timestamps and loading states
+    lastFrameTime.current = now;
     lastValidFrame.current = frame;
     setLoading(false);
     setIsReconnecting(false);
@@ -51,129 +43,20 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       }
     }
     
-    // Flag that a new frame is available for rendering
-    newFrameAvailable.current = true;
+    // Calculate and store frame size
+    setFrameSize(frame.length);
     
+    // Update frame info overlay
+    updateFrameInfo(frameNumberRef.current, frame.length);
   }, [frame]);
-
-  // This effect handles canvas initialization and setup
-  useEffect(() => {
-    // Skip if canvas isn't available
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    
-    // Initialize the canvas to HD resolution
-    canvas.width = 1280;
-    canvas.height = 720;
-    
-    // Setup canvas context once
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) {
-      console.error("[CameraFeed] Could not get canvas context");
-      return;
-    }
-    
-    // Function to render a frame on the canvas
-    const renderFrame = () => {
-      // Only draw if we have a canvas, image, and new frame
-      if (!canvasRef.current || !imageRef.current || !newFrameAvailable.current) {
-        // If no new frame, schedule next animation
-        animationRef.current = requestAnimationFrame(renderFrame);
-        return;
-      }
-      
-      const startTime = performance.now();
-      
-      // Reset the new frame flag
-      newFrameAvailable.current = false;
-      
-      const img = imageRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d', { alpha: false });
-      
-      if (!ctx) return;
-      
-      // Draw the frame to canvas (don't clear first as we're drawing full frames)
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      // Draw frame number if available
-      if (frameNumberRef.current !== null) {
-        // Add a semi-transparent background for the text
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(10, canvas.height - 30, 200, 20);
-        
-        // Draw the frame number text
-        ctx.fillStyle = 'white';
-        ctx.font = '12px monospace';
-        
-        const renderTime = performance.now() - startTime;
-        ctx.fillText(
-          `Frame #${frameNumberRef.current} | ${renderTime.toFixed(1)}ms`, 
-          15, 
-          canvas.height - 15
-        );
-      }
-      
-      // Schedule next animation
-      animationRef.current = requestAnimationFrame(renderFrame);
-    };
-    
-    // Start the animation loop
-    animationRef.current = requestAnimationFrame(renderFrame);
-    
-    // Cleanup function
-    return () => {
-      if (animationRef.current !== null) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-    };
-  }, []);
   
-  // Effect to handle image loading when the frame source changes
-  useEffect(() => {
-    // Skip if no frame or no image ref
-    if (!frame || !imageRef.current) return;
+  // Update frame information overlay
+  const updateFrameInfo = (frameNum: number | null, size: number) => {
+    if (!frameInfoRef.current) return;
     
-    // Get the source of the current frame
-    const currentSrc = imageRef.current.src;
-    
-    // Only set a new source if the frame has changed
-    if (currentSrc !== frame) {
-      // This is critical: create an onload handler BEFORE setting src
-      const onLoadHandler = () => {
-        // Mark that a new frame is ready to be drawn
-        newFrameAvailable.current = true;
-        
-        // Log timing
-        console.log(
-          `[CameraFeed] Frame #${frameNumberRef.current || 'unknown'} loaded | ` + 
-          `Size: ${frame.length} chars`
-        );
-        
-        // Remove the handler after it's called
-        if (imageRef.current) {
-          imageRef.current.onload = null;
-        }
-      };
-      
-      const onErrorHandler = (e: Event) => {
-        console.error("[CameraFeed] Error loading frame:", e);
-        if (imageRef.current) {
-          imageRef.current.onload = null;
-          imageRef.current.onerror = null;
-        }
-      };
-      
-      // Set handlers
-      imageRef.current.onload = onLoadHandler;
-      imageRef.current.onerror = onErrorHandler;
-      
-      // Now set the source to trigger loading
-      imageRef.current.src = frame;
-    }
-  }, [frame]);
+    const infoElement = frameInfoRef.current;
+    infoElement.textContent = `Frame #${frameNum || 'unknown'} | ${(size / 1024).toFixed(1)} KB`;
+  };
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
@@ -181,6 +64,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       setIsReconnecting(true);
       // Force reconnection after 5 seconds of no connection
       const timeout = setTimeout(() => {
+        console.log("[CameraFeed] WebSocket connection lost, reloading...");
         window.location.reload();
       }, 5000);
       return () => clearTimeout(timeout);
@@ -215,6 +99,9 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   };
 
   const statusText = getStatusText();
+  
+  // Get current frame to display (the latest frame or last valid frame)
+  const currentFrame = isFrameRecent && frame ? frame : lastValidFrame.current;
 
   return (
     <div className="relative w-full aspect-video sm:aspect-[16/9] rounded-md overflow-hidden bg-black">
@@ -225,26 +112,29 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
             {statusText || 'Waiting for camera feed...'}
           </div>
         </>
-      ) : (isFrameRecent && frame) || lastValidFrame.current ? (
+      ) : currentFrame ? (
         <>
-          {/* Canvas for ultra-low latency rendering */}
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full"
-            width={1280}
-            height={720}
-            style={{ objectFit: 'contain' }}
+          {/* Simple img element for reliable rendering */}
+          <img
+            src={currentFrame}
+            alt="Camera Feed"
+            className="w-full h-full object-contain"
+            style={{ imageRendering: 'optimizeSpeed' }}
+            onError={(e) => {
+              console.error("[CameraFeed] Error loading frame:", e);
+              setLoading(true);
+            }}
           />
 
-          {/* Fallback for first load (not visible) */}
-          {!canvasRef.current && lastValidFrame.current && (
-            <img
-              src={lastValidFrame.current}
-              alt="Camera Feed"
-              className="w-full h-full object-contain opacity-0"
-              style={{ visibility: 'hidden' }}
-            />
-          )}
+          {/* Frame info overlay */}
+          <div 
+            ref={frameInfoRef}
+            className="absolute bottom-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs font-mono"
+          >
+            {frameNumberRef.current !== null ? 
+              `Frame #${frameNumberRef.current} | ${(frameSize / 1024).toFixed(1)} KB` : 
+              'Waiting for frame data...'}
+          </div>
 
           {/* Reconnecting overlay */}
           {showReconnectingOverlay && (
