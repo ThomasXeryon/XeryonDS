@@ -4,35 +4,61 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface CameraFeedProps {
   rpiId: string | number;
+  showDebugOverlay?: boolean;
 }
 
-export function CameraFeed({ rpiId }: CameraFeedProps) {
+export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
-  const { connectionStatus, frame } = useWebSocket(String(rpiId));
+  const { connectionStatus, frame, lastFrameMetadata } = useWebSocket(String(rpiId));
+  const imgRef = useRef<HTMLImageElement>(null);
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  
+  // Reference to track if this component is mounted
+  const isMounted = useRef(true);
+  
+  // Set up cleanup when unmounting
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (frame) {
+      // Using direct reference update rather than state for best performance
       lastFrameTime.current = Date.now();
       lastValidFrame.current = frame; // Store the last valid frame
-      setLoading(false); // Stop loading when frame arrives
-      setIsReconnecting(false);
-    } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
-      // Force reconnection if no frames for 5 seconds
-      window.location.reload();
+      
+      // Only update state if component is still mounted
+      if (isMounted.current) {
+        setLoading(false); // Stop loading when frame arrives
+        setIsReconnecting(false);
+      }
+    } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 10000)) {
+      // Only reload if no frames for 10 seconds (increased from 5s to avoid unnecessary reloads)
+      // and only if we're still mounted
+      if (isMounted.current) {
+        window.location.reload();
+      }
     }
   }, [frame]);
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
     if (!connectionStatus) {
-      setIsReconnecting(true);
-      // Force reconnection after 5 seconds of no connection
+      if (isMounted.current) {
+        setIsReconnecting(true);
+      }
+      
+      // Force reconnection after 10 seconds of no connection (increased from 5s)
       const timeout = setTimeout(() => {
-        window.location.reload();
-      }, 5000);
+        if (isMounted.current) {
+          window.location.reload();
+        }
+      }, 10000);
+      
       return () => clearTimeout(timeout);
     }
   }, [connectionStatus]);
@@ -65,6 +91,7 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       ) : (isFrameRecent && frame) || lastValidFrame.current ? (
         <>
           <img
+            ref={imgRef}
             src={isFrameRecent && frame ? frame : lastValidFrame.current!}
             alt="Camera Feed"
             className="w-full h-full object-contain"
@@ -72,13 +99,32 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
               console.error("[CameraFeed] Error loading frame:", e);
               setLoading(true);
             }}
-            onLoad={() => console.log("[CameraFeed] Frame loaded successfully for RPi:", rpiId)}
+            // Removed onLoad console log to reduce overhead
           />
 
           {/* Reconnecting overlay that shows in corner when connection is lost */}
           {showReconnectingOverlay && (
             <div className="absolute top-2 right-2 bg-red-500/80 text-white px-2 py-1 rounded text-xs">
               Reconnecting camera...
+            </div>
+          )}
+          
+          {/* Debug overlay with frame information */}
+          {showDebugOverlay && lastFrameMetadata && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-1 text-xs font-mono">
+              <div className="flex justify-between">
+                <span>Frame #{lastFrameMetadata.frameNumber || 'N/A'}</span>
+                <span>
+                  {lastFrameMetadata.latency !== null 
+                    ? `Latency: ${lastFrameMetadata.latency}ms` 
+                    : 'No latency data'}
+                </span>
+              </div>
+              <div className="text-[8px] opacity-70">
+                {lastFrameMetadata.timestamp 
+                  ? new Date(lastFrameMetadata.timestamp).toISOString() 
+                  : 'No timestamp'}
+              </div>
             </div>
           )}
         </>

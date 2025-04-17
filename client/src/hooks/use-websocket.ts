@@ -2,12 +2,19 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "./use-toast";
 
 // Define the structure for WebSocket hook data
+interface FrameMetadata {
+  frameNumber?: number;
+  timestamp?: number | null;
+  latency?: number | null;
+}
+
 interface WebSocketState {
   connectionStatus: boolean;
   frame: string | null;
   rpiStatus: Record<string, boolean>;
   lastResponse: any;
   lastFrameTime: number | null;
+  lastFrameMetadata?: FrameMetadata;
 }
 
 export function useWebSocket(rpiId?: string) {
@@ -120,10 +127,28 @@ export function useWebSocket(rpiId?: string) {
 
       // Handle different message types
       if (data.type === 'camera_frame') {
+        // Extract timestamp and frameNumber for latency calculation and debugging
+        const frameTimestamp = data.timestamp ? new Date(data.timestamp).getTime() : null;
+        const frameNumber = data.frameNumber;
+        const receiveTime = Date.now();
+        const latency = frameTimestamp ? (receiveTime - frameTimestamp) : null;
+        
+        // Log debug info with latency when available
+        if (latency !== null) {
+          console.log(`[WebSocket] Frame #${frameNumber} received, latency: ${latency}ms`);
+        }
+        
+        // Update frame immediately with zero delay
         setState(prev => ({
           ...prev,
-          frame: data.frame,
-          lastFrameTime: Date.now()
+          frame: `data:image/jpeg;base64,${data.frame}`,
+          lastFrameTime: receiveTime,
+          // Store metadata for debugging overlay
+          lastFrameMetadata: {
+            frameNumber,
+            timestamp: frameTimestamp,
+            latency
+          }
         }));
       } else if (data.type === 'rpi_connected') {
         setState(prev => ({
@@ -195,6 +220,7 @@ export function useWebSocket(rpiId?: string) {
     sendMessage,
     frame: state.frame,
     rpiStatus: state.rpiStatus,
-    lastResponse: state.lastResponse
+    lastResponse: state.lastResponse,
+    lastFrameMetadata: state.lastFrameMetadata
   };
 }
