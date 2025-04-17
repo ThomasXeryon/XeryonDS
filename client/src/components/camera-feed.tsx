@@ -12,51 +12,18 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   const lastFrameTime = useRef<number | null>(null);
   const lastValidFrame = useRef<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const frameNumberRef = useRef<number | null>(null);
-  const frameInfoRef = useRef<HTMLDivElement | null>(null);
-  
-  // Store the frame size for statistics display
-  const [frameSize, setFrameSize] = useState<number>(0);
-  
-  // Effect to process and record new frames when they arrive
+
   useEffect(() => {
-    if (!frame) return;
-    
-    const now = Date.now();
-    
-    // Update timestamps and loading states
-    lastFrameTime.current = now;
-    lastValidFrame.current = frame;
-    setLoading(false);
-    setIsReconnecting(false);
-    
-    // Extract frame number from the data URL if available
-    if (frame.includes('frameNumber')) {
-      try {
-        const match = frame.match(/frameNumber=(\d+)/);
-        if (match && match[1]) {
-          frameNumberRef.current = parseInt(match[1], 10);
-          console.log(`[CameraFeed] Received frame #${frameNumberRef.current}`);
-        }
-      } catch (e) {
-        console.error("[CameraFeed] Failed to extract frame number", e);
-      }
+    if (frame) {
+      lastFrameTime.current = Date.now();
+      lastValidFrame.current = frame; // Store the last valid frame
+      setLoading(false); // Stop loading when frame arrives
+      setIsReconnecting(false);
+    } else if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
+      // Force reconnection if no frames for 5 seconds
+      window.location.reload();
     }
-    
-    // Calculate and store frame size
-    setFrameSize(frame.length);
-    
-    // Update frame info overlay
-    updateFrameInfo(frameNumberRef.current, frame.length);
   }, [frame]);
-  
-  // Update frame information overlay
-  const updateFrameInfo = (frameNum: number | null, size: number) => {
-    if (!frameInfoRef.current) return;
-    
-    const infoElement = frameInfoRef.current;
-    infoElement.textContent = `Frame #${frameNum || 'unknown'} | ${(size / 1024).toFixed(1)} KB`;
-  };
 
   // Show reconnecting state when connection is lost
   useEffect(() => {
@@ -64,25 +31,11 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
       setIsReconnecting(true);
       // Force reconnection after 5 seconds of no connection
       const timeout = setTimeout(() => {
-        console.log("[CameraFeed] WebSocket connection lost, reloading...");
         window.location.reload();
       }, 5000);
       return () => clearTimeout(timeout);
     }
   }, [connectionStatus]);
-
-  // Handle automatic reconnection for stale frames
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (lastFrameTime.current && (Date.now() - lastFrameTime.current > 5000)) {
-        // Force reconnection if no frames for 5 seconds
-        console.log("[CameraFeed] No frames for 5 seconds, reloading...");
-        window.location.reload();
-      }
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Check if the frame is recent (within the last 5 seconds)
   const isFrameRecent = frame && lastFrameTime.current && (Date.now() - lastFrameTime.current < 5000);
@@ -99,9 +52,6 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
   };
 
   const statusText = getStatusText();
-  
-  // Get current frame to display (the latest frame or last valid frame)
-  const currentFrame = isFrameRecent && frame ? frame : lastValidFrame.current;
 
   return (
     <div className="relative w-full aspect-video sm:aspect-[16/9] rounded-md overflow-hidden bg-black">
@@ -112,31 +62,20 @@ export function CameraFeed({ rpiId }: CameraFeedProps) {
             {statusText || 'Waiting for camera feed...'}
           </div>
         </>
-      ) : currentFrame ? (
+      ) : (isFrameRecent && frame) || lastValidFrame.current ? (
         <>
-          {/* Simple img element for reliable rendering */}
           <img
-            src={currentFrame}
+            src={isFrameRecent && frame ? frame : lastValidFrame.current!}
             alt="Camera Feed"
             className="w-full h-full object-contain"
-            style={{ imageRendering: 'optimizeSpeed' }}
             onError={(e) => {
               console.error("[CameraFeed] Error loading frame:", e);
               setLoading(true);
             }}
+            onLoad={() => console.log("[CameraFeed] Frame loaded successfully for RPi:", rpiId)}
           />
 
-          {/* Frame info overlay */}
-          <div 
-            ref={frameInfoRef}
-            className="absolute bottom-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs font-mono"
-          >
-            {frameNumberRef.current !== null ? 
-              `Frame #${frameNumberRef.current} | ${(frameSize / 1024).toFixed(1)} KB` : 
-              'Waiting for frame data...'}
-          </div>
-
-          {/* Reconnecting overlay */}
+          {/* Reconnecting overlay that shows in corner when connection is lost */}
           {showReconnectingOverlay && (
             <div className="absolute top-2 right-2 bg-red-500/80 text-white px-2 py-1 rounded text-xs">
               Reconnecting camera...
