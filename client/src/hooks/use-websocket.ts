@@ -114,17 +114,56 @@ export function useWebSocket(rpiId?: string) {
     };
   }, [rpiId]); // Added rpiId to dependencies
 
+  // Keep track of the latest frame number to ensure we only process the newest frames
+  const latestFrameNumberRef = useRef<number>(0);
+  // Store last frame processing time to measure performance
+  const lastProcessTimeRef = useRef<number>(Date.now());
+
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
+      const now = performance.now(); // Use high-resolution timer
 
-      // Handle different message types
+      // Track and handle camera frames with ultra-low latency approach
       if (data.type === 'camera_frame') {
+        // Skip this frame if we're already processing a newer one
+        if (data.frameNumber && data.frameNumber < latestFrameNumberRef.current) {
+          console.log(`[WebSocket] Skipping outdated frame #${data.frameNumber} (current: #${latestFrameNumberRef.current})`);
+          return;
+        }
+
+        // Update the latest frame number
+        if (data.frameNumber) {
+          latestFrameNumberRef.current = data.frameNumber;
+        }
+
+        // Calculate processing delay for monitoring
+        const processingDelay = now - lastProcessTimeRef.current;
+        lastProcessTimeRef.current = now;
+
+        // Measure end-to-end latency if timestamp is available
+        let latency = null;
+        if (data.timestamp) {
+          const frameTime = new Date(data.timestamp).getTime();
+          latency = Date.now() - frameTime;
+        }
+
+        // Log detailed frame info with performance metrics
+        console.log(
+          `[WebSocket] Frame #${data.frameNumber || 'unknown'} | ` +
+          `Size: ${data.frame?.length || 0} chars | ` +
+          `Process delay: ${processingDelay.toFixed(1)}ms | ` + 
+          `End-to-end latency: ${latency !== null ? latency + 'ms' : 'unknown'}`
+        );
+
+        // Use lightweight state update with only necessary changes
+        // This is much faster than updating the entire state object
         setState(prev => ({
           ...prev,
           frame: data.frame,
           lastFrameTime: Date.now()
         }));
+
       } else if (data.type === 'rpi_connected') {
         setState(prev => ({
           ...prev,
