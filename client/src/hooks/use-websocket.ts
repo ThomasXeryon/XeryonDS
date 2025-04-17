@@ -138,10 +138,16 @@ export function useWebSocket(rpiId?: string) {
           console.log(`[WebSocket] Frame #${frameNumber} received, latency: ${latency}ms`);
         }
         
+        // Process frame data with proper data URL handling
+        const frameData = data.frame;
+        const frameUrl = frameData.startsWith('data:image') 
+          ? frameData 
+          : `data:image/jpeg;base64,${frameData}`;
+          
         // Update frame immediately with zero delay
         setState(prev => ({
           ...prev,
-          frame: `data:image/jpeg;base64,${data.frame}`,
+          frame: frameUrl,
           lastFrameTime: receiveTime,
           // Store metadata for debugging overlay
           lastFrameMetadata: {
