@@ -7,7 +7,7 @@ interface CameraFeedProps {
   showDebugOverlay?: boolean;
 }
 
-export function CameraFeed({ rpiId, showDebugOverlay = true }: CameraFeedProps) {
+export function CameraFeed({ rpiId, showDebugOverlay = false }: CameraFeedProps) {
   const [loading, setLoading] = useState(true);
   const { connectionStatus, frame, lastFrameMetadata } = useWebSocket(String(rpiId));
   const imgRef = useRef<HTMLImageElement>(null);
