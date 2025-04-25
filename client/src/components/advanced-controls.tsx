@@ -23,7 +23,7 @@ interface AdvancedControlsProps {
 export function AdvancedControls({ station, enabled, isConnected, onCommand }: AdvancedControlsProps) {
   const [stepSize, setStepSize] = useState("1.0");
   const [stepUnit, setStepUnit] = useState("mm");
-  const [speed, setSpeed] = useState([500]); // Default to middle of range
+  const [speed, setSpeed] = useState([100]); // Default to 100 mm/s
   const [acceleration, setAcceleration] = useState([32750]); // Default to middle of ACCE range (0-65500)
   const [deceleration, setDeceleration] = useState([32750]); // Default to middle of DECE range (0-65500)
   const [isDemoRunning, setIsDemoRunning] = useState(false);
@@ -206,7 +206,7 @@ export function AdvancedControls({ station, enabled, isConnected, onCommand }: A
           onValueChange={handleSpeedChange}
           onValueCommit={handleSpeedCommit}
           min={1}
-          max={1000}
+          max={500}
           step={10}
           disabled={!enabled || !isConnected}
           className="py-1"

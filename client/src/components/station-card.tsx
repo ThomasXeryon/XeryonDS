@@ -246,19 +246,26 @@ export function StationCard({ station }: { station: Station }) {
         // Default deceleration value (middle of range)
         wsConnection.send({
           type: "command",
-          command: "dece",
+          command: "deceleration", 
           direction: "none",
           rpiId: station.rpiId,
           dece: 32750
         });
         
-        // Default speed value (middle of range)
+        // Default speed value (100 mm/s)
         wsConnection.send({
           type: "command",
           command: "speed",
+          direction: "100", // Speed value as direction
+          rpiId: station.rpiId
+        });
+        
+        // Make sure demo is stopped
+        wsConnection.send({
+          type: "command",
+          command: "demo_stop",
           direction: "none",
-          rpiId: station.rpiId,
-          value: 500
+          rpiId: station.rpiId
         });
       }
     },
@@ -294,13 +301,12 @@ export function StationCard({ station }: { station: Station }) {
           dece: 32750
         });
         
-        // Reset speed value (middle of range)
+        // Reset speed value to 100 mm/s
         wsConnection.send({
           type: "command",
           command: "speed",
-          direction: "none",
-          rpiId: station.rpiId,
-          value: 500
+          direction: "100",
+          rpiId: station.rpiId
         });
         
         // Send stop command to ensure motion is stopped

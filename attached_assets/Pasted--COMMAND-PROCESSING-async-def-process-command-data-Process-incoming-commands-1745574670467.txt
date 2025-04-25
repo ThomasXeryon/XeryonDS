@@ -1,0 +1,275 @@
+# ===== COMMAND PROCESSING =====
+async def process_command(data):
+    """Process incoming commands with comprehensive error handling and safety checks."""
+    global axis, last_successful_command_time, current_position
+    global thermal_error_count, amplifier_error_count
+    axis.sendCommand("ENBL=1")
+
+    # Extract command data
+    message_type = data.get("type")
+    command = data.get("command", "unknown")
+    direction = data.get("direction", "none")
+    step_size = data.get("stepSize")
+    step_unit = data.get("stepUnit")
+    timestamp = data.get("timestamp")
+
+    # Handle acceleration/deceleration parameters (support both naming conventions)
+    acce_value = data.get("acceleration")
+    if acce_value is None:
+        acce_value = data.get("acce")
+
+    dece_value = data.get("deceleration")
+    if dece_value is None:
+        dece_value = data.get("dece")
+
+    logger.debug(
+        f"Command received: {command}, direction: {direction}, stepSize: {step_size}, stepUnit: {step_unit}, acce: {acce_value}, dece: {dece_value}"
+    )
+
+    response = {"status": "success", "rpiId": STATION_ID}
+
+    try:
+        # Handle ping/pong for latency measurements
+        if message_type == "ping":
+            response.update({
+                "type": "pong",
+                "timestamp": timestamp,
+                "rpiId": STATION_ID
+            })
+            logger.debug(f"Replied to ping with timestamp: {timestamp}")
+            return response
+        elif message_type == "pong":
+            global last_ping_response_time
+            last_ping_response_time = time.time()
+            logger.debug(f"Received pong with timestamp: {timestamp}")
+            return None
+        elif message_type == "heartbeat":
+            # Heartbeat message for connection health verification
+            response.update({
+                "type": "heartbeat_response",
+                "timestamp": datetime.now().isoformat(),
+                "status": "healthy",
+                "rpiId": STATION_ID
+            })
+            return response
+
+        # Verify controller is initialized
+        if not RUNNING_ON_RPI or not axis:
+            if RUNNING_ON_RPI:  # Only log as error if actually on RPi
+                logger.error("Axis not initialized - cannot process command")
+                response["status"] = "error"
+                response["message"] = "Controller not initialized"
+                return response
+            else:
+                # In simulation mode, we'll pretend commands work
+                logger.info(f"Simulation: Processing command {command}")
+                response["message"] = f"Simulation: Executed {command}"
+                last_successful_command_time = time.time()
+                return response
+
+        # Add minimal sleep to prevent CPU hogging while ensuring ultra-responsiveness
+        await asyncio.sleep(MIN_SLEEP_DELAY)
+
+        # Always enable controller before commands to prevent thermal protection issues
+        try:
+            axis.sendCommand("ENBL=1")
+        except Exception as e:
+            logger.warning(f"Error enabling controller: {str(e)}")
+
+        # Handle acceleration and deceleration commands first
+        if command in ["acceleration", "acce"]:
+            if acce_value is None:
+                acce_value = int(
+                    direction) if direction.isdigit() else DEFAULT_ACCELERATION
+            set_acce_dece_params(acce_value=acce_value)
+            response["message"] = f"Acceleration set to {acce_value}"
+            last_successful_command_time = time.time()
+            return response
+
+        elif command in ["deceleration", "dece"]:
+            if dece_value is None:
+                dece_value = int(
+                    direction) if direction.isdigit() else DEFAULT_DECELERATION
+            set_acce_dece_params(dece_value=dece_value)
+            response["message"] = f"Deceleration set to {dece_value}"
+            last_successful_command_time = time.time()
+            return response
+
+        # Apply acce/dece parameters for all commands if provided
+        if acce_value is not None or dece_value is not None:
+            set_acce_dece_params(acce_value, dece_value)
+            if acce_value is not None:
+                response["acceleration"] = acce_value
+            if dece_value is not None:
+                response["deceleration"] = dece_value
+
+        # Process the main command
+        if command in ["move", "step"]:
+            axis.sendCommand("ENBL=1")
+            # Validate parameters
+            if direction not in ["right", "left"]:
+                raise ValueError(f"Invalid direction: {direction}")
+            if step_size is None or not isinstance(
+                    step_size, (int, float)) or step_size < 0:
+                raise ValueError(f"Invalid stepSize: {step_size}")
+            if step_unit not in ["mm", "ÃÂ¼m", "nm"]:
+                raise ValueError(f"Invalid stepUnit: {step_unit}")
+
+            # Convert to mm
+            step_value = float(step_size)
+            if step_unit == "ÃÂ¼m":
+                step_value /= 1000
+            elif step_unit == "nm":
+                step_value /= 1_000_000
+
+            # Apply direction
+            final_step = step_value if direction == "right" else -step_value
+
+            # Execute the step
+            try:
+                await asyncio.to_thread(axis.step, final_step)
+
+                # Update our tracked position
+                with position_lock:
+                    current_position += final_step
+
+                # Read back actual position
+                epos = await asyncio.to_thread(axis.getEPOS)
+
+                response[
+                    "message"] = f"Stepped {final_step:.6f} mm {'right' if direction == 'right' else 'left'}"
+                response["step_executed_mm"] = final_step
+                response["epos_mm"] = epos
+                logger.info(
+                    f"Move executed: {final_step:.6f} mm to position: {epos:.6f} mm"
+                )
+                last_successful_command_time = time.time()
+            except Exception as e:
+                # Check for specific errors
+                error_str = str(e)
+                if "amplifier error" in error_str:
+                    amplifier_error_count += 1
+                    # Try to recover
+                    try:
+                        axis.sendCommand("ENBL=1")
+                    except:
+                        pass
+                elif "thermal protection" in error_str:
+                    thermal_error_count += 1
+                    # Try to recover
+                    try:
+                        axis.sendCommand("ENBL=1")
+                    except:
+                        pass
+                raise
+
+        elif command == "home":
+            await asyncio.to_thread(axis.findIndex)
+            epos = await asyncio.to_thread(axis.getEPOS)
+
+            # Reset our tracked position
+            with position_lock:
+                current_position = epos
+
+            response["message"] = f"Homed to index, EPOS {epos:.6f} mm"
+            response["epos_mm"] = epos
+            logger.info(f"Homed to index, EPOS: {epos:.6f} mm")
+            last_successful_command_time = time.time()
+
+        elif command == "speed":
+            speed_value = float(direction)
+            # Clamp to reasonable values
+            speed_value = max(1, min(1000, speed_value))
+            await asyncio.to_thread(axis.setSpeed, speed_value)
+            response["message"] = f"Speed set to {speed_value:.2f} mm/s"
+            logger.info(f"Speed set to {speed_value:.2f} mm/s")
+            last_successful_command_time = time.time()
+
+        elif command == "scan":
+            if direction == "right":
+                await asyncio.to_thread(axis.startScan, 1)
+                response["message"] = "Scanning right"
+            elif direction == "left":
+                await asyncio.to_thread(axis.startScan, -1)
+                response["message"] = "Scanning left"
+            else:
+                raise ValueError(f"Invalid scan direction: {direction}")
+
+            logger.info(f"Scan started: {direction}")
+            last_successful_command_time = time.time()
+
+        elif command == "demo_start":
+            global demo_running
+            if not demo_running:
+                demo_running = True
+                asyncio.create_task(run_demo())
+                response["message"] = "Demo started"
+                logger.info("Demo started")
+            else:
+                response["message"] = "Demo already running"
+                logger.info("Demo already running - request ignored")
+            last_successful_command_time = time.time()
+
+        elif command == "demo_stop":
+            if demo_running:
+                demo_running = False
+                await asyncio.to_thread(axis.stopScan)
+                await asyncio.to_thread(axis.setDPOS, 0)
+
+                # Reset tracked position
+                with position_lock:
+                    current_position = 0
+
+                response["message"] = "Demo stopped, DPOS 0 mm"
+                logger.info("Demo stopped, position reset to 0 mm")
+            else:
+                response["message"] = "No demo running"
+                logger.info("No demo to stop - request ignored")
+            last_successful_command_time = time.time()
+
+        elif command == "stop":
+            await asyncio.to_thread(axis.stopScan)
+            await asyncio.to_thread(axis.setDPOS, 0)
+
+            # Reset tracked position
+            with position_lock:
+                current_position = 0
+
+            response["message"] = "Stopped, DPOS 0 mm"
+            logger.info("Stopped, position reset to 0 mm")
+            last_successful_command_time = time.time()
+
+        elif command == "reset_params":
+            # Reset to default parameters
+            await asyncio.to_thread(axis.setSpeed, DEFAULT_SPEED)
+            set_acce_dece_params(DEFAULT_ACCELERATION, DEFAULT_DECELERATION)
+            response["message"] = "Parameters reset to defaults"
+            response["speed"] = DEFAULT_SPEED
+            response["acceleration"] = DEFAULT_ACCELERATION
+            response["deceleration"] = DEFAULT_DECELERATION
+            logger.info("Parameters reset to defaults")
+            last_successful_command_time = time.time()
+
+        else:
+            raise ValueError(f"Unknown command: {command}")
+
+    except Exception as e:
+        global last_error_time
+        last_error_time = time.time()
+
+        response["status"] = "error"
+        response["message"] = f"Command '{command}' failed: {str(e)}"
+        logger.error(f"Command error ({command}): {str(e)}")
+
+        # Try to recover from common errors
+        if RUNNING_ON_RPI and axis:
+            try:
+                # Re-enable controller
+                axis.sendCommand("ENBL=1")
+                time.sleep(0.1)
+            except Exception as recovery_error:
+                logger.error(f"Error recovery failed: {str(recovery_error)}")
+
+    # Add minimal sleep before returning to ensure optimal responsiveness
+    await asyncio.sleep(MIN_SLEEP_DELAY)
+    return response
